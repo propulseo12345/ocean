@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# Env — jamais de secrets dans le repo
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+
+# Tests & coverage
+coverage/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Sentry
+.sentryclirc
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
