@@ -3,6 +3,7 @@
 > **Tu es Claude Code sur Ocean, un SaaS multi-tenant de gestion de contenu social pour freelances marketing.**
 > Lis ce fichier INTÉGRALEMENT avant chaque action. Puis docs/PRD.md et docs/ANALYSE-LANCEMENT.md.
 > **Sécurité multi-tenant, tokens OAuth et idempotence du worker de publication sont CRITIQUES — un bug ici = catastrophe RGPD ou double publication chez un client.**
+> **⚠️ PHASE EN COURS : preview front UI-only avec données mockées — voir « Phase actuelle » (§0). Les règles backend (RLS, worker, tokens) s'appliquent à partir du Lot 0 réel, pas pendant la preview.**
 
 ---
 
@@ -12,7 +13,7 @@
 - **Type** : SaaS B2B — publication Instagram/Facebook (Standard Access Meta), TikTok en brouillon, grille de preview du feed IG, calendrier éditorial par client, portail de validation client, agenda unifié Google+Outlook, PWA mobile (priorité iOS)
 - **Client** : Propul'SEO (projet interne)
 - **Owner** : Étienne (Propul'SEO)
-- **Phase actuelle** : solo (Étienne = premier utilisateur, accès développeur des plateformes)
+- **Phase actuelle** : ⚠️ **PREVIEW FRONT — UI seule, données mockées** (décision du 11/06/2026). On construit et valide d'abord le front (dashboard, studio, grille feed, calendrier éditorial, portail client) **SANS backend** : ne PAS câbler Supabase (auth/DB/RLS/storage), ni remote GitHub, ni Meta/TikTok/Brevo tant que le front n'est pas validé par Étienne. La couche données = mocks typés dans `packages/shared` (mêmes types/enums que la future DB du PRD §6, pour brancher Supabase ensuite sans réécrire l'UI). Après validation : phase solo complète (Étienne = premier utilisateur, accès développeur des plateformes), Lots 0–4 du PRD.
 - **Repo** : [à créer — voir docs/kickoff-day1.md]
 - **URL prod app** : `app.[domain]` (à acter avec le nom commercial)
 - **URL staging** : `staging.app.[domain]`
