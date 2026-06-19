@@ -1,0 +1,17 @@
+**/node_modules
+**/.next
+**/out
+**/dist
+**/build
+**/.turbo
+**/*.tsbuildinfo
+.git
+.github
+.planning
+docs
+**/.env
+**/.env.*
+!**/.env.example
+**/.DS_Store
+npm-debug.log*
+pnpm-debug.log*
