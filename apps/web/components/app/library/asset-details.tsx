@@ -57,19 +57,25 @@ export function AssetDetails({
           value={asset.type === "video" ? t("library.mime.video") : t("library.mime.image")}
         />
         <MetaRow label={t("library.details.format")} value={mimeLabel(asset, t)} />
-        <MetaRow label={t("library.details.dimensions")} value={`${asset.width}×${asset.height} px`} />
+        <MetaRow
+          label={t("library.details.dimensions")}
+          value={`${asset.width}×${asset.height} px`}
+        />
         <MetaRow label={t("library.details.ratio")} value={ratioLabel(asset.width, asset.height)} />
         {asset.fileSizeMb !== undefined ? (
-          <MetaRow label={t("library.details.weight")} value={formatMb(asset.fileSizeMb, locale, t)} />
+          <MetaRow
+            label={t("library.details.weight")}
+            value={formatMb(asset.fileSizeMb, locale, t)}
+          />
         ) : null}
         {asset.durationSec !== undefined ? (
-          <MetaRow label={t("library.details.duration")} value={formatDuration(asset.durationSec)} />
+          <MetaRow
+            label={t("library.details.duration")}
+            value={formatDuration(asset.durationSec)}
+          />
         ) : null}
         <MetaRow label={t("library.details.source")} value={t(sourceMeta[asset.source].labelKey)} />
-        <MetaRow
-          label={t(sourceMeta[asset.source].verbKey)}
-          value={f.date(asset.uploadedAt, tz)}
-        />
+        <MetaRow label={t(sourceMeta[asset.source].verbKey)} value={f.date(asset.uploadedAt, tz)} />
       </dl>
 
       <div className="space-y-1.5">

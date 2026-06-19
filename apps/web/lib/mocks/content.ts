@@ -157,7 +157,10 @@ function buildClientContent(client: Client): ContentItem[] {
       newsletterSubject: isManual ? copy.title : undefined,
       internalNotes:
         i % 5 === 0
-          ? loc("Penser à taguer le lieu et le partenaire.", "Remember to tag the venue and partner.")
+          ? loc(
+              "Penser à taguer le lieu et le partenaire.",
+              "Remember to tag the venue and partner."
+            )
           : undefined,
       media: buildMedia(client, i, bp.media, bp.format),
       targets,

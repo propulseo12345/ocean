@@ -1,6 +1,6 @@
 import "server-only"
 import { cookies, headers } from "next/headers"
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale, LOCALES } from "./config"
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, LOCALES, type Locale } from "./config"
 import { type Format, makeFormat } from "./format-bound"
 import { type Labels, makeLabels } from "./labels"
 import { createTranslator, type Translator } from "./translator"

@@ -64,9 +64,7 @@ export function AssetGrid({
       <EmptyState
         icon={filtered ? FolderOpen : Inbox}
         title={filtered ? t("library.grid.emptyFilteredTitle") : t("library.grid.emptyTitle")}
-        description={
-          filtered ? t("library.grid.emptyFilteredDesc") : t("library.grid.emptyDesc")
-        }
+        description={filtered ? t("library.grid.emptyFilteredDesc") : t("library.grid.emptyDesc")}
       />
     )
   }
@@ -90,7 +88,9 @@ export function AssetGrid({
 
       {others.length > 0 ? (
         <section className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">{t("library.grid.allMedia")}</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {t("library.grid.allMedia")}
+          </h3>
           <Cards assets={others} ctx={ctx} />
         </section>
       ) : null}

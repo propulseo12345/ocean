@@ -98,9 +98,7 @@ export function StepIdentity({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              {t("onboarding.identity.timezoneHint")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("onboarding.identity.timezoneHint")}</p>
           </div>
         </div>
 

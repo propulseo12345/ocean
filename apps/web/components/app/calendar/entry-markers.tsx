@@ -130,7 +130,12 @@ export function entryToneClass(item: ContentItem): string {
 }
 
 /** Libellé d'accessibilité complet d'une carte. */
-export function entryAriaLabel(item: ContentItem, lbl: Labels, locale: Locale, t: ReturnType<typeof useT>): string {
+export function entryAriaLabel(
+  item: ContentItem,
+  lbl: Labels,
+  locale: Locale,
+  t: ReturnType<typeof useT>
+): string {
   return t("calendar.markers.ariaLabel", {
     title: pick(item.title, locale),
     status: lbl.contentStatus(item.status),

@@ -38,7 +38,10 @@ export function performDrop(
     })
   } else {
     toast.success(
-      t("calendar.actions.moved", { date: label, state: wasUnscheduled ? "scheduled" : "rescheduled" }),
+      t("calendar.actions.moved", {
+        date: label,
+        state: wasUnscheduled ? "scheduled" : "rescheduled",
+      }),
       {
         description: t("calendar.actions.movedDesc"),
       }
@@ -139,7 +142,9 @@ export function performRetry(item: ContentItem, t: Translator, locale: Locale): 
 
 export function performRemind(reviewerName: string | null, t: Translator): void {
   toast.info(
-    t("calendar.actions.remind", { name: reviewerName ?? t("calendar.actions.remindFallbackName") }),
+    t("calendar.actions.remind", {
+      name: reviewerName ?? t("calendar.actions.remindFallbackName"),
+    }),
     {
       description: t("calendar.actions.remindDesc"),
     }

@@ -72,9 +72,7 @@ export function AccountConnectCard({
               </span>
             ) : null}
           </p>
-          {noteKey ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">{t(noteKey)}</p>
-          ) : null}
+          {noteKey ? <p className="mt-0.5 text-xs text-muted-foreground">{t(noteKey)}</p> : null}
         </div>
       </div>
 

@@ -103,9 +103,7 @@ export function LoginForm() {
         <p className="flex items-center gap-2">
           <Monitor className="size-3.5 shrink-0 text-foreground" />
           {t("auth.login.hintDesktopPrefix")}
-          <strong className="font-medium text-foreground">
-            {t("auth.login.hintDesktopBold")}
-          </strong>
+          <strong className="font-medium text-foreground">{t("auth.login.hintDesktopBold")}</strong>
           {t("auth.login.hintDesktopSuffix")}
         </p>
         <p className="flex items-center gap-2">

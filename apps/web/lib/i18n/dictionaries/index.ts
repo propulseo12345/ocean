@@ -1,6 +1,6 @@
 import type { Locale } from "../config"
 import { en } from "./en"
-import { type Dictionary, type FrDictionary, fr } from "./fr"
+import { type FrDictionary, fr } from "./fr"
 import { zonesEn } from "./zones/en"
 import { zonesFr } from "./zones/fr"
 

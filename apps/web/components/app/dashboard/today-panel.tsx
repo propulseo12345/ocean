@@ -31,7 +31,14 @@ export async function TodayPanel() {
   return (
     <ul className="space-y-0.5">
       {items.map((it) => (
-        <AgendaRow key={it.id} item={it} tz={tz} f={f} locale={locale} allDayLabel={t("dashboard.allDay")} />
+        <AgendaRow
+          key={it.id}
+          item={it}
+          tz={tz}
+          f={f}
+          locale={locale}
+          allDayLabel={t("dashboard.allDay")}
+        />
       ))}
     </ul>
   )

@@ -53,12 +53,18 @@ function Chip({
 }
 
 const SORT_KEYS: SortKey[] = ["recent", "weight", "usage"]
-const TYPES: Array<{ value: TypeFilter; labelKey: "library.toolbar.typeImage" | "library.toolbar.typeVideo" }> = [
+const TYPES: Array<{
+  value: TypeFilter
+  labelKey: "library.toolbar.typeImage" | "library.toolbar.typeVideo"
+}> = [
   { value: "image", labelKey: "library.toolbar.typeImage" },
   { value: "video", labelKey: "library.toolbar.typeVideo" },
 ]
 const SOURCES: LibraryAssetSource[] = ["upload", "depot_client", "import"]
-const USAGES: Array<{ value: UsageFilter; labelKey: "library.toolbar.usageUsed" | "library.toolbar.usageUnused" }> = [
+const USAGES: Array<{
+  value: UsageFilter
+  labelKey: "library.toolbar.usageUsed" | "library.toolbar.usageUnused"
+}> = [
   { value: "used", labelKey: "library.toolbar.usageUsed" },
   { value: "unused", labelKey: "library.toolbar.usageUnused" },
 ]

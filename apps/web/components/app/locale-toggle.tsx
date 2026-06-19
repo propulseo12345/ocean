@@ -1,8 +1,8 @@
 "use client"
 
 import { Languages } from "lucide-react"
-import { LOCALE_LABEL, LOCALES, useLocale } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
+import { LOCALE_LABEL, LOCALES, useLocale } from "@/lib/i18n"
 
 // Bascule FR ⇄ EN. Affiche la langue VERS laquelle on bascule (ex. en FR, montre « EN »).
 export function LocaleToggle() {

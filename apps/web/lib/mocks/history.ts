@@ -13,10 +13,7 @@ export const CONTENT_VERSIONS: ContentVersion[] = [
       "Le geste, la mousse, le détail. Un moment de calme avant le rush du weekend.",
       "The motion, the foam, the details. A quiet moment before the weekend rush."
     ),
-    note: loc(
-      "Première version envoyée en validation.",
-      "First version sent for review."
-    ),
+    note: loc("Première version envoyée en validation.", "First version sent for review."),
     createdAt: dayAt(-4, 18),
   },
   {
@@ -55,10 +52,7 @@ export const CONTENT_VERSIONS: ContentVersion[] = [
       "Maille côtelée : 3 façons de la porter en mi-saison.",
       "Ribbed knit: 3 ways to style it for mid-season."
     ),
-    note: loc(
-      "Première version envoyée en validation.",
-      "First version sent for review."
-    ),
+    note: loc("Première version envoyée en validation.", "First version sent for review."),
     createdAt: dayAt(-3, 10),
   },
   {

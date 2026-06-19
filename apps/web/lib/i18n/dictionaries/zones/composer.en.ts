@@ -1,4 +1,5 @@
 import type { composerFr } from "./composer.fr"
+
 // Namespace i18n « composer » (EN) — doit refléter les clés de composerFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const composerEn: Widen<typeof composerFr> = {
@@ -73,8 +74,7 @@ export const composerEn: Widen<typeof composerFr> = {
       emptyChoose: "Choose a visual from the library",
       emptyHint: "Real file upload in Phase 1 — the preview pulls from mocked media.",
       slidesAria: "Content slides",
-      carouselReorder:
-        "Drag the thumbnails to reorder — the 1st slide is the carousel cover.",
+      carouselReorder: "Drag the thumbnails to reorder — the 1st slide is the carousel cover.",
       sizeMb: "{size} MB",
       duration: "{count}s",
       cropped: "cropped {preset}",
@@ -146,8 +146,7 @@ export const composerEn: Widen<typeof composerFr> = {
       title: "Advanced per-platform options",
       igLocation: "Location (geotag)",
       igLocationPlaceholder: "e.g. Lille, France",
-      igHint:
-        "Account tagging and collab posts unavailable at MVP (Instagram Login API variant).",
+      igHint: "Account tagging and collab posts unavailable at MVP (Instagram Login API variant).",
       fbLink: "Outbound link",
       fbHint: "Shown as a link preview under the Facebook post.",
       tiktokHint:
@@ -204,7 +203,8 @@ export const composerEn: Widen<typeof composerFr> = {
       bannedHit: "Words to avoid (brand kit)",
       bannedOk: "No banned word detected",
       approvalRequired: "Client approval required",
-      approvalRequiredDetail: "Send for review before publishing — this client approves everything.",
+      approvalRequiredDetail:
+        "Send for review before publishing — this client approves everything.",
       approvalOptional: "Client approval optional",
       approvalAuto: "Direct publishing (no approval)",
       dateNone: "No publish date",

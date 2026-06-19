@@ -22,7 +22,9 @@ export function TrashList({ items: initial }: { items: ContentItem[] }) {
 
   function restore(item: ContentItem) {
     setItems((prev) => prev.filter((c) => c.id !== item.id))
-    toast.success(t("clientSettings.trash.restoredToast"), { description: pick(item.title, locale) })
+    toast.success(t("clientSettings.trash.restoredToast"), {
+      description: pick(item.title, locale),
+    })
   }
 
   function purge() {

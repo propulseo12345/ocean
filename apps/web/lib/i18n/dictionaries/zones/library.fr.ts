@@ -104,8 +104,7 @@ export const libraryFr = {
     // Dialogue de suppression
     deleteDialog: {
       title: "Supprimer ce média ?",
-      description:
-        "{name} est utilisé dans {count, plural, one {# contenu} other {# contenus}} :",
+      description: "{name} est utilisé dans {count, plural, one {# contenu} other {# contenus}} :",
       andMore: "{count, plural, one {et # autre…} other {et # autres…}}",
       warning:
         "En réel, ces contenus perdraient ce visuel et repasseraient en brouillon. En preview, la suppression est purement visuelle.",

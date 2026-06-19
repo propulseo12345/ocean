@@ -149,8 +149,7 @@ export function StepReview({
             ))}
           </div>
           <p className="text-xs">
-            {t("onboarding.review.toneLine")}{" "}
-            <span className="text-foreground">{toneLabel}</span> ·{" "}
+            {t("onboarding.review.toneLine")} <span className="text-foreground">{toneLabel}</span> ·{" "}
             {t("onboarding.review.doCount", { count: draft.doList.length })} ·{" "}
             {t("onboarding.review.dontCount", { count: draft.dontList.length })} ·{" "}
             {t("onboarding.review.bannedCount", { count: draft.bannedWords.length })}

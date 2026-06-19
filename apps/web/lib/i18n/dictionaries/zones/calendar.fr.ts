@@ -12,8 +12,7 @@ export const calendarFr = {
         remindEmptyWeekDesc:
           "Une notification te prévient quand la semaine à venir est vide pour ce client.",
         remindReviewerLabel: "Relance du client après 48 h sans validation",
-        remindReviewerDesc:
-          "Un rappel est envoyé automatiquement au Reviewer (email + portail).",
+        remindReviewerDesc: "Un rappel est envoyé automatiquement au Reviewer (email + portail).",
         quotaDeferLabel: "Report automatique si quota Instagram atteint",
         quotaDeferDesc:
           "Comportement standard d'Ocean : le post est décalé au prochain créneau et tu es notifié du déplacement.",
@@ -189,8 +188,7 @@ export const calendarFr = {
       moved: "{state, select, scheduled {Planifié} other {Replanifié}} au {date} (aperçu)",
       movedDesc: "Aucune date n'est réellement modifiée pendant la preview.",
       reschedulePrecise: "Replanifié au {date} à {time} (aperçu)",
-      reschedulePreciseApprovedDesc:
-        "La validation client reste valable — le client sera notifié.",
+      reschedulePreciseApprovedDesc: "La validation client reste valable — le client sera notifié.",
       shifted:
         "{dir, select, advance {{count, plural, one {# contenu avancé} other {# contenus avancés}}} other {{count, plural, one {# contenu décalé} other {# contenus décalés}}}} de {days, plural, one {# jour} other {# jours}} (aperçu)",
       shiftedSkippedDesc:
@@ -276,14 +274,12 @@ export const calendarFr = {
       allPlanned: "Aucun contenu sans date — tout est planifié.",
       dragHint: "Glisse une carte sur une case du calendrier pour la planifier (aperçu).",
       evergreenQueue: "File evergreen",
-      evergreenEmpty:
-        "Étiquette un contenu « Evergreen » dans le studio pour alimenter la file.",
+      evergreenEmpty: "Étiquette un contenu « Evergreen » dans le studio pour alimenter la file.",
       autoFill: "Auto-remplissage des trous (aperçu)",
       autoFillToggle: "Auto-remplissage des trous",
       autoFillOn: "Auto-remplissage activé (aperçu)",
       autoFillOff: "Auto-remplissage désactivé (aperçu)",
-      autoFillOnDesc:
-        "Ocean proposera des créneaux — aucune publication sans ta confirmation.",
+      autoFillOnDesc: "Ocean proposera des créneaux — aucune publication sans ta confirmation.",
       noGaps: "Aucun trou de cadence à venir ce mois-ci — rien à proposer.",
       proposalArrow: " → « {title} »",
       proposalHint:

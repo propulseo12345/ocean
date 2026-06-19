@@ -169,13 +169,41 @@ export const PILLAR_SUGGESTIONS: Record<string, MessageKey[]> = {
 
 // `labelKey`/`shortKey` = clés i18n ; `value` reste l'identifiant numérique.
 export const WEEKDAYS: { value: number; labelKey: MessageKey; shortKey: MessageKey }[] = [
-  { value: 1, labelKey: "onboarding.weekday.mondayLong", shortKey: "onboarding.weekday.mondayShort" },
-  { value: 2, labelKey: "onboarding.weekday.tuesdayLong", shortKey: "onboarding.weekday.tuesdayShort" },
-  { value: 3, labelKey: "onboarding.weekday.wednesdayLong", shortKey: "onboarding.weekday.wednesdayShort" },
-  { value: 4, labelKey: "onboarding.weekday.thursdayLong", shortKey: "onboarding.weekday.thursdayShort" },
-  { value: 5, labelKey: "onboarding.weekday.fridayLong", shortKey: "onboarding.weekday.fridayShort" },
-  { value: 6, labelKey: "onboarding.weekday.saturdayLong", shortKey: "onboarding.weekday.saturdayShort" },
-  { value: 7, labelKey: "onboarding.weekday.sundayLong", shortKey: "onboarding.weekday.sundayShort" },
+  {
+    value: 1,
+    labelKey: "onboarding.weekday.mondayLong",
+    shortKey: "onboarding.weekday.mondayShort",
+  },
+  {
+    value: 2,
+    labelKey: "onboarding.weekday.tuesdayLong",
+    shortKey: "onboarding.weekday.tuesdayShort",
+  },
+  {
+    value: 3,
+    labelKey: "onboarding.weekday.wednesdayLong",
+    shortKey: "onboarding.weekday.wednesdayShort",
+  },
+  {
+    value: 4,
+    labelKey: "onboarding.weekday.thursdayLong",
+    shortKey: "onboarding.weekday.thursdayShort",
+  },
+  {
+    value: 5,
+    labelKey: "onboarding.weekday.fridayLong",
+    shortKey: "onboarding.weekday.fridayShort",
+  },
+  {
+    value: 6,
+    labelKey: "onboarding.weekday.saturdayLong",
+    shortKey: "onboarding.weekday.saturdayShort",
+  },
+  {
+    value: 7,
+    labelKey: "onboarding.weekday.sundayLong",
+    shortKey: "onboarding.weekday.sundayShort",
+  },
 ]
 
 export function emptyDraft(): ClientDraft {

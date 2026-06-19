@@ -56,7 +56,8 @@ export function AssetSheet({
               <SheetTitle className="truncate">{assetFileName(asset)}</SheetTitle>
               <SheetDescription>
                 {t(sourceMeta[asset.source].labelKey)} ·{" "}
-                {t(sourceMeta[asset.source].verbKey).toLowerCase()} {f.dayMonth(asset.uploadedAt, tz)}
+                {t(sourceMeta[asset.source].verbKey).toLowerCase()}{" "}
+                {f.dayMonth(asset.uploadedAt, tz)}
               </SheetDescription>
             </SheetHeader>
 

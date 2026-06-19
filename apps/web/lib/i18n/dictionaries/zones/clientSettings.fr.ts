@@ -48,8 +48,7 @@ export const clientSettingsFr = {
     },
     profile: {
       title: "Profil du client",
-      description:
-        "Identité affichée dans l'app, l'aperçu de profil et le portail de validation.",
+      description: "Identité affichée dans l'app, l'aperçu de profil et le portail de validation.",
       noName: "Sans nom",
       handleFallback: "handle",
       nameLabel: "Nom",
@@ -80,12 +79,10 @@ export const clientSettingsFr = {
       followers: "{count} abonnés",
       reconnect: "Reconnecter",
       reconnectToast: "Reconnexion {platform} simulée (aperçu)",
-      reconnectToastDescription:
-        "Aucun compte n'est réellement reconnecté pendant la preview.",
+      reconnectToastDescription: "Aucun compte n'est réellement reconnecté pendant la preview.",
       noteInstagram:
         "Nécessite un compte Pro relié à une Page Facebook (variante Instagram Login).",
-      noteFacebook:
-        "Publication via la Page liée, attribuée par le client dans la Business Suite.",
+      noteFacebook: "Publication via la Page liée, attribuée par le client dans la Business Suite.",
       noteTiktok:
         "Mode brouillon uniquement : le post est poussé, le client le finalise dans l'app TikTok.",
     },
@@ -115,8 +112,7 @@ export const clientSettingsFr = {
     },
     approval: {
       title: "Niveau de validation",
-      description:
-        "Définit qui doit approuver un contenu avant publication pour ce client.",
+      description: "Définit qui doit approuver un contenu avant publication pour ce client.",
       requiredLabel: "Validation obligatoire",
       requiredImpact:
         "Aucune publication sans l'accord du relecteur. Chaque contenu passe par le portail avant d'être programmé.",
@@ -168,8 +164,7 @@ export const clientSettingsFr = {
       colPlatforms: "Réseaux",
       colPillar: "Pilier",
       colRemove: "Retirer",
-      note:
-        "Ces créneaux préremplissent les dates suggérées dans le studio et matérialisent les trous à combler dans le calendrier.",
+      note: "Ces créneaux préremplissent les dates suggérées dans le studio et matérialisent les trous à combler dans le calendrier.",
       weekPreviewTitle: "Aperçu de la semaine type",
       timeAriaLabel: "Heure du créneau",
       noPillar: "Aucun pilier",
@@ -180,12 +175,10 @@ export const clientSettingsFr = {
     },
     danger: {
       title: "Archivage & corbeille",
-      description:
-        "Mettre le client en pause, restaurer des contenus supprimés ou tout effacer.",
+      description: "Mettre le client en pause, restaurer des contenus supprimés ou tout effacer.",
       archivedTitle: "Client archivé",
       archiveTitle: "Archiver le client",
-      archivedOn:
-        "Archivé le {date}. Réactive-le pour reprendre la collaboration.",
+      archivedOn: "Archivé le {date}. Réactive-le pour reprendre la collaboration.",
       archiveHint:
         "Il n'apparaîtra plus dans la liste active ni le switcher ; ses contenus sont conservés.",
       reactivate: "Réactiver",
@@ -200,14 +193,11 @@ export const clientSettingsFr = {
         "Il disparaîtra des listes actives et du switcher. Ses contenus et son historique restent conservés, et tu pourras le réactiver à tout moment.",
       archiveConfirm: "Archiver (aperçu)",
       archivedToast: "Client archivé (aperçu)",
-      archivedToastDescription:
-        "Il disparaît des listes actives ; ses contenus restent conservés.",
+      archivedToastDescription: "Il disparaît des listes actives ; ses contenus restent conservés.",
       reactivatedToast: "Client réactivé (aperçu)",
-      reactivatedToastDescription:
-        "Il réapparaît dans la liste active et le switcher.",
+      reactivatedToastDescription: "Il réapparaît dans la liste active et le switcher.",
       deletedToast: "Suppression définitive simulée (aperçu)",
-      deletedToastDescription:
-        "Aucun client n'est réellement supprimé pendant la preview.",
+      deletedToastDescription: "Aucun client n'est réellement supprimé pendant la preview.",
     },
     deleteDialog: {
       title: "Supprimer définitivement le client ?",

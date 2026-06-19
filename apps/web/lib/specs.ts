@@ -76,10 +76,14 @@ function checkInstagramImage(media: MediaCheck): SpecIssue[] {
   const issues: SpecIssue[] = []
   const r = media.width / media.height
   if (r < IG_IMAGE_RATIO.min - RATIO_TOLERANCE || r > IG_IMAGE_RATIO.max + RATIO_TOLERANCE) {
-    issues.push(issue("error", "specs.igRatioOut", { ratio: ratioLabel(media.width, media.height) }))
+    issues.push(
+      issue("error", "specs.igRatioOut", { ratio: ratioLabel(media.width, media.height) })
+    )
   }
   if (media.fileSizeMb !== undefined && media.fileSizeMb > IG_IMAGE_MAX_MB) {
-    issues.push(issue("error", "specs.igImageTooBig", { size: media.fileSizeMb, max: IG_IMAGE_MAX_MB }))
+    issues.push(
+      issue("error", "specs.igImageTooBig", { size: media.fileSizeMb, max: IG_IMAGE_MAX_MB })
+    )
   }
   if (media.mimeType && !JPEG_TYPES.includes(media.mimeType)) {
     issues.push(issue("warning", "specs.notJpeg"))

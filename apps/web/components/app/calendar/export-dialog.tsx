@@ -149,7 +149,10 @@ export function ExportDialog({
                       </span>{" "}
                       <span className="font-medium">{pick(item.title, locale)}</span>
                       {!clientFriendly ? (
-                        <span className="text-muted-foreground"> · {lbl.contentStatus(item.status)}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {lbl.contentStatus(item.status)}
+                        </span>
                       ) : null}
                     </p>
                   ))}

@@ -54,9 +54,7 @@ export function BannedWordsEditor({
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted-foreground italic">
-          {t("clientSettings.banned.empty")}
-        </p>
+        <p className="text-xs text-muted-foreground italic">{t("clientSettings.banned.empty")}</p>
       )}
 
       <div className="flex gap-2">

@@ -63,8 +63,7 @@ export const onboardingFr = {
       timezoneLabel: "Fuseau horaire du client",
       timezoneHint: "Les publications seront planifiées à l'heure locale du client.",
       bioLabel: "Bio",
-      bioPlaceholder:
-        "La présentation affichée sur le profil — quelques lignes suffisent.",
+      bioPlaceholder: "La présentation affichée sur le profil — quelques lignes suffisent.",
     },
     // Étape 2 — comptes
     accounts: {
@@ -78,8 +77,7 @@ export const onboardingFr = {
     accountCard: {
       noteInstagram:
         "Requiert un compte Pro (Business ou Créateur) relié à une Page Facebook. Recommandé pour la grille de feed.",
-      noteFacebook:
-        "La publication passe par la Page Facebook liée, pas par un profil personnel.",
+      noteFacebook: "La publication passe par la Page Facebook liée, pas par un profil personnel.",
       noteTiktok:
         "Publication en brouillon uniquement : Ocean prépare la vidéo, vous finalisez la légende dans l'app TikTok.",
       connected: "Connecté",
@@ -100,8 +98,7 @@ export const onboardingFr = {
         "Ces repères suivront le client partout : ils s'afficheront pendant la rédaction et serviront de garde-fous. Vous pourrez les affiner à tout moment dans les réglages.",
       toneLabel: "Ton éditorial",
       tonePlaceholder: "Choisir un ton",
-      toneHint:
-        "Comment la marque s'adresse à son audience (tutoiement, vouvoiement, registre…).",
+      toneHint: "Comment la marque s'adresse à son audience (tutoiement, vouvoiement, registre…).",
       doLabel: "À faire",
       doPlaceholder: "Ex. Tutoyer la communauté",
       dontLabel: "À éviter",
@@ -117,8 +114,7 @@ export const onboardingFr = {
       paletteLabel: "Palette de la marque",
       paletteHint:
         "Sélectionnez de 3 à 5 teintes — elles guideront la direction artistique du feed.",
-      selectedCount:
-        "{count, plural, one {# teinte sélectionnée} other {# teintes sélectionnées}}",
+      selectedCount: "{count, plural, one {# teinte sélectionnée} other {# teintes sélectionnées}}",
       maxReached: "maximum atteint",
     },
     // Couleurs de marque (libellés des teintes)
@@ -150,8 +146,7 @@ export const onboardingFr = {
       approvalHelp: {
         required:
           "Chaque publication passe par le portail : rien ne part sans le feu vert du client.",
-        optional:
-          "Vous décidez au cas par cas si une publication a besoin d'une validation.",
+        optional: "Vous décidez au cas par cas si une publication a besoin d'une validation.",
         auto: "Les publications partent directement à l'heure prévue, sans étape de validation.",
       },
     },
@@ -265,13 +260,11 @@ export const onboardingFr = {
       toneUndefined: "non défini",
       doCount: "{count, plural, one {# à faire} other {# à faire}}",
       dontCount: "{count, plural, one {# à éviter} other {# à éviter}}",
-      bannedCount:
-        "{count, plural, one {# mot interdit} other {# mots interdits}}",
+      bannedCount: "{count, plural, one {# mot interdit} other {# mots interdits}}",
       pillarsLine: "{count, plural, one {# pilier} other {# piliers}}",
       mixLine: "mix {total} %",
       noPillars: "Aucun pilier défini.",
-      slotsLine:
-        "{count, plural, one {# créneau récurrent} other {# créneaux récurrents}}",
+      slotsLine: "{count, plural, one {# créneau récurrent} other {# créneaux récurrents}}",
       approvalLine: "Validation :",
       reviewerLabel: "Inviter un valideur (optionnel)",
       reviewerHint:

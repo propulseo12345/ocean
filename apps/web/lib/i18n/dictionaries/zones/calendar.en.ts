@@ -1,4 +1,5 @@
 import type { calendarFr } from "./calendar.fr"
+
 // Namespace i18n « calendar » (EN) — doit refléter les clés de calendarFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const calendarEn: Widen<typeof calendarFr> = {
@@ -14,8 +15,7 @@ export const calendarEn: Widen<typeof calendarFr> = {
         remindEmptyWeekDesc:
           "A notification warns you when the upcoming week is empty for this client.",
         remindReviewerLabel: "Nudge the client after 48 h without approval",
-        remindReviewerDesc:
-          "A reminder is sent automatically to the reviewer (email + portal).",
+        remindReviewerDesc: "A reminder is sent automatically to the reviewer (email + portal).",
         quotaDeferLabel: "Auto-defer if the Instagram quota is reached",
         quotaDeferDesc:
           "Ocean's standard behavior: the post is pushed to the next available slot and you're notified of the move.",
@@ -179,7 +179,7 @@ export const calendarEn: Widen<typeof calendarFr> = {
       published: "Already published — the date can no longer change.",
       publishing: "Publishing in progress — date locked.",
       partiallyPublished: "Partially published — reopen the item to retry.",
-      failed: "Failed — use \"Retry\" rather than moving it.",
+      failed: 'Failed — use "Retry" rather than moving it.',
       canceled: "Content canceled — date locked.",
     },
     // calendar-actions toasts
@@ -191,27 +191,25 @@ export const calendarEn: Widen<typeof calendarFr> = {
       moved: "{state, select, scheduled {Scheduled} other {Rescheduled}} for {date} (preview)",
       movedDesc: "No date is actually changed during the preview.",
       reschedulePrecise: "Rescheduled to {date} at {time} (preview)",
-      reschedulePreciseApprovedDesc:
-        "The client's approval stays valid — the client is notified.",
+      reschedulePreciseApprovedDesc: "The client's approval stays valid — the client is notified.",
       shifted:
         "{dir, select, advance {{count, plural, one {# item moved earlier} other {# items moved earlier}}} other {{count, plural, one {# item shifted} other {# items shifted}}}} by {days, plural, one {# day} other {# days}} (preview)",
       shiftedSkippedDesc:
         "{count, plural, one {# skipped} other {# skipped}} (locked status or past date).",
-      unscheduled:
-        "Unscheduled {count, plural, one {# item} other {# items}} (preview)",
+      unscheduled: "Unscheduled {count, plural, one {# item} other {# items}} (preview)",
       unscheduledSkippedDesc:
-        "{count, plural, one {# skipped} other {# skipped}} (locked status or already undated). The content moves back to \"To schedule\".",
-      unscheduledDesc: "The content moves back to \"To schedule\".",
+        '{count, plural, one {# skipped} other {# skipped}} (locked status or already undated). The content moves back to "To schedule".',
+      unscheduledDesc: 'The content moves back to "To schedule".',
       sendToReview:
         "Approval request sent for {count, plural, one {# item} other {# items}} (preview)",
       sendToReviewDesc: "The client will get a direct link to the approval portal.",
-      retry: "Retry scheduled for \"{title}\" (preview)",
+      retry: 'Retry scheduled for "{title}" (preview)',
       retryDesc:
         "Only failed targets will be retried — a target that's already published is never re-published.",
       remind: "Reminder sent to {name} (preview)",
       remindFallbackName: "your client",
       remindDesc: "An email reminder links straight to the content awaiting approval.",
-      duplicated: "\"{title}\" duplicated (preview)",
+      duplicated: '"{title}" duplicated (preview)',
       duplicatedDesc:
         "Draft copy for {date}{client, select, none {} other { at {client}}} — media, caption and targeting carried over.",
     },
@@ -264,12 +262,10 @@ export const calendarEn: Widen<typeof calendarFr> = {
     // export-dialog
     export: {
       title: "Export the schedule",
-      description:
-        "Print preview — use \"Save as PDF\" in the print dialog.",
+      description: 'Print preview — use "Save as PDF" in the print dialog.',
       hideTechnical: "Hide technical statuses",
       clientDeliverable: "Client deliverable (hides failures, canceled and technical statuses)",
-      footer:
-        "Schedule generated with Ocean — preview, times in the client's time zone ({tz}).",
+      footer: "Schedule generated with Ocean — preview, times in the client's time zone ({tz}).",
       print: "Print / PDF",
     },
     // planning-shelf
@@ -278,16 +274,14 @@ export const calendarEn: Widen<typeof calendarFr> = {
       allPlanned: "No undated content — everything is scheduled.",
       dragHint: "Drag a card onto a calendar cell to schedule it (preview).",
       evergreenQueue: "Evergreen queue",
-      evergreenEmpty:
-        "Tag content as \"Evergreen\" in the studio to feed the queue.",
+      evergreenEmpty: 'Tag content as "Evergreen" in the studio to feed the queue.',
       autoFill: "Auto-fill gaps (preview)",
       autoFillToggle: "Auto-fill gaps",
       autoFillOn: "Auto-fill enabled (preview)",
       autoFillOff: "Auto-fill disabled (preview)",
-      autoFillOnDesc:
-        "Ocean will suggest slots — nothing is published without your confirmation.",
+      autoFillOnDesc: "Ocean will suggest slots — nothing is published without your confirmation.",
       noGaps: "No upcoming cadence gaps this month — nothing to suggest.",
-      proposalArrow: " → \"{title}\"",
+      proposalArrow: ' → "{title}"',
       proposalHint:
         "Suggestions only: the queue proposes slots for cadence gaps, it never publishes without confirmation.",
       noDate: "Undated",
@@ -296,7 +290,7 @@ export const calendarEn: Widen<typeof calendarFr> = {
     monthGrid: {
       emptyTitle: "No content scheduled this month",
       emptyDescription:
-        "Schedule content from a date cell, the \"To schedule\" shelf, or the studio to keep the cadence.",
+        'Schedule content from a date cell, the "To schedule" shelf, or the studio to keep the cadence.',
       createContent: "Create content",
     },
     // week-view

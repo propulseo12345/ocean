@@ -1,6 +1,6 @@
 import { isPast, isSameDay } from "@/lib/format"
 import type { Locale } from "@/lib/i18n"
-import { type Labels, type Translator, makeLabels, pick } from "@/lib/i18n"
+import { type Labels, makeLabels, pick, type Translator } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { CALENDAR_EVENTS } from "./agenda"
 import {

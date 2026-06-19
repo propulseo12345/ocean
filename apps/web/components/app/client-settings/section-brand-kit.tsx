@@ -69,9 +69,7 @@ export function SectionBrandKit({
       <div className="space-y-2">
         <Label>{t("clientSettings.brandKit.paletteLabel")}</Label>
         <PaletteEditor palette={palette} onChange={setPalette} />
-        <p className="text-xs text-muted-foreground">
-          {t("clientSettings.brandKit.paletteHint")}
-        </p>
+        <p className="text-xs text-muted-foreground">{t("clientSettings.brandKit.paletteHint")}</p>
       </div>
 
       <Separator />
@@ -124,9 +122,7 @@ export function SectionBrandKit({
           {t("clientSettings.brandKit.bannedLabel")}
         </Label>
         <BannedWordsEditor words={bannedWords} onChange={setBannedWords} />
-        <p className="text-xs text-muted-foreground">
-          {t("clientSettings.brandKit.bannedHint")}
-        </p>
+        <p className="text-xs text-muted-foreground">{t("clientSettings.brandKit.bannedHint")}</p>
       </div>
 
       <SaveBar dirty={dirty} onSave={save} />

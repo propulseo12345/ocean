@@ -157,9 +157,7 @@ function CommentThread({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium">{c.authorName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {isReviewer
-                      ? t("portal.annotation.client")
-                      : t("portal.annotation.yourAgency")}
+                    {isReviewer ? t("portal.annotation.client") : t("portal.annotation.yourAgency")}
                   </span>
                   {order ? (
                     <span className="inline-flex size-4 items-center justify-center rounded-full bg-primary/85 text-[10px] font-semibold text-primary-foreground">

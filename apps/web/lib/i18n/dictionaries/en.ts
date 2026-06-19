@@ -131,5 +131,3 @@ export const en: Dictionary = {
     carouselMin: "A carousel contains at least {min} visuals.",
   },
 }
-
-

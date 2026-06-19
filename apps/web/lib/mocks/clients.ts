@@ -24,13 +24,13 @@ export const CLIENTS: Client[] = [
     category: loc("Café · Torréfaction artisanale", "Coffee · Artisan roastery"),
     bio: loc(
       "Torréfacteur de spécialité à Lille ☕️\nSingle origin & mélanges maison\nClick & collect — du mardi au samedi",
-      "Specialty coffee roaster in Lille ☕️\nSingle origin & house blends\nClick & collect — Tuesday to Saturday",
+      "Specialty coffee roaster in Lille ☕️\nSingle origin & house blends\nClick & collect — Tuesday to Saturday"
     ),
     following: 312,
     approvalMode: "required",
     notes: loc(
       "Forfait 12 posts/mois. Camille valide tout — prévoir 48 h de délai avant chaque publication.",
-      "12 posts/month plan. Camille approves everything — allow 48 h lead time before each publish.",
+      "12 posts/month plan. Camille approves everything — allow 48 h lead time before each publish."
     ),
   },
   {
@@ -44,13 +44,13 @@ export const CLIENTS: Client[] = [
     category: loc("Restaurant", "Restaurant"),
     bio: loc(
       "Cuisine de saison & produits du marché 🌿\nDéjeuner du mardi au samedi\nRéservations en ligne 👇",
-      "Seasonal cooking & market-fresh produce 🌿\nLunch from Tuesday to Saturday\nBook online 👇",
+      "Seasonal cooking & market-fresh produce 🌿\nLunch from Tuesday to Saturday\nBook online 👇"
     ),
     following: 540,
     approvalMode: "optional",
     notes: loc(
       "Sofia est réactive. Priorité au brunch du dimanche et au menu du marché — vouvoiement exigé.",
-      "Sofia is responsive. Prioritize Sunday brunch and the market menu — keep a formal tone.",
+      "Sofia is responsive. Prioritize Sunday brunch and the market menu — keep a formal tone."
     ),
   },
   {
@@ -64,13 +64,13 @@ export const CLIENTS: Client[] = [
     category: loc("Boutique de mode", "Fashion boutique"),
     bio: loc(
       "Mode responsable, fabriquée en France 🇫🇷\nNouvelle collection printemps en ligne\nLivraison offerte dès 80 €",
-      "Sustainable fashion, made in France 🇫🇷\nNew spring collection online\nFree shipping from €80",
+      "Sustainable fashion, made in France 🇫🇷\nNew spring collection online\nFree shipping from €80"
     ),
     following: 421,
     approvalMode: "auto",
     notes: loc(
       "Léa laisse carte blanche (publication directe). Les drops sortent toujours le vendredi à midi.",
-      "Léa gives full freedom (direct publishing). Drops always go live Friday at noon.",
+      "Léa gives full freedom (direct publishing). Drops always go live Friday at noon."
     ),
   },
   {
@@ -84,13 +84,13 @@ export const CLIENTS: Client[] = [
     category: loc("Studio de yoga & bien-être", "Yoga & wellness studio"),
     bio: loc(
       "Yoga, respiration & méditation 🧘\nCours en studio et en ligne\nRetraites et ateliers tout l'année",
-      "Yoga, breathwork & meditation 🧘\nIn-studio and online classes\nRetreats and workshops all year round",
+      "Yoga, breathwork & meditation 🧘\nIn-studio and online classes\nRetreats and workshops all year round"
     ),
     following: 287,
     approvalMode: "required",
     notes: loc(
       "Marc n'a jamais ouvert le portail — relancer par email avant chaque échéance. Jamais de promesse santé.",
-      "Marc has never opened the portal — follow up by email before each deadline. Never make health claims.",
+      "Marc has never opened the portal — follow up by email before each deadline. Never make health claims."
     ),
   },
   {

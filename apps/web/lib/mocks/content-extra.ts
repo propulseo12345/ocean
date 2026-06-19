@@ -26,7 +26,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
   ct_cl_brulerie_7: {
     firstComment: loc(
       "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille",
-      "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille",
+      "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille"
     ),
   },
   ct_cl_brulerie_9: { coverUrl: IMAGES.coffee[10] },
@@ -35,7 +35,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
     labels: [loc("Marronnier", "Seasonal")],
     internalNotes: loc(
       "Idée pour la fête de la musique (21 juin) — voir avec Camille.",
-      "Idea for the Fête de la Musique (June 21) — check with Camille.",
+      "Idea for the Fête de la Musique (June 21) — check with Camille."
     ),
   },
   // Maison Verde
@@ -44,7 +44,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
   ct_cl_verde_7: {
     firstComment: loc(
       "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde",
-      "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde",
+      "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde"
     ),
     labels: [loc("Marronnier", "Seasonal")],
   },
@@ -55,7 +55,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
     labels: [loc("Promo", "Promo")],
     internalNotes: loc(
       "À programmer pour le début des soldes d'été (24 juin).",
-      "To schedule for the start of the summer sales (June 24).",
+      "To schedule for the start of the summer sales (June 24)."
     ),
   },
   // Studio Rise
@@ -64,7 +64,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
     labels: [loc("Marronnier", "Seasonal")],
     internalNotes: loc(
       "Journée internationale du yoga le 21 juin — prévoir le cours gratuit.",
-      "International Yoga Day on June 21 — plan the free class.",
+      "International Yoga Day on June 21 — plan the free class."
     ),
   },
 }
@@ -74,19 +74,19 @@ export const TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, L
   ct_cl_verde_7: {
     facebook: loc(
       "Le brunch est de retour ce dimanche ! Pancakes, granola maison, jus pressés. Réservez votre table : maisonverde.fr/brunch",
-      "Brunch is back this Sunday! Pancakes, house-made granola, fresh-pressed juices. Book your table: maisonverde.fr/brunch",
+      "Brunch is back this Sunday! Pancakes, house-made granola, fresh-pressed juices. Book your table: maisonverde.fr/brunch"
     ),
   },
   ct_cl_verde_9: {
     tiktok: loc(
       "La tarte au citron qu'on ne présente plus 🍋 #dessert #foodtok #patisserie",
-      "The lemon tart that needs no introduction 🍋 #dessert #foodtok #patisserie",
+      "The lemon tart that needs no introduction 🍋 #dessert #foodtok #patisserie"
     ),
   },
   ct_cl_nove_13: {
     tiktok: loc(
       "POV : tu cherches LA maille de mi-saison 🧶 #fashiontok #ootd",
-      "POV: you're hunting for THE mid-season knit 🧶 #fashiontok #ootd",
+      "POV: you're hunting for THE mid-season knit 🧶 #fashiontok #ootd"
     ),
   },
 }
@@ -99,7 +99,7 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
     title: loc("Promo flash sur les capsules", "Flash sale on capsules"),
     caption: loc(
       "Promo flash ce week-end : -30 % sur les capsules compatibles. Fonce, le stock part vite !",
-      "Flash sale this weekend: -30% on compatible capsules. Hurry, stock is going fast!",
+      "Flash sale this weekend: -30% on compatible capsules. Hurry, stock is going fast!"
     ),
     hashtags: ["#promo", "#café"],
     format: "post",
@@ -107,7 +107,7 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
     scheduledAt: null,
     internalNotes: loc(
       "Supprimé : hors charte (« promo flash » et « capsule » interdits au brand kit).",
-      "Deleted: off-brand (“flash sale” and “capsule” banned in the brand kit).",
+      "Deleted: off-brand (“flash sale” and “capsule” banned in the brand kit)."
     ),
     media: [
       {
@@ -139,7 +139,7 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
     title: loc("Concours stories — à revoir", "Stories giveaway — needs review"),
     caption: loc(
       "Jeu concours : un brunch pour deux à gagner. Modalités à définir avec Sofia.",
-      "Giveaway: win a brunch for two. Terms to be defined with Sofia.",
+      "Giveaway: win a brunch for two. Terms to be defined with Sofia."
     ),
     hashtags: [],
     format: "story",
@@ -165,7 +165,7 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
     title: loc("Défi 30 jours de yoga", "30-day yoga challenge"),
     caption: loc(
       "Un mois, une posture par jour. Le défi commence lundi — qui est partant ?",
-      "One month, one pose a day. The challenge starts Monday — who's in?",
+      "One month, one pose a day. The challenge starts Monday — who's in?"
     ),
     hashtags: ["#yogachallenge", "#30jours"],
     format: "post",
@@ -173,7 +173,7 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
     scheduledAt: dayAt(-7, 12),
     internalNotes: loc(
       "Annulé d'un commun accord avec Marc — remplacé par la retraite de printemps.",
-      "Cancelled by mutual agreement with Marc — replaced by the spring retreat.",
+      "Cancelled by mutual agreement with Marc — replaced by the spring retreat."
     ),
     media: [
       {

@@ -5,12 +5,12 @@ export {
   isLocale,
   LOCALE_COOKIE,
   LOCALE_LABEL,
-  type Locale,
   LOCALES,
+  type Locale,
 } from "./config"
-export { type Dictionary, type MessageKey } from "./dictionaries"
+export type { Dictionary, MessageKey } from "./dictionaries"
 export { type Format, makeFormat } from "./format-bound"
-export { type MessageParams } from "./format-message"
+export type { MessageParams } from "./format-message"
 export { type Labels, makeLabels } from "./labels"
 export { type L, loc, pick } from "./localized"
 export { LocaleProvider, useFormat, useLabels, useLocale, useT } from "./provider"

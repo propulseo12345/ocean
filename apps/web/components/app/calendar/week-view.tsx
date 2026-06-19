@@ -121,7 +121,9 @@ function WeekDayColumn({
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={t("calendar.week.newContent", { day: weekdayDayMonth(dayKey, ctx.tz, locale) })}
+            aria-label={t("calendar.week.newContent", {
+              day: weekdayDayMonth(dayKey, ctx.tz, locale),
+            })}
             className="text-muted-foreground"
             render={<Link href={createContentHref(ctx.clientId, dayKey, ctx.tz)} />}
           >

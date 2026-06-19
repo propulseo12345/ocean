@@ -1,4 +1,5 @@
 import type { clientSettingsFr } from "./clientSettings.fr"
+
 // Namespace i18n « clientSettings » (EN) — doit refléter les clés de clientSettingsFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
@@ -50,8 +51,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
     },
     profile: {
       title: "Client profile",
-      description:
-        "Identity shown across the app, the profile preview and the review portal.",
+      description: "Identity shown across the app, the profile preview and the review portal.",
       noName: "Untitled",
       handleFallback: "handle",
       nameLabel: "Name",
@@ -83,10 +83,8 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       reconnect: "Reconnect",
       reconnectToast: "{platform} reconnection simulated (preview)",
       reconnectToastDescription: "No account is actually reconnected during the preview.",
-      noteInstagram:
-        "Requires a Pro account linked to a Facebook Page (Instagram Login variant).",
-      noteFacebook:
-        "Publishing via the linked Page, assigned by the client in Business Suite.",
+      noteInstagram: "Requires a Pro account linked to a Facebook Page (Instagram Login variant).",
+      noteFacebook: "Publishing via the linked Page, assigned by the client in Business Suite.",
       noteTiktok:
         "Draft mode only: the post is pushed and the client finalizes it in the TikTok app.",
     },
@@ -95,29 +93,25 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       description:
         "The client's palette, tone and editorial rules. Surfaced in the studio while writing.",
       paletteLabel: "Color palette",
-      paletteHint:
-        "Click a swatch to copy its value, the cross to remove it, \"+\" to add one.",
+      paletteHint: 'Click a swatch to copy its value, the cross to remove it, "+" to add one.',
       toneLabel: "Tone of voice",
-      tonePlaceholder:
-        "e.g. Warm and artisanal — informal, sensory vocabulary, never any jargon.",
+      tonePlaceholder: "e.g. Warm and artisanal — informal, sensory vocabulary, never any jargon.",
       doLabel: "Do",
       dontLabel: "Avoid",
       addLabel: "Add",
       doPlaceholder: "e.g. Speak to the community casually",
       dontPlaceholder: "e.g. Aggressive promotions",
-      doEmpty: "No \"do\" rule yet.",
-      dontEmpty: "No \"avoid\" rule yet.",
+      doEmpty: 'No "do" rule yet.',
+      dontEmpty: 'No "avoid" rule yet.',
       bannedLabel: "Banned words",
       bannedHint:
         "These terms feed the composer's caption guardrails: any banned word is highlighted in real time while writing.",
       savedToast: "Brand identity saved (preview)",
-      savedToastDescription:
-        "The composer relies on these rules to guide caption writing.",
+      savedToastDescription: "The composer relies on these rules to guide caption writing.",
     },
     approval: {
       title: "Approval level",
-      description:
-        "Defines who must approve content before it's published for this client.",
+      description: "Defines who must approve content before it's published for this client.",
       requiredLabel: "Approval required",
       requiredImpact:
         "No publishing without the reviewer's sign-off. Every piece goes through the portal before being scheduled.",
@@ -162,15 +156,13 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       title: "Recurring publishing slots",
       description: "The weekly commitments agreed with the client.",
       add: "Add",
-      empty:
-        "No slot defined. Add the recurring commitments to pre-fill the monthly batch.",
+      empty: "No slot defined. Add the recurring commitments to pre-fill the monthly batch.",
       colDay: "Day",
       colTime: "Time",
       colPlatforms: "Networks",
       colPillar: "Pillar",
       colRemove: "Remove",
-      note:
-        "These slots pre-fill the suggested dates in the studio and surface the gaps to fill in the calendar.",
+      note: "These slots pre-fill the suggested dates in the studio and surface the gaps to fill in the calendar.",
       weekPreviewTitle: "Typical week preview",
       timeAriaLabel: "Slot time",
       noPillar: "No pillar",
@@ -181,8 +173,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
     },
     danger: {
       title: "Archive & trash",
-      description:
-        "Pause the client, restore deleted content or erase everything.",
+      description: "Pause the client, restore deleted content or erase everything.",
       archivedTitle: "Client archived",
       archiveTitle: "Archive the client",
       archivedOn: "Archived on {date}. Reactivate it to resume the collaboration.",
@@ -192,29 +183,25 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       archive: "Archive",
       trashTitle: "Trash",
       dangerZone: "Danger zone",
-      dangerDescription:
-        "Permanent deletion of the client and all its data. No way back.",
+      dangerDescription: "Permanent deletion of the client and all its data. No way back.",
       deletePermanently: "Delete the client permanently",
       archiveDialogTitle: "Archive this client?",
       archiveDialogDescription:
         "It will disappear from the active lists and the switcher. Its content and history are kept, and you can reactivate it at any time.",
       archiveConfirm: "Archive (preview)",
       archivedToast: "Client archived (preview)",
-      archivedToastDescription:
-        "It disappears from the active lists; its content is kept.",
+      archivedToastDescription: "It disappears from the active lists; its content is kept.",
       reactivatedToast: "Client reactivated (preview)",
-      reactivatedToastDescription:
-        "It reappears in the active list and the switcher.",
+      reactivatedToastDescription: "It reappears in the active list and the switcher.",
       deletedToast: "Permanent deletion simulated (preview)",
-      deletedToastDescription:
-        "No client is actually deleted during the preview.",
+      deletedToastDescription: "No client is actually deleted during the preview.",
     },
     deleteDialog: {
       title: "Delete the client permanently?",
       description:
         "This action is irreversible: the client, its content, its history and its media are deleted. Prefer archiving if you want to keep the records.",
       confirm: "Delete permanently (preview)",
-      confirmLabel: "Type \"{name}\" to confirm",
+      confirmLabel: 'Type "{name}" to confirm',
     },
     confirmDialog: {
       cancel: "Cancel",
@@ -229,7 +216,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       copiedToast: "Hue copied (preview)",
     },
     stringList: {
-      removeAria: "Remove \"{value}\"",
+      removeAria: 'Remove "{value}"',
     },
     brandColor: {
       groupLabel: "Brand color",
@@ -238,14 +225,13 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       empty: "No banned word for this client.",
       placeholder: "e.g. flash sale",
       add: "Add",
-      removeAria: "Remove \"{value}\"",
+      removeAria: 'Remove "{value}"',
     },
     trash: {
       emptyTitle: "Trash empty",
       emptyDescription:
         "Deleted content is kept for {days} days before media purge, and restorable until then.",
-      retentionNote:
-        "Deleted content is kept for {days} days before media purge.",
+      retentionNote: "Deleted content is kept for {days} days before media purge.",
       restore: "Restore",
       restoredToast: "Content restored (preview)",
       purgedToast: "Content permanently deleted (preview)",
@@ -253,7 +239,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       purgeAria: "Delete {title} permanently",
       purgeDialogTitle: "Delete permanently?",
       purgeDialogDescription:
-        "\"{title}\" will be removed from the trash with no way to restore it. In production, the attached media is purged.",
+        '"{title}" will be removed from the trash with no way to restore it. In production, the attached media is purged.',
       purgeConfirm: "Delete permanently (preview)",
     },
   },

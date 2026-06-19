@@ -1,5 +1,5 @@
-import { loc } from "@/lib/i18n"
 import type { L } from "@/lib/i18n"
+import { loc } from "@/lib/i18n"
 import { dayAt } from "./time"
 import type { CalendarEvent } from "./types"
 
@@ -13,7 +13,11 @@ interface Cal {
 }
 
 // Calendriers (avec leur couleur de thème) → pour la vue agenda unifié.
-const STUDIO: Cal = { name: loc("Studio Marea", "Studio Marea"), color: "var(--chart-1)", acc: GOOGLE }
+const STUDIO: Cal = {
+  name: loc("Studio Marea", "Studio Marea"),
+  color: "var(--chart-1)",
+  acc: GOOGLE,
+}
 const PERSO: Cal = { name: loc("Perso", "Personal"), color: "var(--chart-3)", acc: GOOGLE }
 const FERIES: Cal = { name: loc("Jours fériés", "Holidays"), color: "var(--chart-5)", acc: GOOGLE }
 const CLIENTS_CAL: Cal = { name: loc("Clients", "Clients"), color: "var(--chart-2)", acc: MS }

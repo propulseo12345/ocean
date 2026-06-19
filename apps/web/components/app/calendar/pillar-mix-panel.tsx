@@ -71,9 +71,7 @@ export function PillarMixPanel({ rows }: { rows: PillarMixRow[] }) {
           )
         })}
       </ul>
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        {t("calendar.mix.footnote")}
-      </p>
+      <p className="text-[11px] leading-snug text-muted-foreground">{t("calendar.mix.footnote")}</p>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import type { libraryFr } from "./library.fr"
+
 // Namespace i18n « library » (EN) — doit refléter les clés de libraryFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const libraryEn: Widen<typeof libraryFr> = {
@@ -97,7 +98,8 @@ export const libraryEn: Widen<typeof libraryFr> = {
       altPlaceholder: "Describe the visual for accessibility and social SEO…",
       altHint: "Sent to Instagram and Facebook when the platform supports it.",
       save: "Save (preview)",
-      usedIn: "{count, plural, one {Used in # piece of content} other {Used in # pieces of content}}",
+      usedIn:
+        "{count, plural, one {Used in # piece of content} other {Used in # pieces of content}}",
       neverUsed: "Never used",
       unusedHint: "Unused media — perfect for your next content batch.",
       purgeNote:
@@ -138,15 +140,18 @@ export const libraryEn: Widen<typeof libraryFr> = {
       copied: "Link copied to clipboard",
       copyError: "Couldn't copy — select the link manually.",
       emailToastTitle: "Upload email sent (preview)",
-      emailToastDesc: "Your client will get the link valid for {count} days, with the format guidelines.",
+      emailToastDesc:
+        "Your client will get the link valid for {count} days, with the format guidelines.",
     },
     // Upload dialog
     upload: {
       title: "Add media",
-      description: "No file is actually uploaded during the preview — clicking simulates the upload.",
+      description:
+        "No file is actually uploaded during the preview — clicking simulates the upload.",
       dropTitle: "Drop your photos and videos here",
       dropHint: "or click to browse (upload simulation)",
-      specImage: "Instagram images: JPEG ≤ {max} MB, ratio 4:5 to 1.91:1 — PNGs converted automatically.",
+      specImage:
+        "Instagram images: JPEG ≤ {max} MB, ratio 4:5 to 1.91:1 — PNGs converted automatically.",
       specHeic: "iPhone HEIC: converted to JPEG on import, nothing for you to do.",
       specReel: "Reels: MP4 or MOV, 3 s to 15 min, ≤ {max} MB.",
     },
@@ -157,8 +162,7 @@ export const libraryEn: Widen<typeof libraryFr> = {
       noneDeletedDesc: "All selected media are used in content.",
       batchDeleted:
         "{count, plural, one {# media deleted (preview)} other {# media deleted (preview)}}",
-      batchKept:
-        "{count, plural, one {# kept: used in content.} other {# kept: used in content.}}",
+      batchKept: "{count, plural, one {# kept: used in content.} other {# kept: used in content.}}",
       downloading:
         "{count, plural, one {# media downloading (preview)} other {# media downloading (preview)}}",
       tagTitle: "Tags (preview)",

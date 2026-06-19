@@ -37,7 +37,9 @@ export function AssetCard({
   const used = asset.usedInContentIds.length
   const errored = hasSpecErrors(issues)
   const source = sourceMeta[asset.source]
-  const label = asset.altText ? pick(asset.altText, locale) : t("library.card.fallbackLabel", { id: asset.id })
+  const label = asset.altText
+    ? pick(asset.altText, locale)
+    : t("library.card.fallbackLabel", { id: asset.id })
 
   return (
     <button
@@ -45,9 +47,7 @@ export function AssetCard({
       onClick={() => (selectMode ? onToggleSelect(asset.id) : onOpen(asset))}
       aria-pressed={selectMode ? selected : undefined}
       aria-label={
-        selectMode
-          ? t("library.card.selectAria", { label })
-          : t("library.card.openAria", { label })
+        selectMode ? t("library.card.selectAria", { label }) : t("library.card.openAria", { label })
       }
       title={issues[0] ? t(issues[0].key, issues[0].params) : undefined}
       className={cn(
@@ -67,7 +67,9 @@ export function AssetCard({
         {asset.type === "video" ? (
           <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
             <Film className="size-3" aria-hidden />
-            {asset.durationSec !== undefined ? formatDuration(asset.durationSec) : t("library.unit.video")}
+            {asset.durationSec !== undefined
+              ? formatDuration(asset.durationSec)
+              : t("library.unit.video")}
           </span>
         ) : null}
 

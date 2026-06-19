@@ -9,8 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useLabels, useLocale, useT } from "@/lib/i18n"
-import { pick } from "@/lib/i18n"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import { contentStatusMeta, formatLabelKey, platformMeta } from "@/lib/mocks/labels"
 import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"

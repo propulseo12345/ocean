@@ -6,8 +6,8 @@ import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
-  type Locale,
   LOCALES,
+  type Locale,
 } from "./config"
 import { type Format, makeFormat } from "./format-bound"
 import { type Labels, makeLabels } from "./labels"

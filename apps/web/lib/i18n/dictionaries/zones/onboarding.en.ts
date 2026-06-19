@@ -1,4 +1,5 @@
 import type { onboardingFr } from "./onboarding.fr"
+
 // Namespace i18n « onboarding » (EN) — doit refléter les clés de onboardingFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const onboardingEn: Widen<typeof onboardingFr> = {
@@ -33,10 +34,8 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       reviewerEmailFix: "Fix the reviewer's email address or leave the field empty.",
       defaultClientName: "The client",
       clientCreated: "{name} created (preview)",
-      clientCreatedWithReviewer:
-        "Reviewer invitation sent (preview) — no data saved in preview.",
-      clientCreatedNoReviewer:
-        "No data is saved in preview — Supabase wiring coming soon.",
+      clientCreatedWithReviewer: "Reviewer invitation sent (preview) — no data saved in preview.",
+      clientCreatedNoReviewer: "No data is saved in preview — Supabase wiring coming soon.",
     },
     stepper: {
       navLabel: "Creation steps",
@@ -106,8 +105,7 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       brandColorLabel: "Brand color",
       paletteLabel: "Brand palette",
       paletteHint: "Pick 3 to 5 shades — they'll guide the feed's art direction.",
-      selectedCount:
-        "{count, plural, one {# shade selected} other {# shades selected}}",
+      selectedCount: "{count, plural, one {# shade selected} other {# shades selected}}",
       maxReached: "maximum reached",
     },
     color: {
@@ -129,8 +127,7 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       pillarsDescription:
         "The client's main editorial themes, with a target share — to keep a balanced month.",
       slotsTitle: "Recurring posting slots",
-      slotsDescription:
-        "The posting times agreed with the client (day, local time, platforms).",
+      slotsDescription: "The posting times agreed with the client (day, local time, platforms).",
       approvalTitle: "Approval level",
       approvalDescription: "How posts get approved before going out.",
       approvalLabel: "Client approval level",
@@ -142,7 +139,7 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       },
     },
     pillar: {
-      suggestionsFor: "Suggestions for \"{category}\"",
+      suggestionsFor: 'Suggestions for "{category}"',
       suggestions: "Suggestions",
       sharePctAria: "Target share of {name} as a percentage",
       removeAria: "Remove {name}",
@@ -243,13 +240,11 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       toneUndefined: "not set",
       doCount: "{count, plural, one {# do} other {# dos}}",
       dontCount: "{count, plural, one {# don't} other {# don'ts}}",
-      bannedCount:
-        "{count, plural, one {# banned word} other {# banned words}}",
+      bannedCount: "{count, plural, one {# banned word} other {# banned words}}",
       pillarsLine: "{count, plural, one {# pillar} other {# pillars}}",
       mixLine: "{total}% mix",
       noPillars: "No pillar defined.",
-      slotsLine:
-        "{count, plural, one {# recurring slot} other {# recurring slots}}",
+      slotsLine: "{count, plural, one {# recurring slot} other {# recurring slots}}",
       approvalLine: "Approval:",
       reviewerLabel: "Invite a reviewer (optional)",
       reviewerHint:
