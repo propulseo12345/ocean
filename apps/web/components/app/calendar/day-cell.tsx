@@ -68,7 +68,7 @@ export function DayCell({
   const marronniers = ctx.showMarronniers ? getMarronniersOn(dayKey) : []
   const events = ctx.eventsByDay.get(dayKey) ?? []
   const density = ctx.densityByDay.get(dayKey) ?? 0
-  const dayLabel = weekdayDayMonth(dayKey, ctx.tz)
+  const dayLabel = weekdayDayMonth(dayKey, ctx.tz, locale)
 
   return (
     <div

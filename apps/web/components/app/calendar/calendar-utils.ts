@@ -7,6 +7,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns"
+import { DEFAULT_LOCALE, INTL_LOCALE, type Locale } from "@/lib/i18n/config"
 import type { ContentItem } from "@/lib/mocks/types"
 
 // Vue calendrier. Tout est raisonné en "clé jour" (YYYY-MM-DD) dans le fuseau
@@ -96,9 +97,9 @@ export function shiftWeek(anchorKey: DayKey, deltaDays: number): DayKey {
   return keyFromDate(addDays(dateFromKey(anchorKey), deltaDays))
 }
 
-/** Libellé "lundi 9 juin" d'une clé jour. */
-export function weekdayDayMonth(key: DayKey, tz: string): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+/** Libellé "lundi 9 juin" / "Monday, June 9" d'une clé jour. */
+export function weekdayDayMonth(key: DayKey, tz: string, locale: Locale = DEFAULT_LOCALE): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     timeZone: tz,
     weekday: "long",
     day: "numeric",
@@ -106,9 +107,9 @@ export function weekdayDayMonth(key: DayKey, tz: string): string {
   }).format(dateFromKey(key))
 }
 
-/** Libellé "juin 2026" du mois affiché. */
-export function monthYearLabel(cursor: CalendarCursor): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+/** Libellé "juin 2026" / "June 2026" du mois affiché. */
+export function monthYearLabel(cursor: CalendarCursor, locale: Locale = DEFAULT_LOCALE): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     month: "long",
     year: "numeric",
   }).format(new Date(Date.UTC(cursor.year, cursor.month, 1, 12)))

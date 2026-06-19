@@ -134,7 +134,7 @@ export function PlanningShelf({
                     className="rounded-md bg-muted/60 px-2 py-1.5 text-xs"
                   >
                     <span className="font-medium capitalize">
-                      {weekdayDayMonth(dayKey, ctx.tz)}
+                      {weekdayDayMonth(dayKey, ctx.tz, locale)}
                     </span>
                     <span className="text-muted-foreground">
                       {t("calendar.shelf.proposalArrow", { title: pick(item.title, locale) })}

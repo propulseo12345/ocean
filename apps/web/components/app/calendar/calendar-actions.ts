@@ -19,7 +19,8 @@ export function performDrop(
   todayKey: DayKey,
   tz: string,
   setOverride: SetOverride,
-  t: Translator
+  t: Translator,
+  locale: Locale
 ): void {
   if (!isMovable(item)) return
   if (dayKey < todayKey) {
@@ -30,7 +31,7 @@ export function performDrop(
   if (!wasUnscheduled && dayKeyOf(item.scheduledAt as string, tz) === dayKey) return
 
   setOverride(item.id, movedIso(item, dayKey, tz))
-  const label = weekdayDayMonth(dayKey, tz)
+  const label = weekdayDayMonth(dayKey, tz, locale)
   if (item.status === "approved") {
     toast.warning(t("calendar.actions.rescheduledApproved", { date: label }), {
       description: t("calendar.actions.rescheduledApprovedDesc"),
@@ -52,11 +53,12 @@ export function performReschedule(
   time: string,
   tz: string,
   setOverride: SetOverride,
-  t: Translator
+  t: Translator,
+  locale: Locale
 ): void {
   setOverride(item.id, zonedToUtcIso(dayKey, time, tz))
   toast.success(
-    t("calendar.actions.reschedulePrecise", { date: weekdayDayMonth(dayKey, tz), time }),
+    t("calendar.actions.reschedulePrecise", { date: weekdayDayMonth(dayKey, tz, locale), time }),
     {
       description:
         item.status === "approved"
@@ -154,7 +156,7 @@ export function performDuplicate(
 ): void {
   toast.success(t("calendar.actions.duplicated", { title: pick(item.title, locale) }), {
     description: t("calendar.actions.duplicatedDesc", {
-      date: weekdayDayMonth(dayKey, tz),
+      date: weekdayDayMonth(dayKey, tz, locale),
       client: targetClientName ?? "none",
     }),
   })

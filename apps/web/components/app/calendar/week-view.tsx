@@ -98,7 +98,7 @@ function WeekDayColumn({
         <button
           type="button"
           onClick={() => ctx.onOpenDay(dayKey)}
-          aria-label={t("calendar.week.viewDay", { day: weekdayDayMonth(dayKey, ctx.tz) })}
+          aria-label={t("calendar.week.viewDay", { day: weekdayDayMonth(dayKey, ctx.tz, locale) })}
           className="flex items-baseline gap-1.5 rounded-md transition-colors hover:bg-muted"
         >
           <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -121,7 +121,7 @@ function WeekDayColumn({
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={t("calendar.week.newContent", { day: weekdayDayMonth(dayKey, ctx.tz) })}
+            aria-label={t("calendar.week.newContent", { day: weekdayDayMonth(dayKey, ctx.tz, locale) })}
             className="text-muted-foreground"
             render={<Link href={createContentHref(ctx.clientId, dayKey, ctx.tz)} />}
           >

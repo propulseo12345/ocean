@@ -71,7 +71,7 @@ export function DaySheet({
         className={cn(isMobile ? "max-h-[85dvh]" : "sm:max-w-md", "overflow-y-auto")}
       >
         <SheetHeader>
-          <SheetTitle className="capitalize">{weekdayDayMonth(dayKey, ctx.tz)}</SheetTitle>
+          <SheetTitle className="capitalize">{weekdayDayMonth(dayKey, ctx.tz, locale)}</SheetTitle>
           <SheetDescription>
             {t("calendar.daySheet.itemsCount", { count: items.length })}
           </SheetDescription>

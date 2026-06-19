@@ -98,8 +98,8 @@ export function EditorialCalendar(props: CalendarData) {
 
   const periodLabel =
     s.view === "month"
-      ? monthYearLabel(s.cursor)
-      : t("calendar.toolbar.weekOf", { date: weekdayDayMonth(s.weekDays[0], s.tz) })
+      ? monthYearLabel(s.cursor, locale)
+      : t("calendar.toolbar.weekOf", { date: weekdayDayMonth(s.weekDays[0], s.tz, locale) })
 
   return (
     <div className="space-y-3">
@@ -156,7 +156,9 @@ export function EditorialCalendar(props: CalendarData) {
       <CalendarDnd
         items={s.effectiveItems}
         tz={s.tz}
-        onDrop={(item, dayKey) => performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride, t)}
+        onDrop={(item, dayKey) =>
+          performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride, t, locale)
+        }
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0" {...swipe}>
@@ -201,7 +203,7 @@ export function EditorialCalendar(props: CalendarData) {
         todayKey={s.todayKey}
         onClose={() => setRescheduleItem(null)}
         onConfirm={(item, dayKey, time) => {
-          performReschedule(item, dayKey, time, s.tz, s.setOverride, t)
+          performReschedule(item, dayKey, time, s.tz, s.setOverride, t, locale)
           setRescheduleItem(null)
         }}
       />
@@ -229,7 +231,7 @@ export function EditorialCalendar(props: CalendarData) {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         client={props.client}
-        monthLabel={monthYearLabel(s.cursor)}
+        monthLabel={monthYearLabel(s.cursor, locale)}
         days={s.monthDays}
         currentMonth={s.cursor.month}
         itemsByDay={s.allByDay}
