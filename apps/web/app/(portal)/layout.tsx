@@ -1,5 +1,6 @@
 import { Waves } from "lucide-react"
 import type { ReactNode } from "react"
+import { LocaleToggle } from "@/components/app/locale-toggle"
 import { ThemeToggle } from "@/components/app/theme-toggle"
 import { ClientAvatar } from "@/components/shared/client-avatar"
 import { DEMO_REVIEWER_CLIENT_ID, getClient, getReviewer } from "@/lib/mocks"
@@ -25,6 +26,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               {client ? <p className="text-sm font-medium leading-none">{client.name}</p> : null}
             </div>
             {client ? <ClientAvatar client={client} size={32} /> : null}
+            <LocaleToggle />
             <ThemeToggle />
           </div>
         </div>

@@ -8,18 +8,21 @@ import { PwaInstallAssistant } from "@/components/app/shell/pwa-install-assistan
 import { QuickCapture } from "@/components/app/shell/quick-capture"
 import { ShellProvider } from "@/components/app/shell/shell-provider"
 import { ShortcutsDialog } from "@/components/app/shell/shortcuts-dialog"
+import { LocaleToggle } from "@/components/app/locale-toggle"
 import { ThemeToggle } from "@/components/app/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { getT } from "@/lib/i18n/server"
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const t = await getT()
   return (
     <ShellProvider>
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
       >
-        Aller au contenu
+        {t("common.skipToContent")}
       </a>
       <SidebarProvider>
         <AppSidebar />
@@ -31,6 +34,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="ml-auto flex items-center gap-1">
               <HeaderSearchButton />
               <NotificationsButton />
+              <LocaleToggle />
               <ThemeToggle />
             </div>
           </header>

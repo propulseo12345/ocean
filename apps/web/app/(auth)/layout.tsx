@@ -1,6 +1,7 @@
 import { CalendarDays, CheckCircle2, Clock, LayoutGrid, Send, Waves } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { LocaleToggle } from "@/components/app/locale-toggle"
 import { routes } from "@/lib/routes"
 
 const FEATURES = [
@@ -67,7 +68,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Carte de formulaire */}
-      <main className="flex flex-1 items-center justify-center bg-background px-4 py-10 sm:px-6">
+      <main className="relative flex flex-1 items-center justify-center bg-background px-4 py-10 sm:px-6">
+        <div className="absolute top-4 right-4">
+          <LocaleToggle />
+        </div>
         <div className="w-full max-w-sm">{children}</div>
       </main>
     </div>

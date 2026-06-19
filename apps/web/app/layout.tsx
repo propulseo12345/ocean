@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { LocaleProvider } from "@/lib/i18n"
+import { getLocale } from "@/lib/i18n/server"
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] })
@@ -13,15 +15,18 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["500", "600", "700", "800"],
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: "Ocean — le poste de pilotage du freelance en communication",
-    template: "%s · Ocean",
-  },
-  description:
-    "Planification, aperçu de feed, calendrier éditorial, validation client et agenda unifié — tout le travail d'une agence dans un seul outil.",
-  applicationName: "Ocean",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Ocean" },
+export async function generateMetadata(): Promise<Metadata> {
+  const { getT } = await import("@/lib/i18n/server")
+  const t = await getT()
+  return {
+    title: {
+      default: t("meta.appTitleDefault"),
+      template: "%s · Ocean",
+    },
+    description: t("meta.appDescription"),
+    applicationName: "Ocean",
+    appleWebApp: { capable: true, statusBarStyle: "default", title: "Ocean" },
+  }
 }
 
 export const viewport: Viewport = {
@@ -31,26 +36,29 @@ export const viewport: Viewport = {
   ],
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale()
   return (
     <html
-      lang="fr"
+      lang={locale}
       suppressHydrationWarning
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider delay={200}>
-            {children}
-            <Toaster position="top-right" />
-          </TooltipProvider>
-        </ThemeProvider>
+        <LocaleProvider initialLocale={locale}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider delay={200}>
+              {children}
+              <Toaster position="top-right" />
+            </TooltipProvider>
+          </ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   )
