@@ -1,3 +1,4 @@
+import { loc } from "@/lib/i18n"
 import { dayAt } from "./time"
 import type { ClientEvent, RecurringSlot } from "./types"
 
@@ -8,23 +9,23 @@ type EventSpec = [
   clientId: string,
   day: number,
   kind: ClientEvent["kind"],
-  title: string,
+  title: ClientEvent["title"],
 ]
 
 const EVENT_SPECS: EventSpec[] = [
-  ["bru", "cl_brulerie", 4, "note", "Réassort Éthiopie Yirgacheffe attendu"],
-  ["bru", "cl_brulerie", 9, "event", "Atelier dégustation — 6 places"],
-  ["bru", "cl_brulerie", 15, "event", "Lancement cold brew en bouteille"],
-  ["bru", "cl_brulerie", 32, "note", "Fermeture estivale du 13 au 20 juillet"],
-  ["ver", "cl_verde", 7, "event", "Soirée accords mets & vins nature"],
-  ["ver", "cl_verde", 12, "event", "Nouveau menu d'été en salle"],
-  ["ver", "cl_verde", 18, "note", "Chef absent du 29 juin au 3 juillet"],
-  ["nov", "cl_nove", 8, "event", "Drop capsule lin — mise en ligne 12 h"],
-  ["nov", "cl_nove", 13, "event", "Début des soldes d'été en boutique"],
-  ["nov", "cl_nove", 19, "note", "Shooting lookbook automne à l'atelier"],
-  ["ris", "cl_rise", 5, "note", "Inès reprend les cours du soir"],
-  ["ris", "cl_rise", 10, "event", "Journée internationale du yoga — cours gratuit"],
-  ["ris", "cl_rise", 16, "event", "Départ retraite de printemps (2 jours)"],
+  ["bru", "cl_brulerie", 4, "note", loc("Réassort Éthiopie Yirgacheffe attendu", "Ethiopia Yirgacheffe restock expected")],
+  ["bru", "cl_brulerie", 9, "event", loc("Atelier dégustation — 6 places", "Tasting workshop — 6 spots")],
+  ["bru", "cl_brulerie", 15, "event", loc("Lancement cold brew en bouteille", "Bottled cold brew launch")],
+  ["bru", "cl_brulerie", 32, "note", loc("Fermeture estivale du 13 au 20 juillet", "Summer closure from July 13 to 20")],
+  ["ver", "cl_verde", 7, "event", loc("Soirée accords mets & vins nature", "Food & natural wine pairing evening")],
+  ["ver", "cl_verde", 12, "event", loc("Nouveau menu d'été en salle", "New summer menu now serving")],
+  ["ver", "cl_verde", 18, "note", loc("Chef absent du 29 juin au 3 juillet", "Chef away from June 29 to July 3")],
+  ["nov", "cl_nove", 8, "event", loc("Drop capsule lin — mise en ligne 12 h", "Linen capsule drop — live at 12pm")],
+  ["nov", "cl_nove", 13, "event", loc("Début des soldes d'été en boutique", "Summer sale kicks off in store")],
+  ["nov", "cl_nove", 19, "note", loc("Shooting lookbook automne à l'atelier", "Fall lookbook shoot at the studio")],
+  ["ris", "cl_rise", 5, "note", loc("Inès reprend les cours du soir", "Inès resumes evening classes")],
+  ["ris", "cl_rise", 10, "event", loc("Journée internationale du yoga — cours gratuit", "International Yoga Day — free class")],
+  ["ris", "cl_rise", 16, "event", loc("Départ retraite de printemps (2 jours)", "Spring retreat departs (2 days)")],
 ]
 
 export const CLIENT_EVENTS: ClientEvent[] = EVENT_SPECS.map(

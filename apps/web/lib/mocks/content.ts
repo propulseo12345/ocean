@@ -1,3 +1,4 @@
+import { loc } from "@/lib/i18n"
 import { CLIENTS, SOCIAL_ACCOUNTS } from "./clients"
 import { BLUEPRINT, type Blueprint } from "./content-blueprint"
 import {
@@ -154,7 +155,10 @@ function buildClientContent(client: Client): ContentItem[] {
       status,
       scheduledAt: bp.day === null ? null : dayAt(bp.day, bp.hour),
       newsletterSubject: isManual ? copy.title : undefined,
-      internalNotes: i % 5 === 0 ? "Penser à taguer le lieu et le partenaire." : undefined,
+      internalNotes:
+        i % 5 === 0
+          ? loc("Penser à taguer le lieu et le partenaire.", "Remember to tag the venue and partner.")
+          : undefined,
       media: buildMedia(client, i, bp.media, bp.format),
       targets,
       createdAt: dayAt(bp.day === null ? -8 : bp.day - 3, 9),
@@ -163,9 +167,15 @@ function buildClientContent(client: Client): ContentItem[] {
       approvalStale: status === "changes_requested" && i % 2 === 0 ? true : undefined,
       lastError:
         status === "failed"
-          ? "Token expiré : reconnecte le compte Instagram."
+          ? loc(
+              "Token expiré : reconnecte le compte Instagram.",
+              "Token expired: reconnect the Instagram account."
+            )
           : status === "partially_published"
-            ? "Facebook : média refusé (ratio non conforme)."
+            ? loc(
+                "Facebook : média refusé (ratio non conforme).",
+                "Facebook: media rejected (non-compliant ratio)."
+              )
             : undefined,
       ...contentExtras(i, client.id),
       ...CONTENT_OVERRIDES[id],

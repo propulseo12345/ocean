@@ -1,3 +1,4 @@
+import { loc } from "@/lib/i18n"
 import { dayAt } from "./time"
 import type { CalendarAccount, Client, Organization, Reviewer, SocialAccount, User } from "./types"
 
@@ -20,12 +21,17 @@ export const CLIENTS: Client[] = [
     timezone: "Europe/Paris",
     archivedAt: null,
     theme: "coffee",
-    category: "Café · Torréfaction artisanale",
-    bio: "Torréfacteur de spécialité à Lille ☕️\nSingle origin & mélanges maison\nClick & collect — du mardi au samedi",
+    category: loc("Café · Torréfaction artisanale", "Coffee · Artisan roastery"),
+    bio: loc(
+      "Torréfacteur de spécialité à Lille ☕️\nSingle origin & mélanges maison\nClick & collect — du mardi au samedi",
+      "Specialty coffee roaster in Lille ☕️\nSingle origin & house blends\nClick & collect — Tuesday to Saturday",
+    ),
     following: 312,
     approvalMode: "required",
-    notes:
+    notes: loc(
       "Forfait 12 posts/mois. Camille valide tout — prévoir 48 h de délai avant chaque publication.",
+      "12 posts/month plan. Camille approves everything — allow 48 h lead time before each publish.",
+    ),
   },
   {
     id: "cl_verde",
@@ -35,12 +41,17 @@ export const CLIENTS: Client[] = [
     timezone: "Europe/Paris",
     archivedAt: null,
     theme: "food",
-    category: "Restaurant",
-    bio: "Cuisine de saison & produits du marché 🌿\nDéjeuner du mardi au samedi\nRéservations en ligne 👇",
+    category: loc("Restaurant", "Restaurant"),
+    bio: loc(
+      "Cuisine de saison & produits du marché 🌿\nDéjeuner du mardi au samedi\nRéservations en ligne 👇",
+      "Seasonal cooking & market-fresh produce 🌿\nLunch from Tuesday to Saturday\nBook online 👇",
+    ),
     following: 540,
     approvalMode: "optional",
-    notes:
+    notes: loc(
       "Sofia est réactive. Priorité au brunch du dimanche et au menu du marché — vouvoiement exigé.",
+      "Sofia is responsive. Prioritize Sunday brunch and the market menu — keep a formal tone.",
+    ),
   },
   {
     id: "cl_nove",
@@ -50,12 +61,17 @@ export const CLIENTS: Client[] = [
     timezone: "Europe/Paris",
     archivedAt: null,
     theme: "fashion",
-    category: "Boutique de mode",
-    bio: "Mode responsable, fabriquée en France 🇫🇷\nNouvelle collection printemps en ligne\nLivraison offerte dès 80 €",
+    category: loc("Boutique de mode", "Fashion boutique"),
+    bio: loc(
+      "Mode responsable, fabriquée en France 🇫🇷\nNouvelle collection printemps en ligne\nLivraison offerte dès 80 €",
+      "Sustainable fashion, made in France 🇫🇷\nNew spring collection online\nFree shipping from €80",
+    ),
     following: 421,
     approvalMode: "auto",
-    notes:
+    notes: loc(
       "Léa laisse carte blanche (publication directe). Les drops sortent toujours le vendredi à midi.",
+      "Léa gives full freedom (direct publishing). Drops always go live Friday at noon.",
+    ),
   },
   {
     id: "cl_rise",
@@ -65,12 +81,17 @@ export const CLIENTS: Client[] = [
     timezone: "America/Montreal",
     archivedAt: null,
     theme: "yoga",
-    category: "Studio de yoga & bien-être",
-    bio: "Yoga, respiration & méditation 🧘\nCours en studio et en ligne\nRetraites et ateliers tout l'année",
+    category: loc("Studio de yoga & bien-être", "Yoga & wellness studio"),
+    bio: loc(
+      "Yoga, respiration & méditation 🧘\nCours en studio et en ligne\nRetraites et ateliers tout l'année",
+      "Yoga, breathwork & meditation 🧘\nIn-studio and online classes\nRetreats and workshops all year round",
+    ),
     following: 287,
     approvalMode: "required",
-    notes:
+    notes: loc(
       "Marc n'a jamais ouvert le portail — relancer par email avant chaque échéance. Jamais de promesse santé.",
+      "Marc has never opened the portal — follow up by email before each deadline. Never make health claims.",
+    ),
   },
   {
     id: "cl_lompret",
@@ -80,8 +101,8 @@ export const CLIENTS: Client[] = [
     timezone: "Europe/Paris",
     archivedAt: dayAt(-48, 9),
     theme: "coffee",
-    category: "Café de quartier",
-    bio: "Petit café de quartier à Lompret ☕️",
+    category: loc("Café de quartier", "Neighborhood café"),
+    bio: loc("Petit café de quartier à Lompret ☕️", "Cozy neighborhood café in Lompret ☕️"),
     following: 198,
     approvalMode: "optional",
   },
@@ -214,14 +235,14 @@ export const CALENDAR_ACCOUNTS: CalendarAccount[] = [
   {
     id: "ca_google",
     provider: "google",
-    label: "Google — perso",
+    label: loc("Google — perso", "Google — personal"),
     email: "etienne@studiomarea.fr",
     status: "connected",
   },
   {
     id: "ca_ms",
     provider: "microsoft",
-    label: "Outlook — clients",
+    label: loc("Outlook — clients", "Outlook — clients"),
     email: "etienne@outlook.com",
     status: "needs_reauth",
   },

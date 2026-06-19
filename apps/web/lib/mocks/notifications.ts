@@ -1,3 +1,4 @@
+import { loc } from "@/lib/i18n"
 import { dayAt } from "./time"
 import type { AppNotification } from "./types"
 
@@ -5,8 +6,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_1",
     type: "publish_failed",
-    title: "Échec de publication",
-    body: "Brûlerie Lacaze — le Reel n'a pas pu être publié sur Instagram (token expiré).",
+    title: loc("Échec de publication", "Publishing failed"),
+    body: loc(
+      "Brûlerie Lacaze — le Reel n'a pas pu être publié sur Instagram (token expiré).",
+      "Brûlerie Lacaze — the Reel couldn't be published to Instagram (token expired).",
+    ),
     channels: ["in_app", "push", "email"],
     audience: "owner",
     read: false,
@@ -16,8 +20,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_2",
     type: "token_reauth_needed",
-    title: "Compte à reconnecter",
-    body: "Le compte Instagram de Brûlerie Lacaze doit être reconnecté.",
+    title: loc("Compte à reconnecter", "Account needs reconnecting"),
+    body: loc(
+      "Le compte Instagram de Brûlerie Lacaze doit être reconnecté.",
+      "Brûlerie Lacaze's Instagram account needs to be reconnected.",
+    ),
     channels: ["in_app", "email"],
     audience: "owner",
     read: false,
@@ -27,8 +34,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_3",
     type: "tiktok_draft_pushed",
-    title: "Brouillon TikTok prêt",
-    body: "Maison Verde — ton brouillon est dans l'inbox TikTok, ouvre l'app pour finaliser.",
+    title: loc("Brouillon TikTok prêt", "TikTok draft ready"),
+    body: loc(
+      "Maison Verde — ton brouillon est dans l'inbox TikTok, ouvre l'app pour finaliser.",
+      "Maison Verde — your draft is in the TikTok inbox, open the app to finish it.",
+    ),
     channels: ["in_app", "push"],
     audience: "owner",
     read: false,
@@ -38,8 +48,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_4",
     type: "changes_requested",
-    title: "Modifications demandées",
-    body: "Camille (Brûlerie Lacaze) a demandé des modifications sur un contenu.",
+    title: loc("Modifications demandées", "Changes requested"),
+    body: loc(
+      "Camille (Brûlerie Lacaze) a demandé des modifications sur un contenu.",
+      "Camille (Brûlerie Lacaze) requested changes on a piece of content.",
+    ),
     channels: ["in_app", "push"],
     audience: "owner",
     read: false,
@@ -49,8 +62,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_5",
     type: "content_approved",
-    title: "Contenu approuvé",
-    body: "Sofia (Maison Verde) a approuvé une publication.",
+    title: loc("Contenu approuvé", "Content approved"),
+    body: loc(
+      "Sofia (Maison Verde) a approuvé une publication.",
+      "Sofia (Maison Verde) approved a post.",
+    ),
     channels: ["in_app", "push"],
     audience: "owner",
     read: true,
@@ -60,8 +76,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_6",
     type: "publish_succeeded",
-    title: "Publication réussie",
-    body: "Atelier Nove — post publié sur Instagram et Facebook.",
+    title: loc("Publication réussie", "Published successfully"),
+    body: loc(
+      "Atelier Nove — post publié sur Instagram et Facebook.",
+      "Atelier Nove — post published to Instagram and Facebook.",
+    ),
     channels: ["in_app"],
     audience: "owner",
     read: true,
@@ -71,8 +90,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_7",
     type: "publish_delayed",
-    title: "Publication reportée (quota)",
-    body: "Maison Verde — quota Instagram atteint, publication reportée à 14:00.",
+    title: loc("Publication reportée (quota)", "Post rescheduled (quota)"),
+    body: loc(
+      "Maison Verde — quota Instagram atteint, publication reportée à 14:00.",
+      "Maison Verde — Instagram quota reached, post pushed back to 2:00 PM.",
+    ),
     channels: ["in_app", "push", "email"],
     audience: "owner",
     read: true,
@@ -82,8 +104,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_8",
     type: "review_comment",
-    title: "Nouveau commentaire",
-    body: "Léa (Atelier Nove) a laissé un commentaire sur un contenu en revue.",
+    title: loc("Nouveau commentaire", "New comment"),
+    body: loc(
+      "Léa (Atelier Nove) a laissé un commentaire sur un contenu en revue.",
+      "Léa (Atelier Nove) left a comment on a piece of content under review.",
+    ),
     channels: ["in_app", "push"],
     audience: "owner",
     read: true,
@@ -93,8 +118,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_9",
     type: "manual_due",
-    title: "Newsletter à envoyer",
-    body: "Brûlerie Lacaze — la newsletter est prête à être envoyée manuellement.",
+    title: loc("Newsletter à envoyer", "Newsletter to send"),
+    body: loc(
+      "Brûlerie Lacaze — la newsletter est prête à être envoyée manuellement.",
+      "Brûlerie Lacaze — the newsletter is ready to be sent manually.",
+    ),
     channels: ["in_app", "push"],
     audience: "owner",
     read: true,
@@ -104,8 +132,11 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: "nt_10",
     type: "watchdog",
-    title: "Worker — alerte technique",
-    body: "1 job en retard détecté par le watchdog indépendant.",
+    title: loc("Worker — alerte technique", "Worker — technical alert"),
+    body: loc(
+      "1 job en retard détecté par le watchdog indépendant.",
+      "1 overdue job detected by the independent watchdog.",
+    ),
     channels: ["email"],
     audience: "ops",
     read: true,

@@ -1,6 +1,8 @@
 import "server-only"
 import { cookies, headers } from "next/headers"
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale, LOCALES } from "./config"
+import { type Format, makeFormat } from "./format-bound"
+import { type Labels, makeLabels } from "./labels"
 import { createTranslator, type Translator } from "./translator"
 
 // Détection de la langue préférée du navigateur (premier passage, sans cookie).
@@ -32,4 +34,14 @@ export async function getLocale(): Promise<Locale> {
 // Traducteur prêt à l'emploi dans un Server Component / page.
 export async function getT(): Promise<Translator> {
   return createTranslator(await getLocale())
+}
+
+// Résolveurs de libellés localisés (statuts, formats, plateformes) côté serveur.
+export async function getLabels(): Promise<Labels> {
+  return makeLabels(await getT())
+}
+
+// Formatteurs date/heure/nombre pré-liés à la locale active, côté serveur.
+export async function getFormat(): Promise<Format> {
+  return makeFormat(await getLocale())
 }

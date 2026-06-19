@@ -1,3 +1,4 @@
+import { loc } from "@/lib/i18n"
 import { CLIENTS, REVIEWERS } from "./clients"
 import { CONTENT_ITEMS } from "./content"
 import { dayAt } from "./time"
@@ -21,7 +22,10 @@ export const COMMENTS: Comment[] = REVIEW_TARGETS.flatMap((c, i) => {
       contentId: c.id,
       authorName: rName,
       role: "reviewer",
-      body: "On peut éclaircir un peu la photo ici ? Et « weekend » → « week-end ».",
+      body: loc(
+        "On peut éclaircir un peu la photo ici ? Et « weekend » → « week-end ».",
+        "Could we brighten this photo a touch? Also « weekend » → « week-end »."
+      ),
       createdAt: dayAt(-1, 14),
       annotation: c.media[0]
         ? { mediaAssetId: c.media[0].id, slideIndex: 0, x: 0.42, y: 0.36 }
@@ -32,7 +36,10 @@ export const COMMENTS: Comment[] = REVIEW_TARGETS.flatMap((c, i) => {
       contentId: c.id,
       authorName: "Étienne Mercier",
       role: "owner",
-      body: "C'est noté, je renvoie une version corrigée ce soir.",
+      body: loc(
+        "C'est noté, je renvoie une version corrigée ce soir.",
+        "Got it, I'll send over a fixed version tonight."
+      ),
       createdAt: dayAt(-1, 15),
     })
   } else {
@@ -41,7 +48,7 @@ export const COMMENTS: Comment[] = REVIEW_TARGETS.flatMap((c, i) => {
       contentId: c.id,
       authorName: rName,
       role: "reviewer",
-      body: "Super, j'adore la direction ! 👏",
+      body: loc("Super, j'adore la direction ! 👏", "Love it, the direction is spot on! 👏"),
       createdAt: dayAt(0, 6),
     })
     if (i % 2 === 0 && c.media[0]) {
@@ -50,7 +57,10 @@ export const COMMENTS: Comment[] = REVIEW_TARGETS.flatMap((c, i) => {
         contentId: c.id,
         authorName: rName,
         role: "reviewer",
-        body: "Petit doute sur ce détail, qu'en penses-tu ?",
+        body: loc(
+          "Petit doute sur ce détail, qu'en penses-tu ?",
+          "Small doubt about this detail, what do you think?"
+        ),
         createdAt: dayAt(0, 6, 12),
         annotation: { mediaAssetId: c.media[0].id, slideIndex: 0, x: 0.62, y: 0.55 },
       })
@@ -69,7 +79,7 @@ function approvalsFor(c: ContentItem): Approval[] {
         contentId: c.id,
         reviewerId: reviewer.id,
         decision: "changes_requested",
-        message: "Quelques retouches avant validation.",
+        message: loc("Quelques retouches avant validation.", "A few tweaks before approval."),
         versionLabel: "v1",
         createdAt: dayAt(-1, 14),
       },
@@ -82,7 +92,7 @@ function approvalsFor(c: ContentItem): Approval[] {
         contentId: c.id,
         reviewerId: reviewer.id,
         decision: "approved",
-        message: "Parfait, on valide.",
+        message: loc("Parfait, on valide.", "Perfect, approved."),
         versionLabel: "v1",
         createdAt: dayAt(-2, 10),
       },
@@ -106,7 +116,10 @@ export const REVIEW_REQUESTS: ReviewRequest[] = CLIENTS.filter((c) => !c.archive
       clientId: client.id,
       contentIds: items.map((c) => c.id),
       reviewerIds: [reviewer.id],
-      message: "Voici les prochaines publications à valider, merci !",
+      message: loc(
+        "Voici les prochaines publications à valider, merci !",
+        "Here are the upcoming posts to review, thanks!"
+      ),
       sentAt: dayAt(-1, 9),
       state: "partial",
     }

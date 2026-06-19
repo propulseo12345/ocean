@@ -1,3 +1,5 @@
+import { loc } from "@/lib/i18n"
+import type { L } from "@/lib/i18n/localized"
 import { IMAGES } from "./images"
 import { getPillars } from "./pillars"
 import { dayAt } from "./time"
@@ -19,50 +21,73 @@ export function contentExtras(index: number, clientId: string): Partial<ContentI
 // Retouches ciblées par contenu (id = ct_<clientId>_<index du blueprint>).
 export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
   // Brûlerie Lacaze
-  ct_cl_brulerie_0: { pinned: true, labels: ["Lancement"] },
-  ct_cl_brulerie_4: { labels: ["Promo"] },
+  ct_cl_brulerie_0: { pinned: true, labels: [loc("Lancement", "Launch")] },
+  ct_cl_brulerie_4: { labels: [loc("Promo", "Promo")] },
   ct_cl_brulerie_7: {
-    firstComment: "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille",
+    firstComment: loc(
+      "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille",
+      "#specialtycoffee #singleorigin #baristadaily #filtercoffee #lille",
+    ),
   },
   ct_cl_brulerie_9: { coverUrl: IMAGES.coffee[10] },
-  ct_cl_brulerie_13: { approvalStale: true, labels: ["Evergreen"] },
+  ct_cl_brulerie_13: { approvalStale: true, labels: [loc("Evergreen", "Evergreen")] },
   ct_cl_brulerie_16: {
-    labels: ["Marronnier"],
-    internalNotes: "Idée pour la fête de la musique (21 juin) — voir avec Camille.",
+    labels: [loc("Marronnier", "Seasonal")],
+    internalNotes: loc(
+      "Idée pour la fête de la musique (21 juin) — voir avec Camille.",
+      "Idea for the Fête de la Musique (June 21) — check with Camille.",
+    ),
   },
   // Maison Verde
-  ct_cl_verde_1: { labels: ["Evergreen"] },
+  ct_cl_verde_1: { labels: [loc("Evergreen", "Evergreen")] },
   ct_cl_verde_2: { coverUrl: IMAGES.food[10] },
   ct_cl_verde_7: {
-    firstComment: "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde",
-    labels: ["Marronnier"],
+    firstComment: loc(
+      "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde",
+      "#brunch #vinnature #accordmetsvins #foodlover #dimanche #maisonverde",
+    ),
+    labels: [loc("Marronnier", "Seasonal")],
   },
   ct_cl_verde_9: { coverUrl: IMAGES.food[11] },
   // Atelier Nove
-  ct_cl_nove_1: { pinned: true, labels: ["Lancement"] },
+  ct_cl_nove_1: { pinned: true, labels: [loc("Lancement", "Launch")] },
   ct_cl_nove_15: {
-    labels: ["Promo"],
-    internalNotes: "À programmer pour le début des soldes d'été (24 juin).",
+    labels: [loc("Promo", "Promo")],
+    internalNotes: loc(
+      "À programmer pour le début des soldes d'été (24 juin).",
+      "To schedule for the start of the summer sales (June 24).",
+    ),
   },
   // Studio Rise
   ct_cl_rise_2: { excludeFromGrid: true },
   ct_cl_rise_16: {
-    labels: ["Marronnier"],
-    internalNotes: "Journée internationale du yoga le 21 juin — prévoir le cours gratuit.",
+    labels: [loc("Marronnier", "Seasonal")],
+    internalNotes: loc(
+      "Journée internationale du yoga le 21 juin — prévoir le cours gratuit.",
+      "International Yoga Day on June 21 — plan the free class.",
+    ),
   },
 }
 
 // Légendes déclinées par plateforme (ContentTarget.captionOverride).
-export const TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, string>>> = {
+export const TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, L<string>>>> = {
   ct_cl_verde_7: {
-    facebook:
+    facebook: loc(
       "Le brunch est de retour ce dimanche ! Pancakes, granola maison, jus pressés. Réservez votre table : maisonverde.fr/brunch",
+      "Brunch is back this Sunday! Pancakes, house-made granola, fresh-pressed juices. Book your table: maisonverde.fr/brunch",
+    ),
   },
   ct_cl_verde_9: {
-    tiktok: "La tarte au citron qu'on ne présente plus 🍋 #dessert #foodtok #patisserie",
+    tiktok: loc(
+      "La tarte au citron qu'on ne présente plus 🍋 #dessert #foodtok #patisserie",
+      "The lemon tart that needs no introduction 🍋 #dessert #foodtok #patisserie",
+    ),
   },
   ct_cl_nove_13: {
-    tiktok: "POV : tu cherches LA maille de mi-saison 🧶 #fashiontok #ootd",
+    tiktok: loc(
+      "POV : tu cherches LA maille de mi-saison 🧶 #fashiontok #ootd",
+      "POV: you're hunting for THE mid-season knit 🧶 #fashiontok #ootd",
+    ),
   },
 }
 
@@ -71,15 +96,19 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
   {
     id: "ct_cl_brulerie_x1",
     clientId: "cl_brulerie",
-    title: "Promo flash sur les capsules",
-    caption:
+    title: loc("Promo flash sur les capsules", "Flash sale on capsules"),
+    caption: loc(
       "Promo flash ce week-end : -30 % sur les capsules compatibles. Fonce, le stock part vite !",
+      "Flash sale this weekend: -30% on compatible capsules. Hurry, stock is going fast!",
+    ),
     hashtags: ["#promo", "#café"],
     format: "post",
     status: "draft",
     scheduledAt: null,
-    internalNotes:
+    internalNotes: loc(
       "Supprimé : hors charte (« promo flash » et « capsule » interdits au brand kit).",
+      "Deleted: off-brand (“flash sale” and “capsule” banned in the brand kit).",
+    ),
     media: [
       {
         id: "md_cl_brulerie_x1_0",
@@ -107,8 +136,11 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
   {
     id: "ct_cl_verde_x1",
     clientId: "cl_verde",
-    title: "Concours stories — à revoir",
-    caption: "Jeu concours : un brunch pour deux à gagner. Modalités à définir avec Sofia.",
+    title: loc("Concours stories — à revoir", "Stories giveaway — needs review"),
+    caption: loc(
+      "Jeu concours : un brunch pour deux à gagner. Modalités à définir avec Sofia.",
+      "Giveaway: win a brunch for two. Terms to be defined with Sofia.",
+    ),
     hashtags: [],
     format: "story",
     status: "idea",
@@ -130,13 +162,19 @@ export const EXTRA_CONTENT_ITEMS: ContentItem[] = [
   {
     id: "ct_cl_rise_x1",
     clientId: "cl_rise",
-    title: "Défi 30 jours de yoga",
-    caption: "Un mois, une posture par jour. Le défi commence lundi — qui est partant ?",
+    title: loc("Défi 30 jours de yoga", "30-day yoga challenge"),
+    caption: loc(
+      "Un mois, une posture par jour. Le défi commence lundi — qui est partant ?",
+      "One month, one pose a day. The challenge starts Monday — who's in?",
+    ),
     hashtags: ["#yogachallenge", "#30jours"],
     format: "post",
     status: "canceled",
     scheduledAt: dayAt(-7, 12),
-    internalNotes: "Annulé d'un commun accord avec Marc — remplacé par la retraite de printemps.",
+    internalNotes: loc(
+      "Annulé d'un commun accord avec Marc — remplacé par la retraite de printemps.",
+      "Cancelled by mutual agreement with Marc — replaced by the spring retreat.",
+    ),
     media: [
       {
         id: "md_cl_rise_x1_0",

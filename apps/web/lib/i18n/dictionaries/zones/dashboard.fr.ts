@@ -1,0 +1,38 @@
+// Namespace i18n « dashboard » (FR).
+export const dashboardFr = {
+  dashboard: {
+    greeting: "Bonjour {name}",
+    yourDay: "Voici ta journée — {date}.",
+    seeClients: "Voir les clients",
+    kpiPublishToday: "À publier aujourd'hui",
+    kpiReviewPending: "En attente de validation",
+    kpiFailed: "Échecs à traiter",
+    kpiReconnect: "Comptes à reconnecter",
+    tasksTitle: "Tâches du jour",
+    tasksTotal: "{count} au total",
+    today: "Aujourd'hui",
+    agenda: "Agenda",
+    recentActivity: "Activité récente",
+    allClear: "Tout est à jour",
+    allClearHint: "Aucune tâche en attente pour aujourd'hui.",
+    freeDay: "Journée libre",
+    freeDayHint: "Aucun rendez-vous ni publication aujourd'hui.",
+    allDay: "Jour",
+    group: {
+      failed: "Échecs à traiter",
+      publish_today: "À publier aujourd'hui",
+      tiktok_draft: "Brouillons TikTok à finaliser",
+      manual_due: "À publier manuellement",
+      reschedule: "À reprogrammer",
+      review_pending: "En attente de validation client",
+      reconnect: "Comptes à reconnecter",
+    },
+    task: {
+      publishFailed: "Échec de publication",
+      tiktokDraft: "brouillon TikTok à finaliser",
+      awaitingReview: "en attente de validation",
+      reconnect: "Reconnecter {platform}",
+      accessExpired: "accès expiré",
+    },
+  },
+} as const

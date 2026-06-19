@@ -9,7 +9,9 @@ export {
   LOCALES,
 } from "./config"
 export { type Dictionary, type MessageKey } from "./dictionaries"
+export { type Format, makeFormat } from "./format-bound"
 export { type MessageParams } from "./format-message"
+export { type Labels, makeLabels } from "./labels"
 export { type L, loc, pick } from "./localized"
-export { LocaleProvider, useLocale, useT } from "./provider"
+export { LocaleProvider, useFormat, useLabels, useLocale, useT } from "./provider"
 export { createTranslator, type Translator } from "./translator"

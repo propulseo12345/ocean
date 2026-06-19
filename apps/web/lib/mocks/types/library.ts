@@ -1,5 +1,6 @@
 // Ocean — types médiathèque, hashtags et métriques de performance.
 
+import type { L } from "@/lib/i18n/localized"
 import type { EngagementStats, MediaType } from "./core"
 
 /** Provenance d'un asset de médiathèque. */
@@ -19,7 +20,7 @@ export interface LibraryAsset {
   source: LibraryAssetSource
   /** Contenus dans lesquels l'asset est utilisé ([] = inédit). */
   usedInContentIds: string[]
-  altText?: string
+  altText?: L<string>
   /** Poids simulé en Mo — pour la validation des specs plateformes. */
   fileSizeMb?: number
   /** Type MIME simulé (ex. "image/jpeg", "image/heic", "video/mp4"). */
@@ -30,7 +31,7 @@ export interface LibraryAsset {
 export interface HashtagGroup {
   id: string
   clientId: string
-  name: string
+  name: L<string>
   /** Tags avec leur « # », ex. ["#brunch", "#foodie"]. */
   tags: string[]
 }

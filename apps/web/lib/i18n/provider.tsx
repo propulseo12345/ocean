@@ -9,6 +9,8 @@ import {
   type Locale,
   LOCALES,
 } from "./config"
+import { type Format, makeFormat } from "./format-bound"
+import { type Labels, makeLabels } from "./labels"
 import { createTranslator, type Translator } from "./translator"
 
 interface LocaleState {
@@ -73,4 +75,12 @@ export function useLocale(): LocaleState {
 
 export function useT(): Translator {
   return useLocale().t
+}
+
+export function useLabels(): Labels {
+  return makeLabels(useLocale().t)
+}
+
+export function useFormat(): Format {
+  return makeFormat(useLocale().locale)
 }

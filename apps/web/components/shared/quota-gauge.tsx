@@ -1,8 +1,11 @@
+"use client"
+
+import { useT } from "@/lib/i18n"
 import type { QuotaUsage } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Jauge fine de quota plateforme — « 87/100 publications · 24 h ».
-// Server-compatible. Warning ≥ 80 %, danger ≥ 95 % (tokens uniquement).
+// Warning ≥ 80 %, danger ≥ 95 % (tokens uniquement).
 
 const WARNING_AT = 0.8
 const DANGER_AT = 0.95
@@ -34,9 +37,10 @@ export function QuotaGauge({
   showLabel?: boolean
   className?: string
 }) {
+  const t = useT()
   const ratio = usage.limit > 0 ? Math.min(usage.used / usage.limit, 1) : 0
   const tone = toneOf(ratio)
-  const label = `${usage.used}/${usage.limit} ${usage.windowLabel}`
+  const label = `${usage.used}/${usage.limit} ${t(usage.windowKey)}`
 
   return (
     <div className={cn("min-w-0 space-y-1", className)} title={showLabel ? undefined : label}>
@@ -48,7 +52,7 @@ export function QuotaGauge({
         aria-valuemin={0}
         aria-valuemax={usage.limit}
         aria-valuenow={usage.used}
-        aria-label={`Quota : ${label}`}
+        aria-label={`${t("quota.label")} ${label}`}
         className="h-1 w-full overflow-hidden rounded-full bg-muted"
       >
         <div

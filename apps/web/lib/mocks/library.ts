@@ -1,3 +1,5 @@
+import { loc } from "@/lib/i18n"
+import type { L } from "@/lib/i18n/localized"
 import { CLIENTS } from "./clients"
 import { CONTENT_ITEMS } from "./content"
 import { IMAGES } from "./images"
@@ -7,34 +9,55 @@ import type { Client, LibraryAsset, LibraryAssetSource } from "./types"
 // Médiathèque par client : tout le pool d'images devient des assets, avec
 // usages réels calculés depuis les contenus (mêmes URLs) → mix utilisés/inédits.
 
-const ALT_TEXTS: Record<Client["theme"], string[]> = {
+const ALT_TEXTS: Record<Client["theme"], L<string>[]> = {
   coffee: [
-    "Tasse de café filtre fraîchement servie sur le comptoir",
-    "Latte art en forme de cœur, vue de dessus",
-    "Grains de café vert avant torréfaction",
-    "Le torréfacteur surveille la cuisson au tambour",
-    "Sacs de café single origin alignés en boutique",
+    loc(
+      "Tasse de café filtre fraîchement servie sur le comptoir",
+      "Cup of freshly brewed pour-over coffee on the counter"
+    ),
+    loc("Latte art en forme de cœur, vue de dessus", "Heart-shaped latte art, top-down view"),
+    loc("Grains de café vert avant torréfaction", "Green coffee beans before roasting"),
+    loc(
+      "Le torréfacteur surveille la cuisson au tambour",
+      "The roaster keeps an eye on the drum roast"
+    ),
+    loc(
+      "Sacs de café single origin alignés en boutique",
+      "Single-origin coffee bags lined up in the shop"
+    ),
   ],
   food: [
-    "Assiette d'asperges vertes et œuf parfait",
-    "Table de brunch vue de dessus, jus pressés",
-    "La brigade en plein coup de feu",
-    "Part de tarte au citron meringuée",
-    "Légumes du marché posés sur le passe",
+    loc(
+      "Assiette d'asperges vertes et œuf parfait",
+      "Plate of green asparagus with a perfect poached egg"
+    ),
+    loc(
+      "Table de brunch vue de dessus, jus pressés",
+      "Brunch spread shot from above with fresh-pressed juices"
+    ),
+    loc("La brigade en plein coup de feu", "The kitchen crew in the thick of service"),
+    loc("Part de tarte au citron meringuée", "Slice of lemon meringue pie"),
+    loc("Légumes du marché posés sur le passe", "Market-fresh vegetables laid out on the pass"),
   ],
   fashion: [
-    "Veste en lin lavé portée en lumière naturelle",
-    "Flatlay maille côtelée et accessoires",
-    "Mains de couturière en plein patronage",
-    "Sac en cuir tanné végétal sur fond neutre",
-    "Silhouette lookbook dans les tons sable",
+    loc(
+      "Veste en lin lavé portée en lumière naturelle",
+      "Washed-linen jacket worn in natural light"
+    ),
+    loc("Flatlay maille côtelée et accessoires", "Flatlay of ribbed knitwear and accessories"),
+    loc("Mains de couturière en plein patronage", "Seamstress's hands mid pattern-making"),
+    loc(
+      "Sac en cuir tanné végétal sur fond neutre",
+      "Vegetable-tanned leather bag on a neutral backdrop"
+    ),
+    loc("Silhouette lookbook dans les tons sable", "Lookbook silhouette in sandy tones"),
   ],
   yoga: [
-    "Posture de l'arbre tenue en studio",
-    "Salle de cours baignée de lumière du matin",
-    "Séance de pranayama en groupe",
-    "Tapis et briques de yoga alignés",
-    "Méditation guidée à la tombée du jour",
+    loc("Posture de l'arbre tenue en studio", "Tree pose held in the studio"),
+    loc("Salle de cours baignée de lumière du matin", "Class space bathed in morning light"),
+    loc("Séance de pranayama en groupe", "Group pranayama session"),
+    loc("Tapis et briques de yoga alignés", "Yoga mats and blocks neatly lined up"),
+    loc("Méditation guidée à la tombée du jour", "Guided meditation at dusk"),
   ],
 }
 

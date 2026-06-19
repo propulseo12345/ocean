@@ -1,35 +1,54 @@
+import { DEFAULT_LOCALE, INTL_LOCALE, type Locale } from "@/lib/i18n/config"
 import { MOCK_NOW } from "@/lib/mocks/time"
 
 export const DEFAULT_TZ = "Europe/Paris"
 
-function fmt(opts: Intl.DateTimeFormatOptions, tz: string) {
-  return new Intl.DateTimeFormat("fr-FR", { timeZone: tz, ...opts })
+// Locale d'affichage (fr-FR / en-US) à partir de la locale active.
+function intl(locale: Locale): string {
+  return INTL_LOCALE[locale]
 }
 
-export function formatDate(iso: string, tz: string = DEFAULT_TZ): string {
-  return fmt({ day: "numeric", month: "long", year: "numeric" }, tz).format(new Date(iso))
+function fmt(opts: Intl.DateTimeFormatOptions, tz: string, locale: Locale) {
+  return new Intl.DateTimeFormat(intl(locale), { timeZone: tz, ...opts })
 }
 
-export function formatDayMonth(iso: string, tz: string = DEFAULT_TZ): string {
-  return fmt({ day: "numeric", month: "short" }, tz).format(new Date(iso))
+export function formatDate(iso: string, tz: string = DEFAULT_TZ, locale: Locale = DEFAULT_LOCALE) {
+  return fmt({ day: "numeric", month: "long", year: "numeric" }, tz, locale).format(new Date(iso))
 }
 
-export function formatWeekday(iso: string, tz: string = DEFAULT_TZ): string {
-  return fmt({ weekday: "long" }, tz).format(new Date(iso))
+export function formatDayMonth(
+  iso: string,
+  tz: string = DEFAULT_TZ,
+  locale: Locale = DEFAULT_LOCALE
+) {
+  return fmt({ day: "numeric", month: "short" }, tz, locale).format(new Date(iso))
 }
 
-export function formatTime(iso: string, tz: string = DEFAULT_TZ): string {
-  return fmt({ hour: "2-digit", minute: "2-digit" }, tz).format(new Date(iso))
+export function formatWeekday(
+  iso: string,
+  tz: string = DEFAULT_TZ,
+  locale: Locale = DEFAULT_LOCALE
+) {
+  return fmt({ weekday: "long" }, tz, locale).format(new Date(iso))
 }
 
-export function formatDateTime(iso: string, tz: string = DEFAULT_TZ): string {
-  const date = fmt({ weekday: "short", day: "numeric", month: "short" }, tz).format(new Date(iso))
-  return `${date} · ${formatTime(iso, tz)}`
+export function formatTime(iso: string, tz: string = DEFAULT_TZ, locale: Locale = DEFAULT_LOCALE) {
+  return fmt({ hour: "2-digit", minute: "2-digit" }, tz, locale).format(new Date(iso))
 }
 
-const rtf = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" })
+export function formatDateTime(
+  iso: string,
+  tz: string = DEFAULT_TZ,
+  locale: Locale = DEFAULT_LOCALE
+) {
+  const date = fmt({ weekday: "short", day: "numeric", month: "short" }, tz, locale).format(
+    new Date(iso)
+  )
+  return `${date} · ${formatTime(iso, tz, locale)}`
+}
 
-export function formatRelative(iso: string): string {
+export function formatRelative(iso: string, locale: Locale = DEFAULT_LOCALE): string {
+  const rtf = new Intl.RelativeTimeFormat(intl(locale), { numeric: "auto" })
   const diff = new Date(iso).getTime() - MOCK_NOW.getTime()
   const abs = Math.abs(diff)
   const minute = 60_000
@@ -45,6 +64,7 @@ export function isPast(iso: string): boolean {
   return new Date(iso).getTime() < MOCK_NOW.getTime()
 }
 
+// fr-CA est utilisé comme CLÉ technique stable YYYY-MM-DD (jamais affiché) — ne pas localiser.
 export function isSameDay(iso: string, ref: Date = MOCK_NOW, tz = DEFAULT_TZ): boolean {
   const key = (d: Date) =>
     new Intl.DateTimeFormat("fr-CA", {
@@ -56,10 +76,12 @@ export function isSameDay(iso: string, ref: Date = MOCK_NOW, tz = DEFAULT_TZ): b
   return key(new Date(iso)) === key(ref)
 }
 
-export function formatFollowers(n: number): string {
+export function formatFollowers(n: number, locale: Locale = DEFAULT_LOCALE): string {
   if (n >= 1000) {
-    const v = (n / 1000).toFixed(1).replace(".0", "").replace(".", ",")
-    return `${v} k`
+    const v = (n / 1000).toFixed(1).replace(".0", "")
+    // Séparateur décimal selon la locale (virgule en FR, point en EN).
+    const sep = locale === "fr" ? "," : "."
+    return `${v.replace(".", sep)} k`
   }
   return String(n)
 }

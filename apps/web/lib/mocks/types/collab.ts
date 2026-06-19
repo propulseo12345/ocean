@@ -1,6 +1,7 @@
 // Ocean — types de collaboration : validation client, commentaires,
 // notifications, versions et journal d'activité.
 
+import type { L } from "@/lib/i18n/localized"
 import type { MemberRole } from "./core"
 
 export interface Reviewer {
@@ -19,7 +20,7 @@ export interface Approval {
   contentId: string
   reviewerId: string
   decision: ApprovalDecision
-  message?: string
+  message?: L<string>
   versionLabel: string
   createdAt: string
 }
@@ -36,7 +37,7 @@ export interface Comment {
   contentId: string
   authorName: string
   role: MemberRole
-  body: string
+  body: L<string>
   createdAt: string
   annotation?: Annotation
 }
@@ -48,7 +49,7 @@ export interface ReviewRequest {
   clientId: string
   contentIds: string[]
   reviewerIds: string[]
-  message?: string
+  message?: L<string>
   sentAt: string
   state: ReviewRequestState
 }
@@ -59,8 +60,8 @@ export type NotificationAudience = "owner" | "reviewer" | "ops"
 export interface AppNotification {
   id: string
   type: string
-  title: string
-  body: string
+  title: L<string>
+  body: L<string>
   channels: NotificationChannel[]
   audience: NotificationAudience
   read: boolean
@@ -74,9 +75,9 @@ export interface ContentVersion {
   contentId: string
   /** Libellé court : "v1", "v2"… */
   label: string
-  caption: string
+  caption: L<string>
   /** Ce qui a motivé cette version (retour client, correction…). */
-  note: string
+  note: L<string>
   createdAt: string
 }
 
@@ -101,5 +102,5 @@ export interface ActivityEntry {
   /** Nom de l'acteur — "Ocean" pour les événements système (worker). */
   actorName: string
   kind: ActivityKind
-  detail: string
+  detail: L<string>
 }

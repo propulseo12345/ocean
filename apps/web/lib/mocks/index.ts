@@ -1,4 +1,6 @@
 import { isPast, isSameDay } from "@/lib/format"
+import type { Locale } from "@/lib/i18n"
+import { type Labels, type Translator, makeLabels, pick } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { CALENDAR_EVENTS } from "./agenda"
 import {
@@ -12,7 +14,6 @@ import {
 import { CONTENT_ITEMS } from "./content"
 import { IMPORTED_POSTS } from "./imported"
 import { APPROVALS, COMMENTS, REVIEW_REQUESTS } from "./interactions"
-import { platformMeta } from "./labels"
 import { NOTIFICATIONS } from "./notifications"
 import type { AgendaItem, Client, ContentItem, DashboardTask, NotificationAudience } from "./types"
 
@@ -146,13 +147,17 @@ export function getPortalContent(clientId = DEMO_REVIEWER_CLIENT_ID) {
   return getContentItems(clientId).filter((c) => REVIEWER_VISIBLE.includes(c.status))
 }
 
-function platformsLabel(c: ContentItem): string {
-  return c.targets.map((t) => platformMeta[t.platform].short).join(" · ")
+function platformsLabel(c: ContentItem, labels: Labels): string {
+  return c.targets.map((tg) => labels.platformShort(tg.platform)).join(" · ")
 }
 
-export function getDashboardTasks(): DashboardTask[] {
+// Libellés dérivés du dashboard : nécessitent la locale (titres = contenu mock)
+// et un Translator (fragments d'UI). Appelé depuis dashboard/page.tsx (server).
+export function getDashboardTasks(t: Translator, locale: Locale): DashboardTask[] {
   const tasks: DashboardTask[] = []
+  const labels = makeLabels(t)
   const name = (id: string) => getClient(id)?.name ?? ""
+  const title = (c: ContentItem) => pick(c.title, locale)
 
   for (const c of CONTENT_ITEMS) {
     if (c.deletedAt) continue
@@ -160,8 +165,8 @@ export function getDashboardTasks(): DashboardTask[] {
       tasks.push({
         id: `t_pub_${c.id}`,
         kind: "publish_today",
-        title: c.title,
-        detail: `${name(c.clientId)} · ${platformsLabel(c)}`,
+        title: title(c),
+        detail: `${name(c.clientId)} · ${platformsLabel(c, labels)}`,
         clientId: c.clientId,
         href: routes.content(c.clientId, c.id),
         at: c.scheduledAt,
@@ -172,11 +177,12 @@ export function getDashboardTasks(): DashboardTask[] {
   for (const c of CONTENT_ITEMS) {
     if (c.deletedAt) continue
     if (c.status === "failed" || c.status === "partially_published") {
+      const err = c.lastError ? pick(c.lastError, locale) : t("dashboard.task.publishFailed")
       tasks.push({
         id: `t_fail_${c.id}`,
         kind: "failed",
-        title: c.title,
-        detail: `${name(c.clientId)} · ${c.lastError ?? "Échec de publication"}`,
+        title: title(c),
+        detail: `${name(c.clientId)} · ${err}`,
         clientId: c.clientId,
         href: routes.content(c.clientId, c.id),
         tone: "danger",
@@ -185,12 +191,12 @@ export function getDashboardTasks(): DashboardTask[] {
   }
   for (const c of CONTENT_ITEMS) {
     if (c.deletedAt) continue
-    if (c.targets.some((t) => t.status === "pushed_to_platform")) {
+    if (c.targets.some((tg) => tg.status === "pushed_to_platform")) {
       tasks.push({
         id: `t_tt_${c.id}`,
         kind: "tiktok_draft",
-        title: c.title,
-        detail: `${name(c.clientId)} · brouillon TikTok à finaliser`,
+        title: title(c),
+        detail: `${name(c.clientId)} · ${t("dashboard.task.tiktokDraft")}`,
         clientId: c.clientId,
         href: routes.content(c.clientId, c.id),
         tone: "warning",
@@ -203,8 +209,8 @@ export function getDashboardTasks(): DashboardTask[] {
       tasks.push({
         id: `t_rev_${c.id}`,
         kind: "review_pending",
-        title: c.title,
-        detail: `${name(c.clientId)} · en attente de validation`,
+        title: title(c),
+        detail: `${name(c.clientId)} · ${t("dashboard.task.awaitingReview")}`,
         clientId: c.clientId,
         href: routes.content(c.clientId, c.id),
         tone: "neutral",
@@ -216,8 +222,8 @@ export function getDashboardTasks(): DashboardTask[] {
       tasks.push({
         id: `t_acc_${a.id}`,
         kind: "reconnect",
-        title: `Reconnecter ${platformMeta[a.platform].label}`,
-        detail: `${name(a.clientId)} · accès expiré`,
+        title: t("dashboard.task.reconnect", { platform: labels.platform(a.platform) }),
+        detail: `${name(a.clientId)} · ${t("dashboard.task.accessExpired")}`,
         clientId: a.clientId,
         href: routes.settings,
         tone: "warning",

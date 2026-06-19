@@ -91,6 +91,16 @@ remplir fr.ts + en.ts.
 **Lot 4 — Vérif**: `next build`, parité des clés fr/en, Playwright FR + EN sur 6-8 écrans clés,
 screenshots, toggle fonctionnel, dates/nombres corrects dans les 2 langues.
 
+## Décision contenu mock (arrêtée pendant Lot 1)
+Les champs textuels des mocks deviennent `L<string>` (ex. `ContentItem.title`,
+`caption`, `internalNotes`, `lastError`, `Client.name/bio/category/notes`,
+`Notification.title/body`, `Pillar.name`, événements agenda…). La résolution se fait
+**au point d'affichage** via `pick(field, locale)` (client: `useLocale().locale` ;
+server: `getLocale()`). Avantage: le compilateur liste TOUS les sites à résoudre →
+aucune chaîne FR oubliée. Les getters (`getClient`, `getContentItems`…) renvoient les
+données brutes inchangées (pas de threading de locale dans 150 appels).
+Les libellés dérivés purement UI (`getDashboardTasks`) prennent `(t, locale)`.
+
 ## Conventions de clés
 `namespace.sousNamespace.cle` — namespaces: `common`, `nav`, `dashboard`, `clients`, `calendar`,
 `grid`, `studio`, `composer`, `board`, `settings`, `onboarding`, `performance`, `report`,

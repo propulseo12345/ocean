@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n"
 import { SOCIAL_ACCOUNTS } from "./clients"
 import { CONTENT_ITEMS } from "./content"
 import { days, fromNow, MOCK_NOW } from "./time"
@@ -7,11 +8,12 @@ import type { Platform, QuotaUsage } from "./types"
 // côté worker/DB. used = base simulée (activité hors mocks) + activité mockée
 // des dernières 24 h.
 
-export const PLATFORM_QUOTAS: Partial<Record<Platform, { limit: number; windowLabel: string }>> = {
-  instagram: { limit: 100, windowLabel: "publications · 24 h" },
-  facebook: { limit: 30, windowLabel: "Reels · 24 h" },
-  tiktok: { limit: 5, windowLabel: "brouillons · 24 h" },
-}
+export const PLATFORM_QUOTAS: Partial<Record<Platform, { limit: number; windowKey: MessageKey }>> =
+  {
+    instagram: { limit: 100, windowKey: "quota.window.ig" },
+    facebook: { limit: 30, windowKey: "quota.window.fb" },
+    tiktok: { limit: 5, windowKey: "quota.window.tt" },
+  }
 
 // Consommation simulée par compte (Maison Verde volontairement proche des
 // limites pour la jauge : IG 87/100, FB Reels 29/30, TikTok 3+1/5).
@@ -64,5 +66,5 @@ export function getQuotaUsage(accountId: string): QuotaUsage | null {
     quota.limit,
     (BASE_USAGE[accountId] ?? 0) + mockUsage(accountId, account.platform)
   )
-  return { used, limit: quota.limit, windowLabel: quota.windowLabel }
+  return { used, limit: quota.limit, windowKey: quota.windowKey }
 }
