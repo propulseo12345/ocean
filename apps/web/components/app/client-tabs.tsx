@@ -10,18 +10,24 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 
 export function ClientTabs({ clientId }: { clientId: string }) {
+  const t = useT()
   const pathname = usePathname()
   const tabs = [
-    { label: "Grille feed", href: routes.clientGrid(clientId), icon: LayoutGrid },
-    { label: "Calendrier", href: routes.clientCalendar(clientId), icon: CalendarDays },
-    { label: "Studio", href: routes.clientContent(clientId), icon: SquarePen },
-    { label: "Médiathèque", href: routes.clientLibrary(clientId), icon: FolderOpen },
-    { label: "Performance", href: routes.clientPerformance(clientId), icon: ChartColumn },
-    { label: "Réglages", href: routes.clientSettings(clientId), icon: Settings2 },
+    { label: t("nav.tab.grid"), href: routes.clientGrid(clientId), icon: LayoutGrid },
+    { label: t("nav.tab.calendar"), href: routes.clientCalendar(clientId), icon: CalendarDays },
+    { label: t("nav.tab.studio"), href: routes.clientContent(clientId), icon: SquarePen },
+    { label: t("nav.tab.library"), href: routes.clientLibrary(clientId), icon: FolderOpen },
+    {
+      label: t("nav.tab.performance"),
+      href: routes.clientPerformance(clientId),
+      icon: ChartColumn,
+    },
+    { label: t("nav.tab.settings"), href: routes.clientSettings(clientId), icon: Settings2 },
   ]
   return (
     <nav className="flex gap-1 overflow-x-auto border-b">

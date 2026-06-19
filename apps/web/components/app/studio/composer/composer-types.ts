@@ -1,3 +1,4 @@
+import { type Locale, pick } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentItem,
@@ -66,7 +67,11 @@ export interface ComposerDraft {
   fbLink: string
 }
 
-export function mediaFromLibrary(asset: LibraryAsset, position: number): ComposerMedia {
+export function mediaFromLibrary(
+  asset: LibraryAsset,
+  position: number,
+  locale: Locale
+): ComposerMedia {
   return {
     id: `cm_${asset.id}_${position}`,
     type: asset.type,
@@ -77,7 +82,7 @@ export function mediaFromLibrary(asset: LibraryAsset, position: number): Compose
     durationSec: asset.durationSec,
     fileSizeMb: asset.fileSizeMb,
     mimeType: asset.mimeType,
-    altText: asset.altText ?? "",
+    altText: asset.altText ? pick(asset.altText, locale) : "",
     libraryAssetId: asset.id,
   }
 }
@@ -119,12 +124,12 @@ export function emptyDraft(accounts: SocialAccount[]): ComposerDraft {
   }
 }
 
-export function draftFromContent(content: ContentItem): ComposerDraft {
+export function draftFromContent(content: ContentItem, locale: Locale): ComposerDraft {
   const overrides: Partial<Record<Platform, string>> = {}
   const accountIds: string[] = []
   const manualPlatforms: Platform[] = []
   for (const target of content.targets) {
-    if (target.captionOverride) overrides[target.platform] = target.captionOverride
+    if (target.captionOverride) overrides[target.platform] = pick(target.captionOverride, locale)
     if (target.socialAccountId) accountIds.push(target.socialAccountId)
     else manualPlatforms.push(target.platform)
   }
@@ -132,16 +137,17 @@ export function draftFromContent(content: ContentItem): ComposerDraft {
   // Les hashtags du modèle vivent à part : on les réinjecte dans la légende
   // (le composer travaille en « hashtags inline », cf. lib/caption.ts).
   const tags = content.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
-  const caption = tags ? `${content.caption}\n\n${tags}` : content.caption
+  const captionText = pick(content.caption, locale)
+  const caption = tags ? `${captionText}\n\n${tags}` : captionText
 
   return {
-    title: content.title,
+    title: pick(content.title, locale),
     format: content.format,
     state: content.status === "idea" ? "idea" : "draft",
     pillarId: content.pillarId ?? null,
     caption,
     captionOverrides: overrides,
-    firstComment: content.firstComment ?? "",
+    firstComment: content.firstComment ? pick(content.firstComment, locale) : "",
     media: [...content.media]
       .sort((a, b) => a.position - b.position)
       .map((m) => ({
@@ -154,13 +160,13 @@ export function draftFromContent(content: ContentItem): ComposerDraft {
         durationSec: m.durationSec,
         fileSizeMb: m.fileSizeMb,
         mimeType: m.mimeType,
-        altText: m.altText ?? "",
+        altText: m.altText ? pick(m.altText, locale) : "",
       })),
     accountIds,
     manualPlatforms,
-    newsletterSubject: content.newsletterSubject ?? "",
-    internalNotes: content.internalNotes ?? "",
-    labels: content.labels ? [...content.labels] : [],
+    newsletterSubject: content.newsletterSubject ? pick(content.newsletterSubject, locale) : "",
+    internalNotes: content.internalNotes ? pick(content.internalNotes, locale) : "",
+    labels: content.labels ? content.labels.map((l) => pick(l, locale)) : [],
     scheduledAt: content.scheduledAt,
     igLocation: "",
     fbLink: "",

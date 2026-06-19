@@ -7,7 +7,8 @@ import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { formatDate } from "@/lib/format"
+import { useFormat, useLocale, useT } from "@/lib/i18n"
+import { pick } from "@/lib/i18n/localized"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel } from "@/lib/specs"
 import type { UsageRef } from "./library-types"
@@ -36,9 +37,13 @@ export function AssetDetails({
   tz: string
   onSaveAlt: (id: string, altText: string) => void
 }) {
-  const [draft, setDraft] = useState(asset.altText ?? "")
-  useEffect(() => setDraft(asset.altText ?? ""), [asset])
-  const dirty = draft !== (asset.altText ?? "")
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
+  const initialAlt = asset.altText ? pick(asset.altText, locale) : ""
+  const [draft, setDraft] = useState(initialAlt)
+  useEffect(() => setDraft(asset.altText ? pick(asset.altText, locale) : ""), [asset, locale])
+  const dirty = draft !== initialAlt
 
   const publishedUse = usages.some(
     (u) => u.status === "published" || u.status === "partially_published"
@@ -47,35 +52,39 @@ export function AssetDetails({
   return (
     <div className="space-y-4">
       <dl className="divide-y rounded-lg border px-3 py-1">
-        <MetaRow label="Type" value={asset.type === "video" ? "Vidéo" : "Image"} />
-        <MetaRow label="Format" value={mimeLabel(asset)} />
-        <MetaRow label="Dimensions" value={`${asset.width}×${asset.height} px`} />
-        <MetaRow label="Ratio" value={ratioLabel(asset.width, asset.height)} />
+        <MetaRow
+          label={t("library.details.type")}
+          value={asset.type === "video" ? t("library.mime.video") : t("library.mime.image")}
+        />
+        <MetaRow label={t("library.details.format")} value={mimeLabel(asset, t)} />
+        <MetaRow label={t("library.details.dimensions")} value={`${asset.width}×${asset.height} px`} />
+        <MetaRow label={t("library.details.ratio")} value={ratioLabel(asset.width, asset.height)} />
         {asset.fileSizeMb !== undefined ? (
-          <MetaRow label="Poids" value={formatMb(asset.fileSizeMb)} />
+          <MetaRow label={t("library.details.weight")} value={formatMb(asset.fileSizeMb, locale, t)} />
         ) : null}
         {asset.durationSec !== undefined ? (
-          <MetaRow label="Durée" value={formatDuration(asset.durationSec)} />
+          <MetaRow label={t("library.details.duration")} value={formatDuration(asset.durationSec)} />
         ) : null}
-        <MetaRow label="Source" value={sourceMeta[asset.source].label} />
-        <MetaRow label={sourceMeta[asset.source].verb} value={formatDate(asset.uploadedAt, tz)} />
+        <MetaRow label={t("library.details.source")} value={t(sourceMeta[asset.source].labelKey)} />
+        <MetaRow
+          label={t(sourceMeta[asset.source].verbKey)}
+          value={f.date(asset.uploadedAt, tz)}
+        />
       </dl>
 
       <div className="space-y-1.5">
-        <Label htmlFor="asset-alt">Texte alternatif</Label>
+        <Label htmlFor="asset-alt">{t("library.details.altLabel")}</Label>
         <Textarea
           id="asset-alt"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Décris le visuel pour l'accessibilité et le SEO social…"
+          placeholder={t("library.details.altPlaceholder")}
           className="min-h-20"
         />
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
-            Envoyé à Instagram et Facebook si la plateforme le supporte.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("library.details.altHint")}</p>
           <Button size="sm" disabled={!dirty} onClick={() => onSaveAlt(asset.id, draft)}>
-            Enregistrer (aperçu)
+            {t("library.details.save")}
           </Button>
         </div>
       </div>
@@ -83,13 +92,11 @@ export function AssetDetails({
       <div className="space-y-1.5">
         <h4 className="text-sm font-medium">
           {usages.length > 0
-            ? `Utilisé dans ${usages.length} contenu${usages.length > 1 ? "s" : ""}`
-            : "Jamais utilisé"}
+            ? t("library.details.usedIn", { count: usages.length })
+            : t("library.details.neverUsed")}
         </h4>
         {usages.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Média inédit — idéal pour le prochain batch de contenu.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("library.details.unusedHint")}</p>
         ) : (
           <ul className="divide-y rounded-lg border">
             {usages.map((u) => (
@@ -98,7 +105,7 @@ export function AssetDetails({
                   href={u.href}
                   className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-muted/50"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm">{u.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{pick(u.title, locale)}</span>
                   <ContentStatusBadge status={u.status} />
                   <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </Link>
@@ -109,8 +116,7 @@ export function AssetDetails({
         {publishedUse ? (
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <ArchiveRestore className="mt-px size-3.5 shrink-0" aria-hidden />
-            En réel, l'original est purgé 7 jours après publication : seule la miniature reste et
-            réutiliser ce média demandera un re-téléversement.
+            {t("library.details.purgeNote")}
           </p>
         ) : null}
       </div>

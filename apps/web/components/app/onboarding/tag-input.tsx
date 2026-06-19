@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 
 // Saisie de tags (mots interdits, etc.) : ajout par Entrée ou virgule,
 // suppression au clic. Dédoublonnage insensible à la casse.
@@ -23,6 +24,7 @@ export function TagInput({
   values: string[]
   onChange: (values: string[]) => void
 }) {
+  const t = useT()
   const id = useId()
   const [draft, setDraft] = useState("")
 
@@ -58,7 +60,13 @@ export function TagInput({
           }}
           placeholder={placeholder}
         />
-        <Button type="button" variant="outline" size="icon" onClick={add} aria-label="Ajouter">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={add}
+          aria-label={t("onboarding.listEditor.add")}
+        >
           <Plus />
         </Button>
       </div>
@@ -71,7 +79,7 @@ export function TagInput({
                 <button
                   type="button"
                   onClick={() => remove(value)}
-                  aria-label={`Retirer ${value}`}
+                  aria-label={t("onboarding.listEditor.removeAria", { value })}
                   className="rounded-full p-0.5 hover:bg-foreground/10"
                 >
                   <X className="size-3" />

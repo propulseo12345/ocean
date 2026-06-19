@@ -1,6 +1,91 @@
 import type { performanceFr } from "./performance.fr"
+
 // Namespace i18n « performance » (EN) — doit refléter les clés de performanceFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const performanceEn: Widen<typeof performanceFr> = {
-  performance: {},
+  performance: {
+    title: "Performance",
+    subtitle: "Audience and engagement overview, by period.",
+    periodAriaLabel: "Analysis period",
+    generateReport: "Generate client report",
+    mockNotice:
+      "Sample data. Real statistics (reach, engagement, time slots) will appear once accounts are connected — some metrics require Meta advanced access, and TikTok in draft mode provides no statistics via the API.",
+    period: {
+      "30d": "Last 30 days",
+      month: "Current month",
+      "90d": "Last 90 days",
+      short30d: "30d",
+      shortMonth: "Current month",
+      short90d: "90d",
+      prev30d: "previous 30 days",
+      prevMonth: "previous month",
+      prev90d: "previous 90 days",
+    },
+    kpi: {
+      reach: "Total reach",
+      engagement: "Engagements",
+      rate: "Engagement rate",
+      count: "Posts",
+      vsPrevious: "vs {previous}",
+    },
+    trend: {
+      title: "Trend over the period",
+      reach: "Reach",
+      engagement: "Engagements",
+      chartAria: "Reach and engagement trend over the period",
+      tableCaption: "Reach and engagement per interval",
+      colInterval: "Interval",
+      colReach: "Reach",
+      colEngagement: "Engagements",
+      bucketLabel: "P{index}",
+      barTitle: "{label} · {value}",
+    },
+    pillar: {
+      title: "Pillar breakdown",
+      description: "Share of engagement by content pillar — the vertical marker shows the target.",
+      postsAndShare: "{posts} posts · {share}",
+      targetMarker: "Target {target}",
+      targetAbove: "Target {target} · above goal",
+      targetBelow: "Target {target} · below goal",
+    },
+    posts: {
+      topTitle: "Top posts",
+      flopTitle: "Room to improve",
+      reachSuffix: "{value} reach",
+      engagementSuffix: "{value} eng.",
+      openInStudio: 'Open "{title}" in the studio',
+      viewOnInstagram: 'View "{title}" on Instagram',
+      importedTitle: "Post from {date}",
+    },
+    platform: {
+      title: "Platform comparison",
+      colPlatform: "Platform",
+      colPosts: "Posts",
+      colReach: "Reach",
+      colEngagement: "Engagements",
+      colRate: "Rate",
+      notMeasurable: "Not measurable — {platform} in draft mode",
+      noteDraft: "Draft — no statistics via the API",
+      noteFbLimited: "Limited Pages metrics (advanced access required)",
+    },
+    bestTimes: {
+      title: "Best time slots",
+      description: "Estimated from your publishing history — best estimated slot: ",
+      hour: "{hour}:00",
+      slotLabel: "{day} {hour}:00",
+      cellTitle: "{day} {hour}:00 — estimated affinity {affinity}%",
+      cellSr: "{day} {hour}:00, affinity {affinity}%",
+      disclaimer:
+        "Indicative only: no API guarantees these slots. Refine them with real account feedback once statistics are connected.",
+    },
+    weekday: {
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+      sun: "Sun",
+    },
+  },
 }

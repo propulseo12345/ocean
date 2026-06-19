@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import { useT } from "@/lib/i18n"
 import type { Client, LibraryAsset } from "@/lib/mocks/types"
 import type { SpecIssue } from "@/lib/specs"
 import { AssetGrid } from "./asset-grid"
@@ -37,6 +38,7 @@ export function LibraryWorkspace({
   initialAssets: LibraryAsset[]
   contentRefs: ContentRefMap
 }) {
+  const t = useT()
   const lib = useLibraryAssets(client, initialAssets)
   const select = useMultiSelect()
   const [filters, setFilters] = useState<LibraryFilters>(EMPTY_FILTERS)
@@ -94,7 +96,7 @@ export function LibraryWorkspace({
     lib.removeAssets([asset.id])
     setDeleteTarget(null)
     if (sheetId === asset.id) setSheetId(null)
-    toast.success("Média supprimé (aperçu)")
+    toast.success(t("library.toast.deleted"))
   }
 
   function requestDelete(asset: LibraryAsset) {
@@ -108,30 +110,24 @@ export function LibraryWorkspace({
     const keptCount = selected.length - removable.length
     select.clear()
     if (removable.length === 0) {
-      toast.warning("Aucun média supprimé", {
-        description: "Tous les médias sélectionnés sont utilisés dans des contenus.",
+      toast.warning(t("library.toast.noneDeletedTitle"), {
+        description: t("library.toast.noneDeletedDesc"),
       })
       return
     }
     lib.removeAssets(removable.map((a) => a.id))
-    toast.success(
-      `${removable.length} média${removable.length > 1 ? "s" : ""} supprimé${removable.length > 1 ? "s" : ""} (aperçu)`,
-      {
-        description:
-          keptCount > 0
-            ? `${keptCount} conservé${keptCount > 1 ? "s" : ""} : utilisé${keptCount > 1 ? "s" : ""} dans des contenus.`
-            : undefined,
-      }
-    )
+    toast.success(t("library.toast.batchDeleted", { count: removable.length }), {
+      description: keptCount > 0 ? t("library.toast.batchKept", { count: keptCount }) : undefined,
+    })
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-0.5">
-          <h2 className="font-heading text-lg font-semibold">Médiathèque</h2>
+          <h2 className="font-heading text-lg font-semibold">{t("library.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            La banque de médias de {client.name} — le composer pioche dedans sans re-upload.
+            {t("library.subtitle", { name: client.name })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -142,15 +138,15 @@ export function LibraryWorkspace({
             onClick={toggleSelectMode}
           >
             <SquareDashedMousePointer />
-            Sélectionner
+            {t("library.select")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setDepositOpen(true)}>
             <Link2 />
-            Lien de dépôt client
+            {t("library.depositLink")}
           </Button>
           <Button size="sm" onClick={() => setUploadOpen(true)}>
             <ImagePlus />
-            Ajouter des médias
+            {t("library.addMedia")}
           </Button>
         </div>
       </div>
@@ -194,12 +190,10 @@ export function LibraryWorkspace({
         <LibrarySelectionBar
           selectedIds={select.selectedIds}
           onClear={select.clear}
-          onDownload={(ids) =>
-            toast.info(`${ids.length} média${ids.length > 1 ? "s" : ""} en téléchargement (aperçu)`)
-          }
+          onDownload={(ids) => toast.info(t("library.toast.downloading", { count: ids.length }))}
           onTag={(ids) =>
-            toast.info("Étiquettes (aperçu)", {
-              description: `Les tags libres arriveront ici pour ${ids.length} média${ids.length > 1 ? "s" : ""}.`,
+            toast.info(t("library.toast.tagTitle"), {
+              description: t("library.toast.tagDesc", { count: ids.length }),
             })
           }
           onDelete={batchDelete}

@@ -9,8 +9,7 @@ import { QuotaGauge } from "@/components/shared/quota-gauge"
 import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { formatDateTime, formatFollowers } from "@/lib/format"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useFormat, useLabels, useT } from "@/lib/i18n"
 import type {
   Client,
   ContentTarget,
@@ -42,23 +41,25 @@ export function ContentTargets({
   contentError?: string
   editHref: string
 }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl = useLabels()
   const [overrides, setOverrides] = useState<Record<string, TargetStatus>>({})
 
-  const statusOf = (t: ContentTarget): TargetStatus => overrides[t.id] ?? t.status
-  const showIdempotence = targets.some((t) => statusOf(t) === "failed")
+  const statusOf = (tg: ContentTarget): TargetStatus => overrides[tg.id] ?? tg.status
+  const showIdempotence = targets.some((tg) => statusOf(tg) === "failed")
 
   function retry(target: ContentTarget) {
     setOverrides((prev) => ({ ...prev, [target.id]: "queued" }))
-    toast.success("Cible relancée", {
-      description:
-        "Replacée en file (aperçu) — seule cette cible sera republiée, jamais celles déjà publiées.",
+    toast.success(t("studio.targets.retried"), {
+      description: t("studio.targets.retriedDesc"),
     })
   }
 
   function skip(target: ContentTarget) {
     setOverrides((prev) => ({ ...prev, [target.id]: "skipped" }))
-    toast("Cible ignorée", {
-      description: "Marquée « Ignoré » (aperçu) — le contenu reste publié sur les autres cibles.",
+    toast(t("studio.targets.skipped"), {
+      description: t("studio.targets.skippedDesc"),
     })
   }
 
@@ -80,21 +81,26 @@ export function ContentTargets({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
-                    <span className="truncate">{platformMeta[target.platform].label}</span>
+                    <span className="truncate">{lbl.platform(target.platform)}</span>
                     {target.captionOverride ? (
                       <Badge variant="outline" className="h-4 px-1.5 text-[10px] font-normal">
-                        Légende déclinée
+                        {t("studio.targets.captionOverride")}
                       </Badge>
                     ) : null}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {account
-                      ? `@${account.username} · ${formatFollowers(account.followers)} abonnés`
-                      : "Canal manuel — publication assistée"}
+                      ? t("studio.targets.followers", {
+                          username: account.username,
+                          count: f.followers(account.followers),
+                        })
+                      : t("studio.targets.manualChannel")}
                   </p>
                   {target.publishedAt ? (
                     <p className="truncate text-xs text-muted-foreground tabular-nums">
-                      Publié le {formatDateTime(target.publishedAt, client.timezone)}
+                      {t("studio.targets.publishedOn", {
+                        date: f.dateTime(target.publishedAt, client.timezone),
+                      })}
                     </p>
                   ) : null}
                 </div>
@@ -107,14 +113,14 @@ export function ContentTargets({
                     render={<a href={target.permalink} target="_blank" rel="noreferrer" />}
                   >
                     <ExternalLink />
-                    Voir
+                    {t("studio.targets.view")}
                   </Button>
                 ) : null}
               </div>
 
               {unhealthy && upcoming ? (
                 <p className="text-[11px] font-medium text-warning">
-                  La publication échouera tant que le compte n'est pas reconnecté.
+                  {t("studio.targets.unhealthyWarning")}
                 </p>
               ) : null}
 
@@ -136,8 +142,7 @@ export function ContentTargets({
       {showIdempotence ? (
         <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
           <ShieldCheck className="mt-px size-3.5 shrink-0" />
-          Règle d'idempotence : une cible déjà publiée n'est jamais republiée — la relance ne
-          concerne que les cibles en échec.
+          {t("studio.targets.idempotence")}
         </p>
       ) : null}
     </div>

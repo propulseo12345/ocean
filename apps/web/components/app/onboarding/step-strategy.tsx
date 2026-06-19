@@ -2,7 +2,7 @@
 
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { approvalModeMeta } from "@/lib/mocks/labels"
+import { type MessageKey, useLabels, useT } from "@/lib/i18n"
 import type { ApprovalMode } from "@/lib/mocks/types"
 import { PillarEditor } from "./pillar-editor"
 import { SlotEditor } from "./slot-editor"
@@ -11,19 +11,10 @@ import type { ClientDraft } from "./wizard-types"
 // Étape 4 — stratégie de contenu : piliers + jauge de mix, créneaux récurrents,
 // niveau de validation client (= approvalMode, avec explication de chaque mode).
 
-const APPROVAL_MODES: { value: ApprovalMode; help: string }[] = [
-  {
-    value: "required",
-    help: "Chaque publication passe par le portail : rien ne part sans le feu vert du client.",
-  },
-  {
-    value: "optional",
-    help: "Vous décidez au cas par cas si une publication a besoin d'une validation.",
-  },
-  {
-    value: "auto",
-    help: "Les publications partent directement à l'heure prévue, sans étape de validation.",
-  },
+const APPROVAL_MODES: { value: ApprovalMode; helpKey: MessageKey }[] = [
+  { value: "required", helpKey: "onboarding.strategy.approvalHelp.required" },
+  { value: "optional", helpKey: "onboarding.strategy.approvalHelp.optional" },
+  { value: "auto", helpKey: "onboarding.strategy.approvalHelp.auto" },
 ]
 
 function Section({
@@ -53,11 +44,13 @@ export function StepStrategy({
   draft: ClientDraft
   patch: (partial: Partial<ClientDraft>) => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
   return (
     <div className="space-y-6">
       <Section
-        title="Piliers de contenu"
-        description="Les grands thèmes éditoriaux du client, avec une part cible — pour garder un mois équilibré."
+        title={t("onboarding.strategy.pillarsTitle")}
+        description={t("onboarding.strategy.pillarsDescription")}
       >
         <PillarEditor
           pillars={draft.pillars}
@@ -67,20 +60,20 @@ export function StepStrategy({
       </Section>
 
       <Section
-        title="Créneaux de publication récurrents"
-        description="Les rendez-vous convenus avec le client (jour, heure locale, plateformes)."
+        title={t("onboarding.strategy.slotsTitle")}
+        description={t("onboarding.strategy.slotsDescription")}
       >
         <SlotEditor slots={draft.slots} onChange={(slots) => patch({ slots })} />
       </Section>
 
       <Section
-        title="Niveau de validation"
-        description="Comment les publications sont validées avant de partir."
+        title={t("onboarding.strategy.approvalTitle")}
+        description={t("onboarding.strategy.approvalDescription")}
       >
         <RadioGroup
           value={draft.approvalMode}
           onValueChange={(v) => patch({ approvalMode: v as ApprovalMode })}
-          aria-label="Niveau de validation du client"
+          aria-label={t("onboarding.strategy.approvalLabel")}
           className="gap-2"
         >
           {APPROVAL_MODES.map((mode) => (
@@ -90,10 +83,8 @@ export function StepStrategy({
             >
               <RadioGroupItem value={mode.value} className="mt-0.5" />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">
-                  {approvalModeMeta[mode.value].label}
-                </span>
-                <span className="block text-xs text-muted-foreground">{mode.help}</span>
+                <span className="block text-sm font-medium">{lbl.approvalMode(mode.value)}</span>
+                <span className="block text-xs text-muted-foreground">{t(mode.helpKey)}</span>
               </span>
             </Label>
           ))}

@@ -16,7 +16,7 @@ import { PlatformIcons } from "@/components/shared/platform-badge"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { formatDateTime } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -68,9 +68,13 @@ export function ContentCard({
   reviewMeta: CardReviewMeta
   onRemind: () => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const cover = content.media[0]
-  const platforms = content.targets.map((t) => t.platform)
+  const platforms = content.targets.map((tg) => tg.platform)
   const labels = content.labels ?? []
+  const title = pick(content.title, locale)
   const late = isOverdue(content)
 
   return (
@@ -94,14 +98,14 @@ export function ContentCard({
         <Checkbox
           checked={selected}
           onCheckedChange={onToggleSelect}
-          aria-label={`Sélectionner « ${content.title} »`}
+          aria-label={t("studio.card.selectAria", { title })}
         />
       </span>
 
       {cover ? (
         <MediaThumb
           media={cover}
-          alt={content.title}
+          alt={title}
           count={content.media.length}
           className="aspect-[4/3]"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
@@ -115,7 +119,7 @@ export function ContentCard({
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
         <div className="flex items-start justify-between gap-2">
           <p className="line-clamp-2 text-sm font-medium leading-snug group-hover:underline">
-            {content.title}
+            {title}
           </p>
           {content.commentsCount > 0 ? (
             <span className="inline-flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground tabular-nums">
@@ -130,29 +134,31 @@ export function ContentCard({
           <PlatformIcons platforms={platforms} />
         </div>
 
-        {reviewMeta.waitLabel ||
+        {reviewMeta.waitDays !== null ||
         content.status === "changes_requested" ||
         content.approvalStale ||
         late ? (
           <div className="flex flex-wrap items-center gap-1">
-            {reviewMeta.waitLabel ? (
+            {reviewMeta.waitDays !== null ? (
               <MetaBadge tone="warning" icon={Hourglass}>
-                {reviewMeta.waitLabel}
+                {reviewMeta.waitDays >= 1
+                  ? t("studio.card.waitSince", { days: reviewMeta.waitDays })
+                  : t("studio.card.sentToday")}
               </MetaBadge>
             ) : null}
             {content.status === "changes_requested" ? (
               <MetaBadge tone="warning" icon={Undo2}>
-                Retours à traiter
+                {t("studio.card.changesToHandle")}
               </MetaBadge>
             ) : null}
             {content.approvalStale ? (
               <MetaBadge tone="warning" icon={TriangleAlert}>
-                Approbation périmée
+                {t("studio.card.approvalStale")}
               </MetaBadge>
             ) : null}
             {late ? (
               <MetaBadge tone="danger" icon={AlarmClock}>
-                En retard
+                {t("studio.card.late")}
               </MetaBadge>
             ) : null}
           </div>
@@ -160,19 +166,22 @@ export function ContentCard({
 
         {labels.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1">
-            {labels.map((label) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
-              >
+            {labels.map((label) => {
+              const text = pick(label, locale)
+              return (
                 <span
-                  aria-hidden
-                  className="size-1.5 rounded-full"
-                  style={{ backgroundColor: labelColorVar(label) }}
-                />
-                {label}
-              </span>
-            ))}
+                  key={text}
+                  className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
+                >
+                  <span
+                    aria-hidden
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: labelColorVar(text) }}
+                  />
+                  {text}
+                </span>
+              )
+            })}
           </div>
         ) : null}
 
@@ -185,7 +194,7 @@ export function ContentCard({
           >
             <Button variant="outline" size="xs" onClick={onRemind}>
               <BellRing />
-              Relancer le client
+              {t("studio.card.remindClient")}
             </Button>
           </span>
         ) : null}
@@ -200,17 +209,17 @@ export function ContentCard({
               )}
             >
               {content.scheduledAt ? (
-                formatDateTime(content.scheduledAt, client.timezone)
+                f.dateTime(content.scheduledAt, client.timezone)
               ) : (
                 <>
                   <CalendarOff className="size-3.5" />
-                  Sans date
+                  {t("studio.card.noDate")}
                 </>
               )}
             </span>
             <CardLabelPopover
-              title={content.title}
-              labels={labels}
+              title={title}
+              labels={labels.map((l) => pick(l, locale))}
               allLabels={allLabels}
               onApply={onLabelsChange}
             />

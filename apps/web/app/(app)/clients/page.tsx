@@ -5,10 +5,14 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PageHeader } from "@/components/shared/page-header"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Button } from "@/components/ui/button"
+import { getT } from "@/lib/i18n/server"
 import { getClients, getContentItems, getSocialAccounts } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Clients" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.listTitle") }
+}
 
 function clientStats(clientId: string) {
   const items = getContentItems(clientId)
@@ -21,19 +25,20 @@ function clientStats(clientId: string) {
   }
 }
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  const t = await getT()
   const clients = getClients()
   const archived = getClients(true).filter((c) => c.archivedAt)
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Clients"
-        description="Tes espaces de travail. Chaque client est isolé : contenus, comptes, validations."
+        title={t("clients.listTitle")}
+        description={t("clients.listDescription")}
         actions={
           <Button render={<Link href={routes.clientNew} />}>
             <Plus />
-            Nouveau client
+            {t("clients.newClient")}
           </Button>
         }
       />
@@ -71,9 +76,9 @@ export default function ClientsPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-4 text-center">
-                <Stat value={s.scheduled} label="Programmés" />
-                <Stat value={s.review} label="En revue" />
-                <Stat value={s.published} label="Publiés" />
+                <Stat value={s.scheduled} label={t("clients.statScheduled")} />
+                <Stat value={s.review} label={t("clients.statReview")} />
+                <Stat value={s.published} label={t("clients.statPublished")} />
               </div>
             </Link>
           )
@@ -82,7 +87,9 @@ export default function ClientsPage() {
 
       {archived.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="font-heading text-sm font-semibold text-muted-foreground">Archivés</h2>
+          <h2 className="font-heading text-sm font-semibold text-muted-foreground">
+            {t("clients.archivedTitle")}
+          </h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {archived.map((c) => (
               <div
@@ -92,7 +99,7 @@ export default function ClientsPage() {
                 <ClientAvatar client={c} size={36} className="rounded-lg grayscale" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">Collaboration archivée</p>
+                  <p className="text-xs text-muted-foreground">{t("clients.archivedCollab")}</p>
                 </div>
               </div>
             ))}

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useT } from "@/lib/i18n"
 import { IG_IMAGE_MAX_MB, REEL_MAX_MB } from "@/lib/specs"
 import { cn } from "@/lib/utils"
 
@@ -25,6 +26,7 @@ export function UploadDialog({
   /** Ajoute les assets fictifs (état local) et affiche le toast. */
   onSimulate: () => void
 }) {
+  const t = useT()
   const [dragging, setDragging] = useState(false)
 
   function simulate() {
@@ -37,10 +39,8 @@ export function UploadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ajouter des médias</DialogTitle>
-          <DialogDescription>
-            Aucun fichier n'est réellement téléversé pendant la preview — le clic simule l'ajout.
-          </DialogDescription>
+          <DialogTitle>{t("library.upload.title")}</DialogTitle>
+          <DialogDescription>{t("library.upload.description")}</DialogDescription>
         </DialogHeader>
 
         <button
@@ -65,25 +65,22 @@ export function UploadDialog({
           <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <CloudUpload className="size-5" aria-hidden />
           </span>
-          <span className="text-sm font-medium">Glisse tes photos et vidéos ici</span>
-          <span className="text-xs text-muted-foreground">
-            ou clique pour parcourir (simulation d'ajout)
-          </span>
+          <span className="text-sm font-medium">{t("library.upload.dropTitle")}</span>
+          <span className="text-xs text-muted-foreground">{t("library.upload.dropHint")}</span>
         </button>
 
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li className="flex items-start gap-1.5">
             <FileImage className="mt-px size-3.5 shrink-0" aria-hidden />
-            Images Instagram : JPEG ≤ {IG_IMAGE_MAX_MB} Mo, ratio 4:5 à 1.91:1 — conversion
-            automatique des PNG.
+            {t("library.upload.specImage", { max: IG_IMAGE_MAX_MB })}
           </li>
           <li className="flex items-start gap-1.5">
             <Smartphone className="mt-px size-3.5 shrink-0" aria-hidden />
-            HEIC iPhone : converti en JPEG à l'import, rien à faire de ton côté.
+            {t("library.upload.specHeic")}
           </li>
           <li className="flex items-start gap-1.5">
             <Film className="mt-px size-3.5 shrink-0" aria-hidden />
-            Reels : MP4 ou MOV, 3 s à 15 min, ≤ {REEL_MAX_MB} Mo.
+            {t("library.upload.specReel", { max: REEL_MAX_MB })}
           </li>
         </ul>
       </DialogContent>

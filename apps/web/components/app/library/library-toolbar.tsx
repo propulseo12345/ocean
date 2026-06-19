@@ -11,12 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useT } from "@/lib/i18n"
 import type { LibraryAssetSource } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import {
   EMPTY_FILTERS,
   type LibraryFilters,
-  SORT_LABELS,
+  SORT_LABEL_KEYS,
   type SortKey,
   type TypeFilter,
   type UsageFilter,
@@ -52,14 +53,14 @@ function Chip({
 }
 
 const SORT_KEYS: SortKey[] = ["recent", "weight", "usage"]
-const TYPES: Array<{ value: TypeFilter; label: string }> = [
-  { value: "image", label: "Images" },
-  { value: "video", label: "Vidéos" },
+const TYPES: Array<{ value: TypeFilter; labelKey: "library.toolbar.typeImage" | "library.toolbar.typeVideo" }> = [
+  { value: "image", labelKey: "library.toolbar.typeImage" },
+  { value: "video", labelKey: "library.toolbar.typeVideo" },
 ]
 const SOURCES: LibraryAssetSource[] = ["upload", "depot_client", "import"]
-const USAGES: Array<{ value: UsageFilter; label: string }> = [
-  { value: "used", label: "Utilisés" },
-  { value: "unused", label: "Inédits" },
+const USAGES: Array<{ value: UsageFilter; labelKey: "library.toolbar.usageUsed" | "library.toolbar.usageUnused" }> = [
+  { value: "used", labelKey: "library.toolbar.usageUsed" },
+  { value: "unused", labelKey: "library.toolbar.usageUnused" },
 ]
 
 export function LibraryToolbar({
@@ -73,6 +74,7 @@ export function LibraryToolbar({
   onFilters: (next: LibraryFilters) => void
   onSort: (key: SortKey) => void
 }) {
+  const t = useT()
   const set = (patch: Partial<LibraryFilters>) => onFilters({ ...filters, ...patch })
   const hasFilter =
     filters.type !== "all" ||
@@ -93,21 +95,21 @@ export function LibraryToolbar({
             type="search"
             value={filters.search}
             onChange={(e) => set({ search: e.target.value })}
-            placeholder="Rechercher (alt text, nom de fichier)…"
-            aria-label="Rechercher un média"
+            placeholder={t("library.toolbar.searchPlaceholder")}
+            aria-label={t("library.toolbar.searchAria")}
             className="pl-8"
           />
         </div>
         <div className="flex items-center gap-1.5">
           <ArrowDownWideNarrow className="size-3.5 text-muted-foreground" aria-hidden />
           <Select value={sort} onValueChange={(value) => onSort(value as SortKey)}>
-            <SelectTrigger size="sm" aria-label="Trier les médias">
+            <SelectTrigger size="sm" aria-label={t("library.sort.ariaLabel")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {SORT_KEYS.map((key) => (
                 <SelectItem key={key} value={key}>
-                  {SORT_LABELS[key]}
+                  {t(SORT_LABEL_KEYS[key])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -117,15 +119,15 @@ export function LibraryToolbar({
 
       <div className="flex flex-wrap items-center gap-1.5">
         <ListFilter className="size-3.5 text-muted-foreground" aria-hidden />
-        <span className="sr-only">Filtres de la médiathèque</span>
+        <span className="sr-only">{t("library.toolbar.filtersLabel")}</span>
 
-        {TYPES.map((t) => (
+        {TYPES.map((type) => (
           <Chip
-            key={t.value}
-            pressed={filters.type === t.value}
-            onClick={() => set({ type: filters.type === t.value ? "all" : t.value })}
+            key={type.value}
+            pressed={filters.type === type.value}
+            onClick={() => set({ type: filters.type === type.value ? "all" : type.value })}
           >
-            {t.label}
+            {t(type.labelKey)}
           </Chip>
         ))}
 
@@ -137,7 +139,7 @@ export function LibraryToolbar({
             pressed={filters.source === s}
             onClick={() => set({ source: filters.source === s ? "all" : s })}
           >
-            {sourceMeta[s].label}
+            {t(sourceMeta[s].labelKey)}
           </Chip>
         ))}
 
@@ -149,7 +151,7 @@ export function LibraryToolbar({
             pressed={filters.usage === u.value}
             onClick={() => set({ usage: filters.usage === u.value ? "all" : u.value })}
           >
-            {u.label}
+            {t(u.labelKey)}
           </Chip>
         ))}
 
@@ -157,13 +159,13 @@ export function LibraryToolbar({
           pressed={filters.specs === "issues"}
           onClick={() => set({ specs: filters.specs === "issues" ? "all" : "issues" })}
         >
-          Hors specs IG
+          {t("library.toolbar.offSpecIg")}
         </Chip>
 
         {hasFilter ? (
           <Button variant="ghost" size="xs" onClick={() => onFilters(EMPTY_FILTERS)}>
             <X />
-            Effacer
+            {t("library.toolbar.clear")}
           </Button>
         ) : null}
       </div>

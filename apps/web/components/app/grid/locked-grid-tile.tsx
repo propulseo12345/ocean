@@ -9,6 +9,7 @@ import {
   TileInfoButton,
   TileQuickView,
 } from "@/components/app/grid/tile-quick-view"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 // Tuile verrouillée (publié / importé) : non draggable, lecture seule.
@@ -25,6 +26,7 @@ export function LockedGridTile({
   finalRender: boolean
   ctx: QuickViewCtx
 }) {
+  const t = useT()
   const { setNodeRef, isOver, active } = useDroppable({
     id: `locked_${tile.id}`,
     data: { locked: true },
@@ -40,14 +42,18 @@ export function LockedGridTile({
         href={tile.permalink}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Voir ${tile.title} sur Instagram`}
+        aria-label={t("grid.lockedTile.viewOnInstagram", { title: tile.title })}
         className={linkClass}
         draggable={false}
       >
         {inner}
       </a>
     ) : tile.href ? (
-      <Link href={tile.href} aria-label={`Ouvrir ${tile.title}`} className={linkClass}>
+      <Link
+        href={tile.href}
+        aria-label={t("grid.lockedTile.open", { title: tile.title })}
+        className={linkClass}
+      >
         {inner}
       </Link>
     ) : (

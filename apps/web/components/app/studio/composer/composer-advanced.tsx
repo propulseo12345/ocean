@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 import { platformMeta } from "@/lib/mocks/labels"
 import type { Platform } from "@/lib/mocks/types"
 import type { ComposerDraft } from "./composer-types"
@@ -27,12 +28,13 @@ export function ComposerAdvanced({
   platforms: Platform[]
   onPatch: (partial: Partial<ComposerDraft>) => void
 }) {
+  const t = useT()
   if (platforms.length === 0) return null
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Options avancées par plateforme</CardTitle>
+        <CardTitle>{t("composer.advanced.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <Accordion>
@@ -47,18 +49,17 @@ export function ComposerAdvanced({
               <AccordionContent className="space-y-2">
                 <Label htmlFor="composer-ig-location" className="gap-1.5 text-xs">
                   <MapPin className="size-3.5" />
-                  Lieu (géotag)
+                  {t("composer.advanced.igLocation")}
                 </Label>
                 <Input
                   id="composer-ig-location"
                   value={draft.igLocation}
                   onChange={(e) => onPatch({ igLocation: e.target.value })}
-                  placeholder="Ex. : Lille, France"
+                  placeholder={t("composer.advanced.igLocationPlaceholder")}
                 />
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Info className="mt-px size-3.5 shrink-0" />
-                  Identification de comptes et posts collab indisponibles au MVP (variante API
-                  Instagram Login).
+                  {t("composer.advanced.igHint")}
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -75,7 +76,7 @@ export function ComposerAdvanced({
               <AccordionContent className="space-y-2">
                 <Label htmlFor="composer-fb-link" className="gap-1.5 text-xs">
                   <LinkIcon className="size-3.5" />
-                  Lien sortant
+                  {t("composer.advanced.fbLink")}
                 </Label>
                 <Input
                   id="composer-fb-link"
@@ -86,7 +87,7 @@ export function ComposerAdvanced({
                 />
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Info className="mt-px size-3.5 shrink-0" />
-                  Affiché en aperçu de lien sous le post Facebook.
+                  {t("composer.advanced.fbHint")}
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -103,9 +104,7 @@ export function ComposerAdvanced({
               <AccordionContent>
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Info className="mt-px size-3.5 shrink-0" />
-                  Publication en brouillon : confidentialité, duo/collage et commentaires se règlent
-                  dans l'app TikTok à la finalisation. Tu recevras une notification à l'heure
-                  programmée avec la légende à coller.
+                  {t("composer.advanced.tiktokHint")}
                 </p>
               </AccordionContent>
             </AccordionItem>

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { useT } from "@/lib/i18n"
 import { DEMO_REVIEWER_CLIENT_ID } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { StepAccounts } from "./step-accounts"
@@ -23,27 +24,19 @@ import {
   type WizardStepId,
 } from "./wizard-types"
 
-const STEPS: StepDef[] = [
-  { id: "identity", label: "Identité" },
-  { id: "accounts", label: "Comptes" },
-  { id: "brand", label: "Marque" },
-  { id: "strategy", label: "Stratégie" },
-  { id: "review", label: "Récapitulatif" },
-]
+const STEP_IDS: WizardStepId[] = ["identity", "accounts", "brand", "strategy", "review"]
 
 // Étapes 3 et 4 sont facultatives : on peut les passer (« Passer cette étape »).
 const SKIPPABLE: WizardStepId[] = ["brand", "strategy"]
 
-const STEP_TITLES: Record<WizardStepId, { title: string; description: string }> = {
-  identity: { title: "Identité du client", description: "Les informations de base de la marque." },
-  accounts: { title: "Comptes sociaux", description: "Connectez les réseaux à gérer." },
-  brand: { title: "Identité de marque", description: "Palette, ton et garde-fous éditoriaux." },
-  strategy: { title: "Stratégie de contenu", description: "Piliers, créneaux et validation." },
-  review: { title: "Récapitulatif", description: "Vérifiez avant de créer le client." },
-}
-
 export function WizardShell() {
+  const t = useT()
   const router = useRouter()
+
+  const STEPS: StepDef[] = STEP_IDS.map((id) => ({
+    id,
+    label: t(`onboarding.steps.${id}`),
+  }))
   const [draft, setDraft] = useState<ClientDraft>(emptyDraft)
   const [index, setIndex] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
@@ -77,7 +70,7 @@ export function WizardShell() {
     // exige une identité valide — sinon on bloque et on revient à l'étape 0.
     if (clamped > index && !identityOk) {
       setShowIdentityError(true)
-      toast.warning("Renseignez le nom et l'identifiant du client pour continuer.")
+      toast.warning(t("onboarding.shell.identityRequired"))
       setIndex(0)
       firstFieldRef.current?.focus()
       return
@@ -89,7 +82,7 @@ export function WizardShell() {
   function next() {
     if (!canAdvance) {
       setShowIdentityError(true)
-      toast.warning("Renseignez le nom et l'identifiant du client pour continuer.")
+      toast.warning(t("onboarding.shell.identityRequired"))
       firstFieldRef.current?.focus()
       return
     }
@@ -98,14 +91,14 @@ export function WizardShell() {
 
   function create() {
     if (!reviewerEmailOk) {
-      toast.warning("Corrigez l'adresse email du valideur ou laissez le champ vide.")
+      toast.warning(t("onboarding.shell.reviewerEmailFix"))
       return
     }
-    const name = draft.name.trim() || "Le client"
-    toast.success(`${name} créé (aperçu)`, {
+    const name = draft.name.trim() || t("onboarding.shell.defaultClientName")
+    toast.success(t("onboarding.shell.clientCreated", { name }), {
       description: draft.reviewerEmail.trim()
-        ? "Invitation du valideur envoyée (aperçu) — aucune donnée enregistrée en preview."
-        : "Aucune donnée n'est enregistrée en preview — câblage Supabase à venir.",
+        ? t("onboarding.shell.clientCreatedWithReviewer")
+        : t("onboarding.shell.clientCreatedNoReviewer"),
     })
     router.push(routes.clientGrid(DEMO_REVIEWER_CLIENT_ID))
   }
@@ -120,7 +113,10 @@ export function WizardShell() {
           forwardLocked={!identityOk}
           onJump={goTo}
         />
-        <Progress value={((index + 1) / STEPS.length) * 100} aria-label="Progression" />
+        <Progress
+          value={((index + 1) / STEPS.length) * 100}
+          aria-label={t("onboarding.shell.progressLabel")}
+        />
       </div>
 
       <div className="space-y-1">
@@ -129,9 +125,11 @@ export function WizardShell() {
           tabIndex={-1}
           className="font-heading text-xl font-semibold tracking-tight outline-none"
         >
-          {STEP_TITLES[step.id].title}
+          {t(`onboarding.stepTitle.${step.id}`)}
         </h2>
-        <p className="text-sm text-muted-foreground">{STEP_TITLES[step.id].description}</p>
+        <p className="text-sm text-muted-foreground">
+          {t(`onboarding.stepDescription.${step.id}`)}
+        </p>
       </div>
 
       <div className="min-h-[18rem]">
@@ -151,32 +149,30 @@ export function WizardShell() {
       </div>
 
       {step.id === "identity" && showIdentityError && !identityOk ? (
-        <p className="text-sm text-destructive">
-          Le nom et l'identifiant sont requis pour passer à la suite.
-        </p>
+        <p className="text-sm text-destructive">{t("onboarding.shell.identityRequiredHint")}</p>
       ) : null}
 
       <div className="flex items-center justify-between gap-2 border-t pt-4">
         <Button variant="ghost" onClick={() => goTo(index - 1)} disabled={index === 0}>
           <ArrowLeft />
-          Précédent
+          {t("common.previous")}
         </Button>
 
         <div className="flex items-center gap-2">
           {SKIPPABLE.includes(step.id) ? (
             <Button variant="outline" onClick={() => goTo(index + 1)}>
               <SkipForward />
-              Passer
+              {t("onboarding.shell.skip")}
             </Button>
           ) : null}
           {isLast ? (
             <Button onClick={create} disabled={!reviewerEmailOk}>
               <Check />
-              Créer le client
+              {t("onboarding.shell.createClient")}
             </Button>
           ) : (
             <Button onClick={next} disabled={!canAdvance}>
-              Suivant
+              {t("common.next")}
               <ArrowRight />
             </Button>
           )}

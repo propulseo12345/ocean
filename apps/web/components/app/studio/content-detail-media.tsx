@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState } from "react"
 import { MediaCarousel } from "@/components/portal/media-carousel"
 import { Button } from "@/components/ui/button"
-import { formatRelative } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { Comment, ContentFormat, MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { DetailCoverDialog } from "./detail-cover-dialog"
@@ -13,6 +13,8 @@ import { DetailCoverDialog } from "./detail-cover-dialog"
 // Visionneuse studio : carrousel (composant du portail) + épingles
 // d'annotation posées par le client, synchronisées avec leurs remarques.
 // Pour les Reels : choix de la couverture (dialog, état local — aperçu).
+// Le titre arrive déjà résolu (string) ; les commentaires (L<string>) sont
+// résolus ici avec la locale active.
 
 export function ContentDetailMedia({
   media,
@@ -27,10 +29,13 @@ export function ContentDetailMedia({
   format: ContentFormat
   coverUrl?: string
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const [slideIndex, setSlideIndex] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [coverLabel, setCoverLabel] = useState(
-    coverUrl ? "Image dédiée" : "Première image de la vidéo"
+    coverUrl ? t("studio.media.coverDedicated") : t("studio.media.coverFirstFrame")
   )
   const [coverOpen, setCoverOpen] = useState(false)
 
@@ -44,7 +49,7 @@ export function ContentDetailMedia({
     return (
       <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/40 text-muted-foreground">
         <ImageOff className="size-7" />
-        <p className="text-sm">Aucun média</p>
+        <p className="text-sm">{t("studio.media.none")}</p>
       </div>
     )
   }
@@ -79,16 +84,15 @@ export function ContentDetailMedia({
             </span>
             <span className="text-xs font-medium">{active.authorName}</span>
             <span className="text-[11px] text-muted-foreground">
-              {formatRelative(active.createdAt)}
+              {f.relative(active.createdAt)}
             </span>
           </div>
-          <p className="mt-1 text-sm text-foreground/90">{active.body}</p>
+          <p className="mt-1 text-sm text-foreground/90">{pick(active.body, locale)}</p>
         </div>
       ) : pinned.length > 0 ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="size-3.5" />
-          {pinned.length} remarque{pinned.length > 1 ? "s" : ""} épinglée
-          {pinned.length > 1 ? "s" : ""} par le client — clique un repère pour la lire.
+          {t("studio.media.pinnedNote", { count: pinned.length })}
         </p>
       ) : null}
 
@@ -97,18 +101,18 @@ export function ContentDetailMedia({
           <span className="relative block h-12 w-9 shrink-0 overflow-hidden rounded-md border">
             <Image
               src={coverUrl ?? video.thumbUrl}
-              alt="Couverture du Reel"
+              alt={t("studio.media.reelCover")}
               fill
               sizes="36px"
               className="object-cover"
             />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium">Couverture du Reel</p>
+            <p className="text-xs font-medium">{t("studio.media.reelCover")}</p>
             <p className="truncate text-[11px] text-muted-foreground">{coverLabel}</p>
           </div>
           <Button size="xs" variant="outline" onClick={() => setCoverOpen(true)}>
-            Choisir
+            {t("studio.media.choose")}
           </Button>
           <DetailCoverDialog
             open={coverOpen}
@@ -136,10 +140,11 @@ function AnnotationPin({
   active: boolean
   onClick: () => void
 }) {
+  const t = useT()
   return (
     <button
       type="button"
-      aria-label={`Repère ${label}`}
+      aria-label={t("studio.media.pinAria", { label })}
       onClick={onClick}
       style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
       className={cn(

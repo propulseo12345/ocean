@@ -1,18 +1,20 @@
 import type { Metadata } from "next"
 import { LoginForm } from "@/components/auth/login-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getT } from "@/lib/i18n/server"
 
-export const metadata: Metadata = { title: "Connexion" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("auth.loginPage.metaTitle") }
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getT()
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Accéder à la démo</CardTitle>
-        <CardDescription>
-          Aperçu produit à données fictives. Entre en un clic, ou simule une connexion sans mot de
-          passe.
-        </CardDescription>
+        <CardTitle className="text-xl">{t("auth.loginPage.cardTitle")}</CardTitle>
+        <CardDescription>{t("auth.loginPage.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <LoginForm />

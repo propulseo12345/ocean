@@ -3,7 +3,9 @@ import { notFound } from "next/navigation"
 import { FeedGrid } from "@/components/app/grid/feed-grid"
 import type { GridTileData, PillarOption } from "@/components/app/grid/grid-types"
 import type { InstagramProfileData } from "@/components/app/grid/instagram-profile-header"
-import { formatDayMonth } from "@/lib/format"
+import type { Format, Locale, Translator } from "@/lib/i18n"
+import { pick } from "@/lib/i18n"
+import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import {
   getBrandKit,
   getClient,
@@ -19,9 +21,10 @@ import {
 import type { ContentItem, EngagementStats, ImportedPost, MediaAsset } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
-const HIGHLIGHT_LABELS = ["Nouveautés", "Coulisses", "Avis", "Équipe"]
-
-export const metadata: Metadata = { title: "Grille feed" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaGrid") }
+}
 
 // Les échecs, publications en cours et annulations restent VISIBLES dans la
 // grille (audit §1, P0) — seuls les contenus du portail disparaissaient avant.
@@ -72,7 +75,8 @@ function toContentTile(
   group: GridTileData["group"],
   dateIso: string | null,
   tz: string,
-  topId: string | undefined
+  topId: string | undefined,
+  locale: Locale
 ): GridTileData {
   const ig = c.targets.find((t) => t.platform === "instagram")
   return {
@@ -81,7 +85,7 @@ function toContentTile(
     media: c.media[0] ?? null,
     mediaCount: c.media.length,
     format: c.format,
-    title: c.title,
+    title: pick(c.title, locale),
     dateIso,
     tz,
     href: routes.content(c.clientId, c.id),
@@ -92,23 +96,29 @@ function toContentTile(
     pinned: c.pinned,
     excludedFromGrid: c.excludeFromGrid,
     coverUrl: c.coverUrl,
-    caption: c.caption,
+    caption: pick(c.caption, locale),
     commentsCount: c.commentsCount,
     approvalStale: c.approvalStale,
-    lastError: c.lastError,
+    lastError: c.lastError ? pick(c.lastError, locale) : undefined,
     metrics: metricsOf(c.id),
     isTopPost: topId === c.id,
   }
 }
 
-function toImportedTile(post: ImportedPost, tz: string, topId: string | undefined): GridTileData {
+function toImportedTile(
+  post: ImportedPost,
+  tz: string,
+  topId: string | undefined,
+  t: Translator,
+  f: Format
+): GridTileData {
   return {
     id: post.id,
     group: "imported",
     media: placeholderMedia(post),
     mediaCount: 1,
     format: post.mediaType === "video" ? "reel" : "post",
-    title: `Publication du ${formatDayMonth(post.publishedAt, tz)}`,
+    title: t("clients.importedPostTitle", { date: f.dayMonth(post.publishedAt, tz) }),
     dateIso: post.publishedAt,
     tz,
     permalink: post.permalink,
@@ -131,6 +141,9 @@ export default async function ClientGridPage({
   const { clientId } = await params
   const client = getClient(clientId)
   if (!client) notFound()
+  const t = await getT()
+  const f = await getFormat()
+  const locale = await getLocale()
   const tz = client.timezone
   const topId = getTopPosts(clientId, 1)[0]?.refId
 
@@ -139,18 +152,18 @@ export default async function ClientGridPage({
   // Zone planifiée (datée) : déplaçables + échecs/en cours/annulés visibles.
   const scheduled = items
     .filter((c) => PLANNED_STATUSES.includes(c.status) && c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId))
+    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, locale))
     .sort(byDateDesc)
 
   // Publiés via l'app — verrouillés, après le séparateur « Aujourd'hui ».
   const publishedAll = items
     .filter((c) => PUBLISHED_STATUSES.includes(c.status))
-    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId))
+    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId, locale))
     .sort(byDateDesc)
 
   // Feed réel importé — verrouillé, en queue.
   const importedPosts = getImportedPosts(clientId)
-  const importedAll = importedPosts.map((p) => toImportedTile(p, tz, topId)).sort(byDateDesc)
+  const importedAll = importedPosts.map((p) => toImportedTile(p, tz, topId, t, f)).sort(byDateDesc)
 
   // Épinglés (simulation) : remontés en tête de grille, comme sur le vrai profil.
   const pinned = [...publishedAll, ...importedAll].filter((t) => t.pinned).sort(byDateDesc)
@@ -160,28 +173,35 @@ export default async function ClientGridPage({
   // Étagère — idées / brouillons sans date (y compris sans média).
   const shelf = items
     .filter((c) => SHELF_STATUSES.includes(c.status) && !c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", null, tz, topId))
+    .map((c) => toContentTile(c, "scheduled", null, tz, topId, locale))
 
   const igAccount = getSocialAccounts(clientId).find((a) => a.platform === "instagram") ?? null
   const quota = igAccount ? getQuotaUsage(igAccount.id) : null
   const pillars: PillarOption[] = getPillars(clientId).map((p) => ({
     id: p.id,
-    label: p.name,
+    label: pick(p.name, locale),
     colorVar: p.colorVar,
   }))
+
+  const highlightLabels = [
+    t("clients.highlightNouveautes"),
+    t("clients.highlightCoulisses"),
+    t("clients.highlightAvis"),
+    t("clients.highlightEquipe"),
+  ]
 
   const profile: InstagramProfileData = {
     name: client.name,
     handle: igAccount?.username ?? client.handle,
-    category: client.category,
-    bio: client.bio,
+    category: pick(client.category, locale),
+    bio: pick(client.bio, locale),
     avatarUrl: importedPosts[0]?.thumbUrl ?? publishedAll[0]?.media?.thumbUrl ?? "",
     postCount: publishedAll.length + importedAll.length,
     followers: igAccount?.followers ?? 0,
     following: client.following,
     highlights: importedPosts
       .slice(0, 4)
-      .map((p, i) => ({ label: HIGHLIGHT_LABELS[i], cover: p.thumbUrl })),
+      .map((p, i) => ({ label: highlightLabels[i], cover: p.thumbUrl })),
   }
 
   return (

@@ -6,28 +6,41 @@ import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { type L, pick, useLocale, useT } from "@/lib/i18n"
 import type { BrandKit } from "@/lib/mocks/types"
 import { BannedWordsEditor } from "./banned-words-editor"
 import { arraysEqual, PaletteEditor } from "./palette-editor"
 import { SaveBar, SectionCard } from "./section-card"
 import { StringListEditor } from "./string-list-editor"
 
-const EMPTY_KIT = {
-  palette: [] as string[],
-  tone: "",
-  doList: [] as string[],
-  dontList: [] as string[],
-  bannedWords: [] as string[],
+interface ResolvedKit {
+  palette: string[]
+  tone: string
+  doList: string[]
+  dontList: string[]
+  bannedWords: string[]
 }
 
 export function SectionBrandKit({
-  clientId,
+  clientId: _clientId,
   brandKit,
 }: {
   clientId: string
   brandKit: BrandKit | undefined
 }) {
-  const base = brandKit ?? { clientId, ...EMPTY_KIT }
+  const t = useT()
+  const { locale } = useLocale()
+  const resolveList = (list: L<string>[] | undefined) =>
+    (list ?? []).map((item) => pick(item, locale))
+
+  const base: ResolvedKit = {
+    palette: brandKit?.palette ?? [],
+    tone: brandKit ? pick(brandKit.tone, locale) : "",
+    doList: resolveList(brandKit?.doList),
+    dontList: resolveList(brandKit?.dontList),
+    bannedWords: brandKit?.bannedWords ?? [],
+  }
+
   const [palette, setPalette] = useState(base.palette)
   const [tone, setTone] = useState(base.tone)
   const [doList, setDoList] = useState(base.doList)
@@ -42,62 +55,63 @@ export function SectionBrandKit({
     !arraysEqual(bannedWords, base.bannedWords)
 
   function save() {
-    toast.success("Identité de marque enregistrée (aperçu)", {
-      description: "Le composer s'appuie sur ces règles pour guider la rédaction des légendes.",
+    toast.success(t("clientSettings.brandKit.savedToast"), {
+      description: t("clientSettings.brandKit.savedToastDescription"),
     })
   }
 
   return (
     <SectionCard
       icon={Palette}
-      title="Identité de marque"
-      description="Palette, ton et règles éditoriales du client. Rappelés dans le studio pendant la rédaction."
+      title={t("clientSettings.brandKit.title")}
+      description={t("clientSettings.brandKit.description")}
     >
       <div className="space-y-2">
-        <Label>Palette de couleurs</Label>
+        <Label>{t("clientSettings.brandKit.paletteLabel")}</Label>
         <PaletteEditor palette={palette} onChange={setPalette} />
         <p className="text-xs text-muted-foreground">
-          Clique une pastille pour copier sa valeur, la croix pour la retirer, « + » pour en ajouter
-          une.
+          {t("clientSettings.brandKit.paletteHint")}
         </p>
       </div>
 
       <Separator />
 
       <div className="grid gap-1.5">
-        <Label htmlFor="brand-tone">Ton de voix</Label>
+        <Label htmlFor="brand-tone">{t("clientSettings.brandKit.toneLabel")}</Label>
         <Textarea
           id="brand-tone"
           rows={3}
           value={tone}
           onChange={(e) => setTone(e.target.value)}
-          placeholder="Ex. : Chaleureux et artisanal — tutoiement, vocabulaire sensoriel, jamais de jargon."
+          placeholder={t("clientSettings.brandKit.tonePlaceholder")}
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label className="text-success">
-            <ThumbsUp className="size-4" />À faire
+            <ThumbsUp className="size-4" />
+            {t("clientSettings.brandKit.doLabel")}
           </Label>
           <StringListEditor
             items={doList}
             onChange={setDoList}
-            placeholder="Ex. : Tutoyer la communauté"
-            addLabel="Ajouter"
-            emptyLabel="Aucune règle « à faire » pour l'instant."
+            placeholder={t("clientSettings.brandKit.doPlaceholder")}
+            addLabel={t("clientSettings.brandKit.addLabel")}
+            emptyLabel={t("clientSettings.brandKit.doEmpty")}
           />
         </div>
         <div className="space-y-2">
           <Label className="text-destructive">
-            <ThumbsDown className="size-4" />À éviter
+            <ThumbsDown className="size-4" />
+            {t("clientSettings.brandKit.dontLabel")}
           </Label>
           <StringListEditor
             items={dontList}
             onChange={setDontList}
-            placeholder="Ex. : Promotions agressives"
-            addLabel="Ajouter"
-            emptyLabel="Aucune règle « à éviter » pour l'instant."
+            placeholder={t("clientSettings.brandKit.dontPlaceholder")}
+            addLabel={t("clientSettings.brandKit.addLabel")}
+            emptyLabel={t("clientSettings.brandKit.dontEmpty")}
           />
         </div>
       </div>
@@ -107,12 +121,11 @@ export function SectionBrandKit({
       <div className="space-y-2">
         <Label>
           <ShieldAlert className="size-4 text-destructive" />
-          Mots interdits
+          {t("clientSettings.brandKit.bannedLabel")}
         </Label>
         <BannedWordsEditor words={bannedWords} onChange={setBannedWords} />
         <p className="text-xs text-muted-foreground">
-          Ces termes alimentent les garde-fous de légende du composer : tout mot interdit y est
-          surligné en temps réel pendant la rédaction.
+          {t("clientSettings.brandKit.bannedHint")}
         </p>
       </div>
 

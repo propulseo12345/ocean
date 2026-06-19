@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n"
 import type { EngagementStats } from "@/lib/mocks/types"
 
 // Socle de la page Performance : modèle de période + primitives de calcul,
@@ -8,10 +9,26 @@ export type PerfPeriod = "30d" | "month" | "90d"
 // « days » = nombre de jours de la fenêtre. Pour « Mois en cours », 11 jours
 // correspond au 1er → MOCK_NOW (11 juin 2026) : c'est volontairement plus court
 // que 30j, ce qui distingue bien les deux périodes (count et stales différents).
-export const PERIOD_META: Record<PerfPeriod, { label: string; days: number; previous: string }> = {
-  "30d": { label: "30 derniers jours", days: 30, previous: "30 jours précédents" },
-  month: { label: "Mois en cours", days: 11, previous: "mois précédent" },
-  "90d": { label: "90 derniers jours", days: 90, previous: "90 jours précédents" },
+// labelKey/previousKey = clés i18n résolues à l'affichage via t().
+export const PERIOD_META: Record<
+  PerfPeriod,
+  { labelKey: MessageKey; days: number; previousKey: MessageKey }
+> = {
+  "30d": {
+    labelKey: "performance.period.30d",
+    days: 30,
+    previousKey: "performance.period.prev30d",
+  },
+  month: {
+    labelKey: "performance.period.month",
+    days: 11,
+    previousKey: "performance.period.prevMonth",
+  },
+  "90d": {
+    labelKey: "performance.period.90d",
+    days: 90,
+    previousKey: "performance.period.prev90d",
+  },
 }
 
 // Facteurs déterministes par période : la fenêtre courte échantillonne moins

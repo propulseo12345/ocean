@@ -8,7 +8,7 @@ import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { formatDateTime } from "@/lib/format"
+import { type MessageKey, pick, type Translator, useFormat, useLocale, useT } from "@/lib/i18n"
 import { hours } from "@/lib/mocks/time"
 import type { ContentTarget, Platform, SocialAccount } from "@/lib/mocks/types"
 
@@ -27,19 +27,26 @@ interface StepState {
   permalink: string
 }
 
-const APP_LABELS: Partial<Record<Platform, string>> = {
-  tiktok: "l'app TikTok",
-  newsletter: "l'outil d'envoi",
-  custom: "le canal concerné",
-  instagram: "l'app Instagram",
-  facebook: "l'app Facebook",
+const APP_LABEL_KEYS: Partial<Record<Platform, MessageKey>> = {
+  tiktok: "studio.manual.appTiktok",
+  newsletter: "studio.manual.appNewsletter",
+  custom: "studio.manual.appCustom",
+  instagram: "studio.manual.appInstagram",
+  facebook: "studio.manual.appFacebook",
 }
 
-function itemTitle(platform: Platform, status: ContentTarget["status"]): string {
-  if (platform === "tiktok") return "Brouillon TikTok à finaliser"
-  if (platform === "newsletter") return "Newsletter à envoyer"
-  if (platform === "custom") return "Publication sur mesure"
-  return status === "awaiting_manual" ? "À publier manuellement" : "Publication manuelle"
+function appLabel(t: Translator, platform: Platform): string {
+  const key = APP_LABEL_KEYS[platform]
+  return key ? t(key) : t("studio.manual.appFallback")
+}
+
+function itemTitle(t: Translator, platform: Platform, status: ContentTarget["status"]): string {
+  if (platform === "tiktok") return t("studio.manual.titleTiktok")
+  if (platform === "newsletter") return t("studio.manual.titleNewsletter")
+  if (platform === "custom") return t("studio.manual.titleCustom")
+  return status === "awaiting_manual"
+    ? t("studio.manual.titleAwaiting")
+    : t("studio.manual.titleGeneric")
 }
 
 export function DetailManualCenter({
@@ -55,6 +62,8 @@ export function DetailManualCenter({
   scheduledAt: string | null
   timezone: string
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [steps, setSteps] = useState<Record<string, StepState>>({})
 
   const stateOf = (id: string): StepState =>
@@ -64,13 +73,17 @@ export function DetailManualCenter({
 
   async function copyCaption(item: ManualItem) {
     const tags = hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
-    const text = [item.target.captionOverride ?? caption, tags].filter(Boolean).join("\n\n")
+    // La légende de base arrive résolue ; la déclinaison par cible reste L<string>.
+    const captionText = item.target.captionOverride
+      ? pick(item.target.captionOverride, locale)
+      : caption
+    const text = [captionText, tags].filter(Boolean).join("\n\n")
     try {
       await navigator.clipboard.writeText(text)
       patch(item.target.id, { copied: true })
-      toast.success("Légende copiée dans le presse-papier")
+      toast.success(t("studio.manual.captionCopied"))
     } catch {
-      toast.error("Copie impossible dans ce navigateur")
+      toast.error(t("studio.manual.copyFailed"))
     }
   }
 
@@ -79,23 +92,24 @@ export function DetailManualCenter({
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           <Hand className="size-4 text-muted-foreground" />
-          Publication manuelle ({items.length})
+          {t("studio.manual.heading", { count: items.length })}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {items.map((item) => {
           const state = stateOf(item.target.id)
+          const app = appLabel(t, item.target.platform)
           return (
             <div key={item.target.id} className="space-y-2.5 rounded-lg border p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <PlatformIcon platform={item.target.platform} className="size-4" />
                 <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {itemTitle(item.target.platform, item.target.status)}
+                  {itemTitle(t, item.target.platform, item.target.status)}
                 </p>
                 {state.done ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
                     <CircleCheck className="size-3.5" />
-                    Publié manuellement
+                    {t("studio.manual.publishedManually")}
                   </span>
                 ) : (
                   <TargetStatusBadge status={item.target.status} />
@@ -110,57 +124,52 @@ export function DetailManualCenter({
 
               {state.done ? (
                 <p className="text-xs text-muted-foreground">
-                  Marquée publiée{state.permalink ? " — lien enregistré" : ""} (aperçu).
+                  {t("studio.manual.markedPublished", {
+                    withLink: state.permalink ? t("studio.manual.markedPublishedLink") : "",
+                  })}
                 </p>
               ) : (
                 <ol className="space-y-2">
-                  <Step index={1} done={state.copied} label="Copier la légende">
+                  <Step index={1} done={state.copied} label={t("studio.manual.stepCopy")}>
                     <Button size="xs" variant="outline" onClick={() => copyCaption(item)}>
                       {state.copied ? <Check /> : <Copy />}
-                      {state.copied ? "Copiée" : "Copier"}
+                      {state.copied ? t("studio.manual.copied") : t("studio.manual.copy")}
                     </Button>
                   </Step>
-                  <Step
-                    index={2}
-                    done={false}
-                    label={`Ouvrir ${APP_LABELS[item.target.platform] ?? "l'app"}`}
-                  >
+                  <Step index={2} done={false} label={t("studio.manual.stepOpen", { app })}>
                     <Button
                       size="xs"
                       variant="outline"
                       onClick={() =>
-                        toast.info(
-                          `Ouvre ${APP_LABELS[item.target.platform] ?? "l'app"} pour finaliser`,
-                          {
-                            description: "Étape simulée (aperçu).",
-                          }
-                        )
+                        toast.info(t("studio.manual.openHint", { app }), {
+                          description: t("studio.manual.openHintDesc"),
+                        })
                       }
                     >
                       <ExternalLink />
-                      Ouvrir
+                      {t("studio.manual.open")}
                     </Button>
                   </Step>
-                  <Step index={3} done={false} label="Marquer comme publié">
+                  <Step index={3} done={false} label={t("studio.manual.stepMark")}>
                     <div className="flex w-full flex-wrap items-center gap-1.5">
                       <Input
                         value={state.permalink}
                         onChange={(e) => patch(item.target.id, { permalink: e.target.value })}
-                        placeholder="Lien de la publication (optionnel)"
-                        aria-label="Lien de la publication"
+                        placeholder={t("studio.manual.linkPlaceholder")}
+                        aria-label={t("studio.manual.linkAria")}
                         className="h-7 min-w-0 flex-1 text-xs"
                       />
                       <Button
                         size="xs"
                         onClick={() => {
                           patch(item.target.id, { done: true })
-                          toast.success("Cible marquée publiée manuellement", {
-                            description: "État local simulé (aperçu).",
+                          toast.success(t("studio.manual.markedDone"), {
+                            description: t("studio.manual.markedDoneDesc"),
                           })
                         }}
                       >
                         <CircleCheck />
-                        Publié
+                        {t("studio.manual.markDone")}
                       </Button>
                     </div>
                   </Step>
@@ -183,14 +192,16 @@ function ReminderLine({
   scheduledAt: string | null
   timezone: string
 }) {
+  const t = useT()
+  const f = useFormat()
   let label: string
   if (target.status === "pushed_to_platform" && target.publishedAt) {
     const reminder = new Date(new Date(target.publishedAt).getTime() + hours(24)).toISOString()
-    label = `Relance le ${formatDateTime(reminder, timezone)} si le brouillon n'est pas publié.`
+    label = t("studio.manual.reminderPushed", { date: f.dateTime(reminder, timezone) })
   } else if (scheduledAt) {
-    label = `Rappel prévu le ${formatDateTime(scheduledAt, timezone)} (heure du client).`
+    label = t("studio.manual.reminderScheduled", { date: f.dateTime(scheduledAt, timezone) })
   } else {
-    label = "Sans date — programme le contenu pour planifier un rappel."
+    label = t("studio.manual.reminderNoDate")
   }
   return (
     <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground tabular-nums">

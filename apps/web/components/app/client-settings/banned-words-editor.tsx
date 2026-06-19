@@ -4,6 +4,7 @@ import { Plus, X } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useT } from "@/lib/i18n"
 
 // Mots interdits sous forme de tags — alimentent les garde-fous de légende du
 // composer (lib/caption détecte ces termes en temps réel pendant la rédaction).
@@ -15,6 +16,7 @@ export function BannedWordsEditor({
   words: string[]
   onChange: (next: string[]) => void
 }) {
+  const t = useT()
   const [draft, setDraft] = useState("")
 
   function add() {
@@ -42,7 +44,7 @@ export function BannedWordsEditor({
                 <button
                   type="button"
                   onClick={() => remove(word)}
-                  aria-label={`Retirer « ${word} »`}
+                  aria-label={t("clientSettings.banned.removeAria", { value: word })}
                   className="rounded-full outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   <X className="size-3" />
@@ -52,7 +54,9 @@ export function BannedWordsEditor({
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted-foreground italic">Aucun mot interdit pour ce client.</p>
+        <p className="text-xs text-muted-foreground italic">
+          {t("clientSettings.banned.empty")}
+        </p>
       )}
 
       <div className="flex gap-2">
@@ -65,11 +69,11 @@ export function BannedWordsEditor({
               add()
             }
           }}
-          placeholder="Ex. : promo flash"
+          placeholder={t("clientSettings.banned.placeholder")}
         />
         <Button size="sm" variant="outline" onClick={add} disabled={!draft.trim()}>
           <Plus />
-          Ajouter
+          {t("clientSettings.banned.add")}
         </Button>
       </div>
     </div>

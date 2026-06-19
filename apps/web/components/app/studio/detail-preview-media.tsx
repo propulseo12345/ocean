@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -19,6 +20,8 @@ export function DetailPreviewMedia({
   slide: number
   onSlide: (next: number) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const media = content.media
   const index = Math.min(slide, Math.max(media.length - 1, 0))
   const current = media[index]
@@ -29,7 +32,7 @@ export function DetailPreviewMedia({
         <>
           <Image
             src={current.fullUrl}
-            alt={current.altText || content.title}
+            alt={current.altText ? pick(current.altText, locale) : pick(content.title, locale)}
             fill
             sizes="320px"
             className="object-cover"
@@ -42,7 +45,7 @@ export function DetailPreviewMedia({
               <Button
                 variant="secondary"
                 size="icon-xs"
-                aria-label="Visuel précédent"
+                aria-label={t("studio.media.prevVisual")}
                 className="absolute top-1/2 left-1.5 -translate-y-1/2 rounded-full opacity-90"
                 onClick={() => onSlide((index - 1 + media.length) % media.length)}
               >
@@ -51,7 +54,7 @@ export function DetailPreviewMedia({
               <Button
                 variant="secondary"
                 size="icon-xs"
-                aria-label="Visuel suivant"
+                aria-label={t("studio.media.nextVisual")}
                 className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full opacity-90"
                 onClick={() => onSlide((index + 1) % media.length)}
               >
@@ -63,7 +66,7 @@ export function DetailPreviewMedia({
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
           <ImageOff className="size-5" />
-          <span className="text-xs">Aucun média</span>
+          <span className="text-xs">{t("studio.media.none")}</span>
         </div>
       )}
     </div>

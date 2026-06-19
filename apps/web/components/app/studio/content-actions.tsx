@@ -6,11 +6,10 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { type MessageKey, useT } from "@/lib/i18n"
 import type { Client, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { DetailDuplicateDialog } from "./detail-duplicate-dialog"
-
-const SIM = "Action simulée (preview)"
 
 // Statuts en lecture seule (édition interdite à partir de publishing — §5.B).
 const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
@@ -28,9 +27,11 @@ export function ContentActions({
   contentTitle: string
   clients: Client[]
 }) {
+  const t = useT()
   const [duplicateOpen, setDuplicateOpen] = useState(false)
   const isReadOnly = READ_ONLY.includes(status)
-  const sim = (label: string) => () => toast.success(label, { description: SIM })
+  const sim = (key: MessageKey) => () =>
+    toast.success(t(key), { description: t("studio.actions.simulated") })
 
   const duplicateDialog = (
     <DetailDuplicateDialog
@@ -47,14 +48,12 @@ export function ContentActions({
       <div className="space-y-3">
         <Alert>
           <Lock />
-          <AlertTitle>Contenu en lecture seule</AlertTitle>
-          <AlertDescription>
-            La publication a commencé. Duplique le contenu pour repartir d'une nouvelle version.
-          </AlertDescription>
+          <AlertTitle>{t("studio.actions.readOnlyTitle")}</AlertTitle>
+          <AlertDescription>{t("studio.actions.readOnlyDesc")}</AlertDescription>
         </Alert>
         <Button variant="outline" className="w-full" onClick={() => setDuplicateOpen(true)}>
           <Copy />
-          Dupliquer le contenu
+          {t("studio.actions.duplicateContent")}
         </Button>
         {duplicateDialog}
       </div>
@@ -68,18 +67,18 @@ export function ContentActions({
       {status !== "in_review" ? (
         <Button variant="outline" render={<Link href={routes.contentEdit(clientId, contentId)} />}>
           <Pencil />
-          Modifier le contenu
+          {t("studio.actions.editContent")}
         </Button>
       ) : null}
 
       <Button variant="outline" onClick={() => setDuplicateOpen(true)}>
         <Copy />
-        Dupliquer
+        {t("studio.actions.duplicate")}
       </Button>
 
-      <Button variant="destructive" onClick={sim("Programmation annulée")}>
+      <Button variant="destructive" onClick={sim("studio.actions.toastScheduleCanceled")}>
         <XCircle />
-        {status === "scheduled" ? "Annuler la programmation" : "Abandonner"}
+        {status === "scheduled" ? t("studio.actions.cancelSchedule") : t("studio.actions.abandon")}
       </Button>
 
       {duplicateDialog}
@@ -93,64 +92,65 @@ function PrimaryAction({
   onDuplicate,
 }: {
   status: ContentStatus
-  onAction: (label: string) => () => void
+  onAction: (key: MessageKey) => () => void
   onDuplicate: () => void
 }) {
+  const t = useT()
   switch (status) {
     case "idea":
     case "draft":
       return (
         <>
-          <Button onClick={onAction("Contenu programmé")}>
+          <Button onClick={onAction("studio.actions.toastScheduled")}>
             <CalendarClock />
-            Programmer
+            {t("studio.actions.schedule")}
           </Button>
-          <Button variant="secondary" onClick={onAction("Envoyé en revue")}>
+          <Button variant="secondary" onClick={onAction("studio.actions.toastSentReview")}>
             <Send />
-            Envoyer en revue
+            {t("studio.actions.sendReview")}
           </Button>
         </>
       )
     case "changes_requested":
       return (
-        <Button onClick={onAction("Nouvelle version envoyée en revue")}>
+        <Button onClick={onAction("studio.actions.toastNewVersion")}>
           <Send />
-          Renvoyer en revue
+          {t("studio.actions.resendReview")}
         </Button>
       )
     case "in_review":
       return (
-        <Button variant="outline" onClick={onAction("Revue retirée")}>
+        <Button variant="outline" onClick={onAction("studio.actions.toastReviewRemoved")}>
           <XCircle />
-          Retirer de la revue
+          {t("studio.actions.removeFromReview")}
         </Button>
       )
     case "approved":
       return (
-        <Button onClick={onAction("Contenu programmé")}>
+        <Button onClick={onAction("studio.actions.toastScheduled")}>
           <CalendarClock />
-          Programmer
+          {t("studio.actions.schedule")}
         </Button>
       )
     case "scheduled":
       return (
-        <Button onClick={onAction("Date modifiée")}>
+        <Button onClick={onAction("studio.actions.toastDateChanged")}>
           <CalendarClock />
-          Modifier la date
+          {t("studio.actions.editDate")}
         </Button>
       )
     case "failed":
       return (
-        <Button onClick={onAction("Cibles en échec reprogrammées")}>
+        <Button onClick={onAction("studio.actions.toastFailedRescheduled")}>
           <CalendarClock />
-          Reprogrammer les échecs
+          {t("studio.actions.rescheduleFailed")}
         </Button>
       )
     default:
       return (
         <Button onClick={onDuplicate}>
           <Copy />
-          Dupliquer
+          {t("studio.actions.duplicate")}
         </Button>
       )
   }

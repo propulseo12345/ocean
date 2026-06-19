@@ -1,3 +1,4 @@
+import type { L, MessageKey } from "@/lib/i18n"
 import type { AgendaItem } from "@/lib/mocks/types"
 
 // Bornes horaires de la grille semaine (fuseau du freelance).
@@ -8,8 +9,16 @@ export const HOURS = Array.from(
   (_, i) => DAY_START_HOUR + i
 )
 
-// Libellés courts des jours (lun → dim).
-export const WEEKDAY_LABELS = ["lun", "mar", "mer", "jeu", "ven", "sam", "dim"]
+// Clés des libellés courts des jours (lun → dim), résolues à l'affichage via t().
+export const WEEKDAY_KEYS: MessageKey[] = [
+  "agenda.weekday.mon",
+  "agenda.weekday.tue",
+  "agenda.weekday.wed",
+  "agenda.weekday.thu",
+  "agenda.weekday.fri",
+  "agenda.weekday.sat",
+  "agenda.weekday.sun",
+]
 
 // Décompose un instant ISO dans un fuseau donné, sans dépendre de l'heure locale.
 interface ZonedParts {
@@ -105,8 +114,14 @@ export function agendaStart(item: AgendaItem): string {
   return item.kind === "event" ? item.event.startsAt : item.startsAt
 }
 
+// Clé d'identité stable d'un calendrier (indépendante de la langue d'affichage) :
+// on retient la valeur FR du libellé bilingue comme identifiant canonique.
+export function calendarKey(name: L<string>): string {
+  return name.fr
+}
+
 // Un item est visible si ses filtres calendrier/compte sont actifs.
 export function isItemEnabled(item: AgendaItem, disabledCalendars: ReadonlySet<string>): boolean {
   if (item.kind === "publication") return true
-  return !disabledCalendars.has(item.event.calendarName)
+  return !disabledCalendars.has(calendarKey(item.event.calendarName))
 }

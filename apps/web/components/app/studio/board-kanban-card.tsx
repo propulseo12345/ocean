@@ -5,7 +5,7 @@ import Link from "next/link"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { StatusDot } from "@/components/shared/status-dot"
-import { formatDayMonth } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -22,6 +22,9 @@ export function KanbanCard({
   client: Client
   dragging?: boolean
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const cover = item.media[0]
   return (
     <div
@@ -41,35 +44,40 @@ export function KanbanCard({
             draggable={false}
             className="line-clamp-2 text-xs leading-snug font-medium hover:underline"
           >
-            {item.title}
+            {pick(item.title, locale)}
           </Link>
           <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground tabular-nums">
             <StatusDot status={item.status} />
-            {item.scheduledAt ? formatDayMonth(item.scheduledAt, client.timezone) : "Sans date"}
+            {item.scheduledAt
+              ? f.dayMonth(item.scheduledAt, client.timezone)
+              : t("studio.kanban.noDate")}
             {item.status === "changes_requested" ? (
-              <span className="font-medium text-warning">Retours</span>
+              <span className="font-medium text-warning">{t("studio.kanban.changes")}</span>
             ) : null}
             {item.status === "failed" ? (
-              <span className="font-medium text-destructive">Échec</span>
+              <span className="font-medium text-destructive">{t("studio.kanban.failed")}</span>
             ) : null}
           </p>
         </div>
       </div>
       {item.labels && item.labels.length > 0 ? (
         <p className="flex flex-wrap items-center gap-1">
-          {item.labels.map((label) => (
-            <span
-              key={label}
-              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
-            >
+          {item.labels.map((label) => {
+            const text = pick(label, locale)
+            return (
               <span
-                aria-hidden
-                className="size-1.5 rounded-full"
-                style={{ backgroundColor: labelColorVar(label) }}
-              />
-              {label}
-            </span>
-          ))}
+                key={text}
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
+              >
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: labelColorVar(text) }}
+                />
+                {text}
+              </span>
+            )
+          })}
         </p>
       ) : null}
     </div>
@@ -105,11 +113,12 @@ export function KanbanColumn({
   items: ContentItem[]
   client: Client
 }) {
+  const t = useT()
   const { setNodeRef, isOver } = useDroppable({ id: `col:${id}` })
   return (
     <section
       ref={setNodeRef}
-      aria-label={`Colonne ${label}`}
+      aria-label={t("studio.kanban.columnAria", { label })}
       className={cn(
         "flex w-56 shrink-0 flex-col gap-1.5 rounded-xl border bg-card/40 p-2 transition-colors",
         isOver && "border-primary/50 bg-primary/5"
@@ -124,7 +133,7 @@ export function KanbanColumn({
       ))}
       {items.length === 0 ? (
         <p className="rounded-lg border border-dashed p-3 text-center text-[11px] text-muted-foreground">
-          Déposer ici
+          {t("studio.kanban.dropHere")}
         </p>
       ) : null}
     </section>

@@ -7,6 +7,7 @@ import { AgendaSidebar, type CalendarFilter } from "@/components/app/agenda/agen
 import {
   addDays,
   agendaStart,
+  calendarKey,
   isItemEnabled,
   startOfWeekMonday,
   weekDays,
@@ -15,15 +16,17 @@ import {
 import { WeekGrid } from "@/components/app/agenda/week-grid"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { formatDayMonth } from "@/lib/format"
+import { useFormat, useT } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { AgendaItem, CalendarAccount, CalendarEvent } from "@/lib/mocks/types"
 
 function buildCalendars(events: CalendarEvent[]): CalendarFilter[] {
   const map = new Map<string, CalendarFilter>()
   for (const e of events) {
-    if (!map.has(e.calendarName)) {
-      map.set(e.calendarName, {
+    const key = calendarKey(e.calendarName)
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
         name: e.calendarName,
         colorVar: e.colorVar,
         accountId: e.accountId,
@@ -44,6 +47,8 @@ export function UnifiedAgenda({
   events: CalendarEvent[]
   tz: string
 }) {
+  const t = useT()
+  const f = useFormat()
   const now = useMemo(() => new Date(MOCK_NOW), [])
   const baseMonday = useMemo(() => startOfWeekMonday(now), [now])
   const calendars = useMemo(() => buildCalendars(events), [events])
@@ -51,7 +56,7 @@ export function UnifiedAgenda({
   // Calendriers désactivés par défaut (event.enabled === false dans les mocks).
   const [disabled, setDisabled] = useState<Set<string>>(() => {
     const off = new Set<string>()
-    for (const e of events) if (!e.enabled) off.add(e.calendarName)
+    for (const e of events) if (!e.enabled) off.add(calendarKey(e.calendarName))
     return off
   })
   const [weekOffset, setWeekOffset] = useState(0)
@@ -69,15 +74,15 @@ export function UnifiedAgenda({
     })
   }, [agenda, disabled, weekStart, tz])
 
-  const toggle = (name: string) =>
+  const toggle = (key: string) =>
     setDisabled((prev) => {
       const next = new Set(prev)
-      if (next.has(name)) next.delete(name)
-      else next.add(name)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
 
-  const rangeLabel = `${formatDayMonth(weekStart.toISOString(), tz)} – ${formatDayMonth(
+  const rangeLabel = `${f.dayMonth(weekStart.toISOString(), tz)} – ${f.dayMonth(
     addDays(weekStart, 6).toISOString(),
     tz
   )}`
@@ -99,7 +104,7 @@ export function UnifiedAgenda({
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Semaine précédente"
+              aria-label={t("agenda.prevWeek")}
               onClick={() => setWeekOffset((w) => w - 1)}
             >
               <ChevronLeft />
@@ -107,7 +112,7 @@ export function UnifiedAgenda({
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Semaine suivante"
+              aria-label={t("agenda.nextWeek")}
               onClick={() => setWeekOffset((w) => w + 1)}
             >
               <ChevronRight />
@@ -118,7 +123,7 @@ export function UnifiedAgenda({
               onClick={() => setWeekOffset(0)}
               disabled={weekOffset === 0}
             >
-              Aujourd'hui
+              {t("agenda.today")}
             </Button>
             <span className="ml-1 text-sm font-medium text-muted-foreground capitalize">
               {rangeLabel}
@@ -130,13 +135,13 @@ export function UnifiedAgenda({
               render={
                 <Button variant="outline" size="sm" className="lg:hidden">
                   <SlidersHorizontal />
-                  Filtres
+                  {t("agenda.filters")}
                 </Button>
               }
             />
             <SheetContent side="right" className="w-80 max-w-[85vw]">
               <SheetHeader>
-                <SheetTitle>Agendas &amp; filtres</SheetTitle>
+                <SheetTitle>{t("agenda.calendarsAndFilters")}</SheetTitle>
               </SheetHeader>
               <div className="overflow-y-auto px-4 pb-6">{sidebar}</div>
             </SheetContent>

@@ -10,54 +10,54 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+import { type MessageKey, useT } from "@/lib/i18n"
 
 // Règles d'automatisation par client (aperçu) : état local + toasts. Le report
 // auto sur quota atteint correspond au comportement réel acté côté worker.
 
 interface AutomationRule {
   id: string
-  label: string
-  description: string
+  labelKey: MessageKey
+  descriptionKey: MessageKey
   enabled: boolean
 }
 
 const DEFAULT_RULES: AutomationRule[] = [
   {
     id: "remind_empty_week",
-    label: "Rappel si aucun post planifié à J-7",
-    description: "Une notification te prévient quand la semaine à venir est vide pour ce client.",
+    labelKey: "calendar.automation.rules.remindEmptyWeekLabel",
+    descriptionKey: "calendar.automation.rules.remindEmptyWeekDesc",
     enabled: true,
   },
   {
     id: "remind_reviewer",
-    label: "Relance du client après 48 h sans validation",
-    description: "Un rappel est envoyé automatiquement au Reviewer (email + portail).",
+    labelKey: "calendar.automation.rules.remindReviewerLabel",
+    descriptionKey: "calendar.automation.rules.remindReviewerDesc",
     enabled: false,
   },
   {
     id: "quota_defer",
-    label: "Report automatique si quota Instagram atteint",
-    description:
-      "Comportement standard d'Ocean : le post est décalé au prochain créneau et tu es notifié du déplacement.",
+    labelKey: "calendar.automation.rules.quotaDeferLabel",
+    descriptionKey: "calendar.automation.rules.quotaDeferDesc",
     enabled: true,
   },
   {
     id: "publish_on_approval",
-    label: "Publication automatique dès approbation",
-    description:
-      "Uniquement si la date prévue est à plus de 15 minutes — une approbation tardive ne publie jamais seule.",
+    labelKey: "calendar.automation.rules.publishOnApprovalLabel",
+    descriptionKey: "calendar.automation.rules.publishOnApprovalDesc",
     enabled: false,
   },
 ]
 
 export function AutomationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT()
   const [rules, setRules] = useState(DEFAULT_RULES)
 
   function toggleRule(id: string, enabled: boolean) {
     const rule = rules.find((r) => r.id === id)
     setRules((prev) => prev.map((r) => (r.id === id ? { ...r, enabled } : r)))
-    toast.info(`Règle ${enabled ? "activée" : "désactivée"} (aperçu)`, {
-      description: rule?.label,
+    toast.info(t("calendar.automation.ruleToggled", { state: enabled ? "on" : "off" }), {
+      description: rule ? t(rule.labelKey) : undefined,
     })
   }
 
@@ -65,24 +65,22 @@ export function AutomationDialog({ open, onClose }: { open: boolean; onClose: ()
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Automatisations du client</DialogTitle>
-          <DialogDescription>
-            Règles de workflow propres à ce client. Aperçu — elles seront actives avec le backend.
-          </DialogDescription>
+          <DialogTitle>{t("calendar.automation.title")}</DialogTitle>
+          <DialogDescription>{t("calendar.automation.description")}</DialogDescription>
         </DialogHeader>
         <ul className="space-y-3">
           {rules.map((rule) => (
             <li key={rule.id} className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">{rule.label}</p>
+                <p className="text-sm font-medium">{t(rule.labelKey)}</p>
                 <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-                  {rule.description}
+                  {t(rule.descriptionKey)}
                 </p>
               </div>
               <Switch
                 checked={rule.enabled}
                 onCheckedChange={(checked) => toggleRule(rule.id, checked)}
-                aria-label={rule.label}
+                aria-label={t(rule.labelKey)}
               />
             </li>
           ))}

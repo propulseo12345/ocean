@@ -1,8 +1,10 @@
 import type { dashboardFr } from "./dashboard.fr"
+
 // Namespace i18n « dashboard » (EN) — doit refléter les clés de dashboardFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const dashboardEn: Widen<typeof dashboardFr> = {
   dashboard: {
+    metaTitle: "Dashboard",
     greeting: "Hi {name}",
     yourDay: "Here's your day — {date}.",
     seeClients: "View clients",

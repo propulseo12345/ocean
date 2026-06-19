@@ -2,14 +2,20 @@ import { CheckCircle2, ClipboardCheck, History } from "lucide-react"
 import type { Metadata } from "next"
 import { PortalCard } from "@/components/portal/portal-card"
 import { EmptyState } from "@/components/shared/empty-state"
+import { getT } from "@/lib/i18n/server"
+import type { Translator } from "@/lib/i18n/translator"
 import { DEMO_REVIEWER_CLIENT_ID, getClient, getPortalContent, getReviewer } from "@/lib/mocks"
 import type { Client, ContentStatus } from "@/lib/mocks/types"
 
-export const metadata: Metadata = { title: "Espace de validation" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("portal.home.metaTitle") }
+}
 
 const TO_REVIEW: ContentStatus[] = ["in_review", "changes_requested"]
 
-export default function PortalPage() {
+export default async function PortalPage() {
+  const t = await getT()
   const client = getClient(DEMO_REVIEWER_CLIENT_ID) as Client
   const reviewer = getReviewer(DEMO_REVIEWER_CLIENT_ID)
   const tz = client.timezone
@@ -23,10 +29,14 @@ export default function PortalPage() {
 
   return (
     <div className="space-y-8">
-      <ReviewBanner count={toReview.length} firstName={firstName} />
+      <ReviewBanner count={toReview.length} firstName={firstName} t={t} />
 
       <section className="space-y-3">
-        <SectionTitle icon={ClipboardCheck} title="À valider" count={toReview.length} />
+        <SectionTitle
+          icon={ClipboardCheck}
+          title={t("portal.home.sectionToValidate")}
+          count={toReview.length}
+        />
         {toReview.length > 0 ? (
           <div className="grid gap-3">
             {toReview.map((c) => (
@@ -36,15 +46,19 @@ export default function PortalPage() {
         ) : (
           <EmptyState
             icon={CheckCircle2}
-            title="Tout est validé"
-            description="Aucune publication n'attend votre relecture pour l'instant."
+            title={t("portal.home.emptyValidatedTitle")}
+            description={t("portal.home.emptyValidatedDescription")}
           />
         )}
       </section>
 
       {history.length > 0 ? (
         <section className="space-y-3">
-          <SectionTitle icon={History} title="Historique" count={history.length} />
+          <SectionTitle
+            icon={History}
+            title={t("portal.home.sectionHistory")}
+            count={history.length}
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             {history.map((c) => (
               <PortalCard key={c.id} content={c} timezone={tz} />
@@ -56,20 +70,26 @@ export default function PortalPage() {
   )
 }
 
-function ReviewBanner({ count, firstName }: { count: number; firstName: string }) {
+function ReviewBanner({
+  count,
+  firstName,
+  t,
+}: {
+  count: number
+  firstName: string
+  t: Translator
+}) {
   const hasItems = count > 0
   return (
     <div className="rounded-xl border bg-card p-5 ring-1 ring-foreground/5 sm:p-6">
-      <p className="text-sm text-muted-foreground">Bonjour{firstName ? ` ${firstName}` : ""},</p>
+      <p className="text-sm text-muted-foreground">
+        {t("portal.home.greeting", { name: firstName ? ` ${firstName}` : "" })}
+      </p>
       <h1 className="font-heading mt-1 text-2xl font-semibold tracking-tight text-balance">
-        {hasItems
-          ? `Vous avez ${count} publication${count > 1 ? "s" : ""} à valider`
-          : "Vous êtes à jour"}
+        {hasItems ? t("portal.home.toValidateHeading", { count }) : t("portal.home.upToDate")}
       </h1>
       <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-        {hasItems
-          ? "Relisez chaque publication, laissez vos remarques si besoin, puis approuvez en un clic."
-          : "Dès qu'une nouvelle publication est prête, vous la retrouverez ici."}
+        {hasItems ? t("portal.home.toValidateLead") : t("portal.home.upToDateLead")}
       </p>
     </div>
   )

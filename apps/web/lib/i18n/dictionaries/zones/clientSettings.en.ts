@@ -2,5 +2,259 @@ import type { clientSettingsFr } from "./clientSettings.fr"
 // Namespace i18n « clientSettings » (EN) — doit refléter les clés de clientSettingsFr.
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
-  clientSettings: {},
+  clientSettings: {
+    nav: {
+      ariaLabel: "Settings sections",
+      profile: "Profile",
+      accounts: "Accounts",
+      brand: "Brand",
+      approval: "Approval",
+      slots: "Slots",
+      cadence: "Cadence",
+      archive: "Archive",
+    },
+    saveBar: {
+      dirty: "Unsaved changes.",
+      clean: "Everything is up to date.",
+      save: "Save (preview)",
+    },
+    hues: {
+      coffee: "Coffee earth",
+      caramel: "Caramel",
+      brick: "Brick",
+      magenta: "Magenta",
+      lavender: "Lavender",
+      indigo: "Indigo",
+      ocean: "Ocean",
+      forest: "Forest green",
+      olive: "Olive",
+      amber: "Amber",
+      slate: "Slate",
+      ink: "Ink",
+    },
+    weekday: {
+      monShort: "Mon",
+      monLong: "Monday",
+      tueShort: "Tue",
+      tueLong: "Tuesday",
+      wedShort: "Wed",
+      wedLong: "Wednesday",
+      thuShort: "Thu",
+      thuLong: "Thursday",
+      friShort: "Fri",
+      friLong: "Friday",
+      satShort: "Sat",
+      satLong: "Saturday",
+      sunShort: "Sun",
+      sunLong: "Sunday",
+    },
+    profile: {
+      title: "Client profile",
+      description:
+        "Identity shown across the app, the profile preview and the review portal.",
+      noName: "Untitled",
+      handleFallback: "handle",
+      nameLabel: "Name",
+      handleLabel: "Username (@handle)",
+      categoryLabel: "Category",
+      categoryPlaceholder: "e.g. Coffee · Artisan roastery",
+      timezoneLabel: "Time zone",
+      timezoneHint: "Used to time-stamp this client's publications.",
+      bioLabel: "Bio",
+      brandColorLabel: "Brand color",
+      notesLabel: "Internal notes",
+      notesHint:
+        "Visible only to you (plan, lead times, preferences) — never shared with the client.",
+      notesPlaceholder: "e.g. 12 posts/month plan. Allow 48 h for approval.",
+      savedToast: "Profile saved (preview)",
+      savedToastDescription: "No data is actually changed during the preview.",
+    },
+    accounts: {
+      title: "Connected accounts",
+      description:
+        "Networks this client publishes to. OAuth connection happens in the global settings.",
+      manage: "Manage connections",
+      emptyTitle: "No connected account",
+      emptyDescription:
+        "Connect Instagram, Facebook or TikTok from the connection settings to publish for this client.",
+      healthNote:
+        "Access health is monitored continuously: an expired token is caught before publish time, never after.",
+      followers: "{count} followers",
+      reconnect: "Reconnect",
+      reconnectToast: "{platform} reconnection simulated (preview)",
+      reconnectToastDescription: "No account is actually reconnected during the preview.",
+      noteInstagram:
+        "Requires a Pro account linked to a Facebook Page (Instagram Login variant).",
+      noteFacebook:
+        "Publishing via the linked Page, assigned by the client in Business Suite.",
+      noteTiktok:
+        "Draft mode only: the post is pushed and the client finalizes it in the TikTok app.",
+    },
+    brandKit: {
+      title: "Brand identity",
+      description:
+        "The client's palette, tone and editorial rules. Surfaced in the studio while writing.",
+      paletteLabel: "Color palette",
+      paletteHint:
+        "Click a swatch to copy its value, the cross to remove it, \"+\" to add one.",
+      toneLabel: "Tone of voice",
+      tonePlaceholder:
+        "e.g. Warm and artisanal — informal, sensory vocabulary, never any jargon.",
+      doLabel: "Do",
+      dontLabel: "Avoid",
+      addLabel: "Add",
+      doPlaceholder: "e.g. Speak to the community casually",
+      dontPlaceholder: "e.g. Aggressive promotions",
+      doEmpty: "No \"do\" rule yet.",
+      dontEmpty: "No \"avoid\" rule yet.",
+      bannedLabel: "Banned words",
+      bannedHint:
+        "These terms feed the composer's caption guardrails: any banned word is highlighted in real time while writing.",
+      savedToast: "Brand identity saved (preview)",
+      savedToastDescription:
+        "The composer relies on these rules to guide caption writing.",
+    },
+    approval: {
+      title: "Approval level",
+      description:
+        "Defines who must approve content before it's published for this client.",
+      requiredLabel: "Approval required",
+      requiredImpact:
+        "No publishing without the reviewer's sign-off. Every piece goes through the portal before being scheduled.",
+      optionalLabel: "Approval optional",
+      optionalImpact:
+        "Sending for review is offered by default, but you can schedule directly, piece by piece.",
+      autoLabel: "Direct publishing",
+      autoImpact:
+        "No portal step: scheduled content goes out at the planned time, under your sole responsibility.",
+      seenAt: "Seen {when}",
+      neverVisited: "Never visited the portal",
+      noReviewer: "No reviewer attached to this client.",
+      invite: "Invite",
+      reminderLabel: "Remind the reviewer with no reply after",
+      reminderUnit: "day(s)",
+      lateNote:
+        "A late approval never triggers automatic publishing: past the deadline, the content comes back to you for rescheduling.",
+      savedToast: "Approval level saved (preview)",
+      inviteToast: "Reviewer invitation simulated (preview)",
+      inviteToastDescription:
+        "A portal invitation email will go out via Brevo once the backend is wired.",
+    },
+    cadence: {
+      title: "Cadence & alerts",
+      description:
+        "Gap and density detection thresholds, to protect the consistency sold to the client.",
+      gapLabel: "Cadence gap",
+      gapHint: "Alert after this many days with no scheduled post.",
+      gapUnit: "days",
+      densityLabel: "Maximum density",
+      densityHint: "Warn beyond this many posts on the same day.",
+      densityUnit: "/ day",
+      alertEmptyWeek: "Notify me if the calendar is empty 7 days out",
+      alertGap: "Flag a cadence gap beyond the threshold above",
+      alertCollision: "Warn if two posts on the same day are less than an hour apart",
+      decrease: "Decrease {label}",
+      increase: "Increase {label}",
+      savedToast: "Cadence thresholds saved (preview)",
+      savedToastDescription: "Gap: {gap} d · max density: {density}/day",
+    },
+    slots: {
+      title: "Recurring publishing slots",
+      description: "The weekly commitments agreed with the client.",
+      add: "Add",
+      empty:
+        "No slot defined. Add the recurring commitments to pre-fill the monthly batch.",
+      colDay: "Day",
+      colTime: "Time",
+      colPlatforms: "Networks",
+      colPillar: "Pillar",
+      colRemove: "Remove",
+      note:
+        "These slots pre-fill the suggested dates in the studio and surface the gaps to fill in the calendar.",
+      weekPreviewTitle: "Typical week preview",
+      timeAriaLabel: "Slot time",
+      noPillar: "No pillar",
+      removeSlot: "Delete this slot",
+      removedToast: "Slot deleted (preview)",
+      addedToast: "Slot added (preview)",
+      addedToastDescription: "Adjust the day, time and networks.",
+    },
+    danger: {
+      title: "Archive & trash",
+      description:
+        "Pause the client, restore deleted content or erase everything.",
+      archivedTitle: "Client archived",
+      archiveTitle: "Archive the client",
+      archivedOn: "Archived on {date}. Reactivate it to resume the collaboration.",
+      archiveHint:
+        "It will no longer appear in the active list or the switcher; its content is kept.",
+      reactivate: "Reactivate",
+      archive: "Archive",
+      trashTitle: "Trash",
+      dangerZone: "Danger zone",
+      dangerDescription:
+        "Permanent deletion of the client and all its data. No way back.",
+      deletePermanently: "Delete the client permanently",
+      archiveDialogTitle: "Archive this client?",
+      archiveDialogDescription:
+        "It will disappear from the active lists and the switcher. Its content and history are kept, and you can reactivate it at any time.",
+      archiveConfirm: "Archive (preview)",
+      archivedToast: "Client archived (preview)",
+      archivedToastDescription:
+        "It disappears from the active lists; its content is kept.",
+      reactivatedToast: "Client reactivated (preview)",
+      reactivatedToastDescription:
+        "It reappears in the active list and the switcher.",
+      deletedToast: "Permanent deletion simulated (preview)",
+      deletedToastDescription:
+        "No client is actually deleted during the preview.",
+    },
+    deleteDialog: {
+      title: "Delete the client permanently?",
+      description:
+        "This action is irreversible: the client, its content, its history and its media are deleted. Prefer archiving if you want to keep the records.",
+      confirm: "Delete permanently (preview)",
+      confirmLabel: "Type \"{name}\" to confirm",
+    },
+    confirmDialog: {
+      cancel: "Cancel",
+    },
+    palette: {
+      copyTitle: "Copy {value}",
+      copyAria: "Copy the {value} hue",
+      removeAria: "Remove the {value} hue",
+      addAria: "Add a hue",
+      addHueAria: "Add the {value} hue",
+      allAdded: "All hues have been added.",
+      copiedToast: "Hue copied (preview)",
+    },
+    stringList: {
+      removeAria: "Remove \"{value}\"",
+    },
+    brandColor: {
+      groupLabel: "Brand color",
+    },
+    banned: {
+      empty: "No banned word for this client.",
+      placeholder: "e.g. flash sale",
+      add: "Add",
+      removeAria: "Remove \"{value}\"",
+    },
+    trash: {
+      emptyTitle: "Trash empty",
+      emptyDescription:
+        "Deleted content is kept for {days} days before media purge, and restorable until then.",
+      retentionNote:
+        "Deleted content is kept for {days} days before media purge.",
+      restore: "Restore",
+      restoredToast: "Content restored (preview)",
+      purgedToast: "Content permanently deleted (preview)",
+      deletedRelative: "· deleted {when}",
+      purgeAria: "Delete {title} permanently",
+      purgeDialogTitle: "Delete permanently?",
+      purgeDialogDescription:
+        "\"{title}\" will be removed from the trash with no way to restore it. In production, the attached media is purged.",
+      purgeConfirm: "Delete permanently (preview)",
+    },
+  },
 }

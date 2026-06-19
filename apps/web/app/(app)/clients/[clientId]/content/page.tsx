@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import type { QuotaRow } from "@/components/app/studio/board-types"
 import { ContentBoard } from "@/components/app/studio/content-board"
+import { getT } from "@/lib/i18n/server"
 import {
   getClient,
   getContentItems,
@@ -13,7 +14,10 @@ import {
   getSocialAccounts,
 } from "@/lib/mocks"
 
-export const metadata: Metadata = { title: "Studio de contenu" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaContentBoard") }
+}
 
 export default async function ClientContentPage({
   params,

@@ -1,6 +1,7 @@
 "use client"
 
 import { Check } from "lucide-react"
+import { useT } from "@/lib/i18n"
 import { BRAND_HUES } from "./constants"
 
 // Sélecteur de teinte de marque : pastilles oklch prédéfinies cliquables
@@ -13,18 +14,24 @@ export function BrandColorPalette({
   value: string
   onChange: (hue: string) => void
 }) {
+  const t = useT()
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Couleur de marque">
+    <div
+      className="flex flex-wrap gap-2"
+      role="radiogroup"
+      aria-label={t("clientSettings.brandColor.groupLabel")}
+    >
       {BRAND_HUES.map((hue) => {
         const selected = hue.value === value
+        const name = t(hue.nameKey)
         return (
           <button
             key={hue.value}
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={hue.name}
-            title={hue.name}
+            aria-label={name}
+            title={name}
             onClick={() => onChange(hue.value)}
             className="relative flex size-8 items-center justify-center rounded-full ring-1 ring-foreground/10 transition-transform outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:scale-110"
             style={{ backgroundColor: hue.value }}

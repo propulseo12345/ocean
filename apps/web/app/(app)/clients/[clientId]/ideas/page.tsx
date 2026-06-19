@@ -1,9 +1,13 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BoardIdeaBank } from "@/components/app/studio/board-idea-bank"
+import { getT } from "@/lib/i18n/server"
 import { getClient, getContentItems, getPillars } from "@/lib/mocks"
 
-export const metadata: Metadata = { title: "Banque d'idées" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaIdeas") }
+}
 
 export default async function ClientIdeasPage({
   params,

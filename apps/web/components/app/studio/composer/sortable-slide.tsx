@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Film, X } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { ComposerMedia } from "./composer-types"
 
@@ -24,6 +25,7 @@ export function SortableSlide({
   onSelect: () => void
   onRemove: () => void
 }) {
+  const t = useT()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: media.id,
   })
@@ -39,7 +41,11 @@ export function SortableSlide({
       <button
         type="button"
         onClick={onSelect}
-        aria-label={`Slide ${index + 1}${active ? " (sélectionnée)" : ""}`}
+        aria-label={
+          active
+            ? t("composer.slide.ariaSlideSelected", { index: index + 1 })
+            : t("composer.slide.ariaSlide", { index: index + 1 })
+        }
         aria-current={active || undefined}
         className={cn(
           "relative block size-20 overflow-hidden rounded-lg border-2 bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -48,7 +54,7 @@ export function SortableSlide({
       >
         <Image
           src={media.thumbUrl}
-          alt={media.altText || `Slide ${index + 1}`}
+          alt={media.altText || t("composer.slide.slideAlt", { index: index + 1 })}
           fill
           sizes="80px"
           className="object-cover"
@@ -66,14 +72,14 @@ export function SortableSlide({
 
       {index === 0 ? (
         <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-1.5 py-px text-[10px] font-medium whitespace-nowrap text-primary-foreground">
-          Couverture
+          {t("composer.slide.cover")}
         </span>
       ) : null}
 
       <Button
         variant="secondary"
         size="icon-xs"
-        aria-label={`Retirer la slide ${index + 1}`}
+        aria-label={t("composer.slide.removeSlide", { index: index + 1 })}
         className="absolute -top-1.5 -right-1.5 size-5 rounded-full shadow-sm"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={onRemove}

@@ -1,6 +1,7 @@
 import { Crop, Plus } from "lucide-react"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { GridRatio, GridTileData } from "./grid-types"
 import { cropLoss, isSortableTile, RATIO_CLASS } from "./grid-types"
@@ -15,6 +16,7 @@ function displayMedia(tile: GridTileData) {
 }
 
 function GhostTile({ tile }: { tile: GridTileData }) {
+  const t = useT()
   return (
     <div
       className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed p-2 text-center"
@@ -27,7 +29,7 @@ function GhostTile({ tile }: { tile: GridTileData }) {
       <span className="line-clamp-2 text-[11px] font-medium leading-tight">
         {tile.ghost?.label}
       </span>
-      <span className="text-[10px] text-muted-foreground">Emplacement réservé</span>
+      <span className="text-[10px] text-muted-foreground">{t("grid.tile.reserved")}</span>
     </div>
   )
 }
@@ -52,6 +54,7 @@ export function GridTile({
   finalRender?: boolean
   dragging?: boolean
 }) {
+  const t = useT()
   const media = displayMedia(tile)
   const sortable = isSortableTile(tile)
   const failed = tile.status === "failed"
@@ -91,11 +94,11 @@ export function GridTile({
       {/* Badge recadrage : un média qui sera rogné sur le profil réel. */}
       {cropped ? (
         <span
-          title={`Ce média sera recadré en ${ratio} sur le profil — survole la tuile pour voir la zone perdue`}
+          title={t("grid.tile.cropBadge", { ratio })}
           className="absolute bottom-8 left-1.5 z-10 rounded-full bg-warning/90 p-1 text-warning-foreground"
         >
           <Crop className="size-3" />
-          <span className="sr-only">Média recadré en {ratio}</span>
+          <span className="sr-only">{t("grid.tile.croppedSr", { ratio })}</span>
         </span>
       ) : null}
 

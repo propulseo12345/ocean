@@ -13,10 +13,21 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { formatTime } from "@/lib/format"
-import { contentStatusMeta } from "@/lib/mocks/labels"
+import { type MessageKey, pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
-import { type DayKey, dayNumber, monthOf, WEEKDAY_LABELS } from "./calendar-utils"
+import { type DayKey, dayNumber, monthOf } from "./calendar-utils"
+
+// Entêtes de jours (lundi → dimanche) traduits via le namespace calendar.
+const WEEKDAY_KEYS: MessageKey[] = [
+  "calendar.weekdays.mon",
+  "calendar.weekdays.tue",
+  "calendar.weekdays.wed",
+  "calendar.weekdays.thu",
+  "calendar.weekdays.fri",
+  "calendar.weekdays.sat",
+  "calendar.weekdays.sun",
+]
 
 // Export PDF du planning : aperçu print stylé + window.print() (CSS @media
 // print). Par défaut, les états techniques sont masqués (livrable client).
@@ -66,6 +77,9 @@ export function ExportDialog({
   itemsByDay: ReadonlyMap<DayKey, ContentItem[]>
   tz: string
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const [clientFriendly, setClientFriendly] = useState(true)
 
   function itemsFor(key: DayKey): ContentItem[] {
@@ -78,20 +92,17 @@ export function ExportDialog({
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
         <style>{PRINT_CSS}</style>
         <DialogHeader>
-          <DialogTitle>Exporter le planning</DialogTitle>
-          <DialogDescription>
-            Aperçu d'impression — utilise « Enregistrer en PDF » dans la boîte de dialogue
-            d'impression.
-          </DialogDescription>
+          <DialogTitle>{t("calendar.export.title")}</DialogTitle>
+          <DialogDescription>{t("calendar.export.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex w-fit items-center gap-2 text-sm">
           <Switch
             checked={clientFriendly}
             onCheckedChange={setClientFriendly}
-            aria-label="Masquer les états techniques"
+            aria-label={t("calendar.export.hideTechnical")}
           />
-          Livrable client (masque échecs, annulés et statuts techniques)
+          {t("calendar.export.clientDeliverable")}
         </div>
 
         <div id="calendar-print" className="rounded-xl border bg-card p-4">
@@ -104,12 +115,12 @@ export function ExportDialog({
           </header>
 
           <div className="grid grid-cols-7 overflow-hidden rounded-lg border-r border-b text-[10px]">
-            {WEEKDAY_LABELS.map((label) => (
+            {WEEKDAY_KEYS.map((labelKey) => (
               <div
-                key={label}
+                key={labelKey}
                 className="border-t border-l bg-muted/40 px-1 py-1 text-center font-semibold text-muted-foreground uppercase"
               >
-                {label}
+                {t(labelKey)}
               </div>
             ))}
             {days.map((key) => {
@@ -136,12 +147,9 @@ export function ExportDialog({
                       <span className="text-muted-foreground tabular-nums">
                         {item.scheduledAt ? formatTime(item.scheduledAt, tz) : ""}
                       </span>{" "}
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-medium">{pick(item.title, locale)}</span>
                       {!clientFriendly ? (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {contentStatusMeta[item.status].label}
-                        </span>
+                        <span className="text-muted-foreground"> · {lbl.contentStatus(item.status)}</span>
                       ) : null}
                     </p>
                   ))}
@@ -151,18 +159,17 @@ export function ExportDialog({
           </div>
 
           <p className="mt-3 text-right text-[10px] text-muted-foreground">
-            Planning généré avec Ocean — aperçu preview, heures dans le fuseau du client (
-            {client.timezone}).
+            {t("calendar.export.footer", { tz: client.timezone })}
           </p>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Fermer
+            {t("common.close")}
           </Button>
           <Button onClick={() => window.print()}>
             <Printer data-icon="inline-start" />
-            Imprimer / PDF
+            {t("calendar.export.print")}
           </Button>
         </DialogFooter>
       </DialogContent>

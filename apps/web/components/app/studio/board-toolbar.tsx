@@ -10,27 +10,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { type Translator, useT } from "@/lib/i18n"
 import type { ContentPillar, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { BoardFiltersPopover } from "./board-filters"
 import type { BoardState } from "./board-state"
-import { type BoardViewMode, SORT_LABELS, type SortKey } from "./board-types"
+import { type BoardViewMode, SORT_LABEL_KEYS, type SortKey } from "./board-types"
 
 // Barre d'outils du board : recherche plein texte, filtres, tri et bascule
 // Liste / Kanban. Compteur de résultats inclus (N sur M).
 
 const SORT_KEYS: SortKey[] = ["priority", "scheduled", "created", "status"]
 
-const MODES: { id: BoardViewMode; label: string; icon: typeof LayoutList }[] = [
-  { id: "list", label: "Liste", icon: LayoutList },
-  { id: "kanban", label: "Kanban", icon: SquareKanban },
+const MODES: {
+  id: BoardViewMode
+  labelKey: "studio.toolbar.modeList" | "studio.toolbar.modeKanban"
+  icon: typeof LayoutList
+}[] = [
+  { id: "list", labelKey: "studio.toolbar.modeList", icon: LayoutList },
+  { id: "kanban", labelKey: "studio.toolbar.modeKanban", icon: SquareKanban },
 ]
 
-function ModeSwitch({ mode, onMode }: { mode: BoardViewMode; onMode: (m: BoardViewMode) => void }) {
+function ModeSwitch({
+  mode,
+  onMode,
+  t,
+}: {
+  mode: BoardViewMode
+  onMode: (m: BoardViewMode) => void
+  t: Translator
+}) {
   return (
     <div
       role="group"
-      aria-label="Mode d'affichage"
+      aria-label={t("studio.toolbar.modeGroup")}
       className="inline-flex w-fit items-center gap-0.5 rounded-lg bg-muted p-0.5"
     >
       {MODES.map((m) => (
@@ -47,7 +60,7 @@ function ModeSwitch({ mode, onMode }: { mode: BoardViewMode; onMode: (m: BoardVi
           )}
         >
           <m.icon className="size-3.5" />
-          {m.label}
+          {t(m.labelKey)}
         </button>
       ))}
     </div>
@@ -69,6 +82,7 @@ export function BoardToolbar({
   resultCount: number
   totalCount: number
 }) {
+  const t = useT()
   const search = board.filters.search
 
   return (
@@ -79,15 +93,15 @@ export function BoardToolbar({
           type="search"
           value={search}
           onChange={(e) => board.patchFilters({ search: e.target.value })}
-          placeholder="Rechercher titre, légende, étiquette…"
-          aria-label="Rechercher dans les contenus"
+          placeholder={t("studio.toolbar.searchPlaceholder")}
+          aria-label={t("studio.toolbar.searchAria")}
           className="pl-8 [&::-webkit-search-cancel-button]:hidden"
         />
         {search.length > 0 ? (
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label="Effacer la recherche"
+            aria-label={t("studio.toolbar.clearSearch")}
             className="absolute top-1/2 right-1.5 -translate-y-1/2"
             onClick={() => board.patchFilters({ search: "" })}
           >
@@ -99,14 +113,14 @@ export function BoardToolbar({
       <BoardFiltersPopover board={board} platforms={platforms} pillars={pillars} labels={labels} />
 
       <Select value={board.sort} onValueChange={(v) => board.setSort(v as SortKey)}>
-        <SelectTrigger size="sm" aria-label="Trier les contenus">
+        <SelectTrigger size="sm" aria-label={t("studio.toolbar.sortAria")}>
           <ArrowUpDown className="size-3.5 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {SORT_KEYS.map((key) => (
             <SelectItem key={key} value={key}>
-              {SORT_LABELS[key]}
+              {t(SORT_LABEL_KEYS[key])}
             </SelectItem>
           ))}
         </SelectContent>
@@ -115,11 +129,12 @@ export function BoardToolbar({
       <span className="flex-1" />
 
       <span className="text-xs text-muted-foreground tabular-nums">
-        {resultCount} contenu{resultCount > 1 ? "s" : ""}
-        {resultCount !== totalCount ? ` sur ${totalCount}` : ""}
+        {resultCount === totalCount
+          ? t("studio.toolbar.resultCount", { count: resultCount })
+          : t("studio.toolbar.resultCountOf", { count: resultCount, total: totalCount })}
       </span>
 
-      <ModeSwitch mode={board.mode} onMode={board.setMode} />
+      <ModeSwitch mode={board.mode} onMode={board.setMode} t={t} />
     </div>
   )
 }

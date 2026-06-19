@@ -4,11 +4,23 @@ import { CalendarDays, Plus } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
+import { type MessageKey, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { createContentHref } from "./calendar-schedule"
 import type { DayContext } from "./calendar-types"
-import { type DayKey, monthOf, WEEKDAY_LABELS } from "./calendar-utils"
+import { type DayKey, monthOf } from "./calendar-utils"
 import { DayCell } from "./day-cell"
+
+// Entêtes de jours (lundi → dimanche) traduits via le namespace calendar.
+const WEEKDAY_KEYS: MessageKey[] = [
+  "calendar.weekdays.mon",
+  "calendar.weekdays.tue",
+  "calendar.weekdays.wed",
+  "calendar.weekdays.thu",
+  "calendar.weekdays.fri",
+  "calendar.weekdays.sat",
+  "calendar.weekdays.sun",
+]
 
 // Grille mensuelle lundi→dimanche. L'empty state propose désormais une action
 // concrète (création préremplie sur aujourd'hui).
@@ -24,6 +36,7 @@ export function MonthGrid({
   itemsByDay: ReadonlyMap<DayKey, ContentItem[]>
   ctx: DayContext
 }) {
+  const t = useT()
   const monthHasContent = days.some(
     (k) => monthOf(k) === currentMonth && (itemsByDay.get(k)?.length ?? 0) > 0
   )
@@ -32,12 +45,12 @@ export function MonthGrid({
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border-r border-b">
         <div className="grid grid-cols-7 border-t border-l bg-muted/40">
-          {WEEKDAY_LABELS.map((label) => (
+          {WEEKDAY_KEYS.map((labelKey) => (
             <div
-              key={label}
+              key={labelKey}
               className="px-2 py-2 text-center text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
             >
-              {label}
+              {t(labelKey)}
             </div>
           ))}
         </div>
@@ -58,15 +71,15 @@ export function MonthGrid({
       {!monthHasContent ? (
         <EmptyState
           icon={CalendarDays}
-          title="Aucun contenu programmé ce mois-ci"
-          description="Planifie un contenu depuis une case de date, l'étagère « À planifier » ou le studio pour tenir la cadence."
+          title={t("calendar.monthGrid.emptyTitle")}
+          description={t("calendar.monthGrid.emptyDescription")}
           action={
             <Button
               size="sm"
               render={<Link href={createContentHref(ctx.clientId, ctx.todayKey, ctx.tz)} />}
             >
               <Plus data-icon="inline-start" />
-              Créer un contenu
+              {t("calendar.monthGrid.createContent")}
             </Button>
           }
         />

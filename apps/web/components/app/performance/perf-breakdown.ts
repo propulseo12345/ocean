@@ -1,3 +1,4 @@
+import type { L, MessageKey } from "@/lib/i18n"
 import { getContentItems, getPillars, getPostMetrics, getSocialAccounts } from "@/lib/mocks"
 import type { Platform, SocialAccount } from "@/lib/mocks/types"
 import { engagementOf, PERIOD_FACTOR, type PerfPeriod, round1, scaleStats } from "./perf-core"
@@ -8,7 +9,7 @@ import type { PostRow } from "./perf-data"
 
 export interface PillarSlice {
   id: string
-  name: string
+  name: L<string>
   colorVar: string
   targetShare: number
   posts: number
@@ -54,7 +55,8 @@ export interface PlatformRow {
   reach: number
   engagement: number
   rate: number
-  note?: string
+  /** Clé i18n d'une note explicative, résolue à l'affichage via t(). */
+  noteKey?: MessageKey
 }
 
 // Comparatif par plateforme. TikTok = brouillon → aucune statistique API.
@@ -73,7 +75,7 @@ export function getPlatformRows(clientId: string, posts: PostRow[]): PlatformRow
         reach: 0,
         engagement: 0,
         rate: 0,
-        note: "Brouillon — aucune statistique via l'API",
+        noteKey: "performance.platform.noteDraft",
       }
     }
     // IG porte l'essentiel ; FB reçoit une fraction déterministe (≈ 35 %).
@@ -89,7 +91,7 @@ export function getPlatformRows(clientId: string, posts: PostRow[]): PlatformRow
       reach,
       engagement,
       rate: reach > 0 ? round1((engagement / reach) * 100) : 0,
-      note: platform === "facebook" ? "Métriques Pages limitées (accès avancé requis)" : undefined,
+      noteKey: platform === "facebook" ? "performance.platform.noteFbLimited" : undefined,
     }
   })
 }

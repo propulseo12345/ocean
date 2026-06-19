@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { SavedView } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { BoardState } from "./board-state"
@@ -42,6 +43,8 @@ function ViewChip({
 }
 
 export function BoardViews({ board, clientId }: { board: BoardState; clientId: string }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const noFilters = filtersAreEmpty(board.filters)
@@ -52,22 +55,22 @@ export function BoardViews({ board, clientId }: { board: BoardState; clientId: s
     board.saveCurrentView(trimmed, clientId)
     setOpen(false)
     setName("")
-    toast.success(`Vue « ${trimmed} » enregistrée (aperçu)`, {
-      description: "Disponible dans les chips de vues — état local de la preview.",
+    toast.success(t("studio.views.saved", { name: trimmed }), {
+      description: t("studio.views.savedDesc"),
     })
   }
 
   return (
     <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5">
       <ViewChip
-        label="Tous les contenus"
+        label={t("studio.views.all")}
         active={board.activeViewId === null && noFilters}
         onClick={() => board.applyView(null)}
       />
       {board.views.map((view: SavedView) => (
         <ViewChip
           key={view.id}
-          label={view.name}
+          label={pick(view.name, locale)}
           active={board.activeViewId === view.id}
           onClick={() => board.applyView(view)}
         />
@@ -81,27 +84,27 @@ export function BoardViews({ board, clientId }: { board: BoardState; clientId: s
               size="xs"
               className="shrink-0 rounded-full text-muted-foreground"
               disabled={noFilters}
-              title={noFilters ? "Applique d'abord des filtres ou une recherche" : undefined}
+              title={noFilters ? t("studio.views.saveDisabledHint") : undefined}
             />
           }
         >
           <BookmarkPlus />
-          Enregistrer la vue actuelle
+          {t("studio.views.saveCurrent")}
         </PopoverTrigger>
         <PopoverContent align="start" className="w-64">
           <div className="space-y-1.5">
-            <Label htmlFor="board-view-name">Nom de la vue</Label>
+            <Label htmlFor="board-view-name">{t("studio.views.nameLabel")}</Label>
             <Input
               id="board-view-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && save()}
-              placeholder="Ex. Reels en attente"
+              placeholder={t("studio.views.namePlaceholder")}
               autoFocus
             />
           </div>
           <Button size="sm" onClick={save} disabled={name.trim().length === 0}>
-            Enregistrer (aperçu)
+            {t("studio.views.save")}
           </Button>
         </PopoverContent>
       </Popover>

@@ -4,11 +4,15 @@ import { CalendarRange, Send } from "lucide-react"
 import { GoogleIcon, MicrosoftIcon } from "@/components/app/agenda/provider-icons"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Switch } from "@/components/ui/switch"
+import { type L, pick, useLocale, useT } from "@/lib/i18n"
 import type { CalendarAccount, CalendarProvider } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 export interface CalendarFilter {
-  name: string
+  /** Identifiant stable (indépendant de la langue) — clé de filtre. */
+  key: string
+  /** Libellé bilingue affiché. */
+  name: L<string>
   colorVar: string
   accountId: string
 }
@@ -30,12 +34,14 @@ export function AgendaSidebar({
   accounts: CalendarAccount[]
   calendars: CalendarFilter[]
   disabled: ReadonlySet<string>
-  onToggle: (name: string) => void
+  onToggle: (key: string) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <h2 className="font-heading text-sm font-semibold">Comptes connectés</h2>
+        <h2 className="font-heading text-sm font-semibold">{t("agenda.connectedAccounts")}</h2>
         <ul className="space-y-2">
           {accounts.map((acc) => (
             <li key={acc.id} className="flex items-center gap-2.5 rounded-lg border bg-card p-2.5">
@@ -43,7 +49,9 @@ export function AgendaSidebar({
                 <ProviderIcon provider={acc.provider} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{acc.label}</span>
+                <span className="block truncate text-sm font-medium">
+                  {pick(acc.label, locale)}
+                </span>
                 <span className="block truncate text-xs text-muted-foreground">{acc.email}</span>
               </span>
               <AccountStatusBadge status={acc.status} className="shrink-0" />
@@ -53,12 +61,13 @@ export function AgendaSidebar({
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-sm font-semibold">Calendriers</h2>
+        <h2 className="font-heading text-sm font-semibold">{t("agenda.calendars")}</h2>
         <ul className="space-y-1">
           {calendars.map((cal) => {
-            const enabled = !disabled.has(cal.name)
+            const enabled = !disabled.has(cal.key)
+            const calName = pick(cal.name, locale)
             return (
-              <li key={cal.name}>
+              <li key={cal.key}>
                 <div className="-mx-1 flex items-center gap-2.5 rounded-md px-1 py-1.5 hover:bg-muted/50">
                   <span
                     className={cn(
@@ -73,13 +82,13 @@ export function AgendaSidebar({
                       enabled ? "text-foreground" : "text-muted-foreground"
                     )}
                   >
-                    {cal.name}
+                    {calName}
                   </span>
                   <Switch
                     size="sm"
                     checked={enabled}
-                    onCheckedChange={() => onToggle(cal.name)}
-                    aria-label={`Afficher le calendrier ${cal.name}`}
+                    onCheckedChange={() => onToggle(cal.key)}
+                    aria-label={t("agenda.showCalendar", { name: calName })}
                   />
                 </div>
               </li>
@@ -89,18 +98,18 @@ export function AgendaSidebar({
       </section>
 
       <section className="space-y-2.5">
-        <h2 className="font-heading text-sm font-semibold">Légende</h2>
+        <h2 className="font-heading text-sm font-semibold">{t("agenda.legend")}</h2>
         <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-md border-l-2 border-l-foreground/40 bg-card">
             <CalendarRange className="size-3.5" />
           </span>
-          Rendez-vous agenda
+          {t("agenda.legendEvent")}
         </div>
         <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed bg-primary/10 text-primary">
             <Send className="size-3.5" />
           </span>
-          Publication planifiée
+          {t("agenda.legendPublication")}
         </div>
       </section>
     </div>

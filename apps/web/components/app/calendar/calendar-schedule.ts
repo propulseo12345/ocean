@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -20,19 +21,20 @@ export function isMovable(item: ContentItem): boolean {
   return !LOCKED_STATUSES.includes(item.status)
 }
 
-export function lockReason(status: ContentStatus): string | null {
+/** Clé i18n expliquant pourquoi la date est verrouillée (null si déplaçable). */
+export function lockReasonKey(status: ContentStatus): MessageKey | null {
   if (!LOCKED_STATUSES.includes(status)) return null
   switch (status) {
     case "published":
-      return "Déjà publié — la date ne peut plus changer."
+      return "calendar.lock.published"
     case "publishing":
-      return "Publication en cours — date verrouillée."
+      return "calendar.lock.publishing"
     case "partially_published":
-      return "Partiellement publié — repasser par la fiche pour relancer."
+      return "calendar.lock.partiallyPublished"
     case "failed":
-      return "En échec — utilise « Réessayer » plutôt qu'un déplacement."
+      return "calendar.lock.failed"
     default:
-      return "Contenu annulé — date verrouillée."
+      return "calendar.lock.canceled"
   }
 }
 

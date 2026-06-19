@@ -9,25 +9,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useLabels, useLocale, useT } from "@/lib/i18n"
 import type { PlatformRow } from "./perf-data"
 import { compactNumber, percent } from "./perf-utils"
 
 export function PerfPlatformTable({ rows }: { rows: PlatformRow[] }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Comparatif par plateforme</CardTitle>
+        <CardTitle>{t("performance.platform.title")}</CardTitle>
       </CardHeader>
       <CardContent className="px-0 pb-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-6">Plateforme</TableHead>
-              <TableHead className="text-right">Publications</TableHead>
-              <TableHead className="text-right">Portée</TableHead>
-              <TableHead className="text-right">Engagements</TableHead>
-              <TableHead className="pr-6 text-right">Taux</TableHead>
+              <TableHead className="pl-6">{t("performance.platform.colPlatform")}</TableHead>
+              <TableHead className="text-right">{t("performance.platform.colPosts")}</TableHead>
+              <TableHead className="text-right">{t("performance.platform.colReach")}</TableHead>
+              <TableHead className="text-right">
+                {t("performance.platform.colEngagement")}
+              </TableHead>
+              <TableHead className="pr-6 text-right">{t("performance.platform.colRate")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -36,10 +41,10 @@ export function PerfPlatformTable({ rows }: { rows: PlatformRow[] }) {
                 <TableCell className="pl-6">
                   <div className="flex flex-col gap-0.5">
                     <PlatformBadge platform={r.platform} className="w-fit border-0 px-0" />
-                    {r.note ? (
+                    {r.noteKey ? (
                       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Info className="size-3" />
-                        {r.note}
+                        {t(r.noteKey)}
                       </span>
                     ) : null}
                   </div>
@@ -48,18 +53,20 @@ export function PerfPlatformTable({ rows }: { rows: PlatformRow[] }) {
                   <>
                     <TableCell className="text-right tabular-nums">{r.posts}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {compactNumber(r.reach)}
+                      {compactNumber(r.reach, locale)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {compactNumber(r.engagement)}
+                      {compactNumber(r.engagement, locale)}
                     </TableCell>
                     <TableCell className="pr-6 text-right tabular-nums">
-                      {percent(r.rate)}
+                      {percent(r.rate, locale)}
                     </TableCell>
                   </>
                 ) : (
                   <TableCell colSpan={4} className="pr-6 text-right text-sm text-muted-foreground">
-                    Non mesurable — {platformMeta[r.platform].label} en mode brouillon
+                    {t("performance.platform.notMeasurable", {
+                      platform: lbl.platform(r.platform),
+                    })}
                   </TableCell>
                 )}
               </TableRow>

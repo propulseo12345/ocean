@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/lib/i18n"
+import type { L } from "@/lib/i18n/localized"
 import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 
 // Types partagés de la médiathèque client (preview, données mockées).
@@ -5,7 +7,8 @@ import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 /** Référence d'un contenu utilisant un asset — pour les liens vers le studio. */
 export interface UsageRef {
   id: string
-  title: string
+  /** Titre du contenu (bilingue) — résolu via pick() à l'affichage. */
+  title: L<string>
   status: ContentStatus
   href: string
 }
@@ -37,10 +40,11 @@ export const EMPTY_FILTERS: LibraryFilters = {
 
 export type SortKey = "recent" | "weight" | "usage"
 
-export const SORT_LABELS: Record<SortKey, string> = {
-  recent: "Plus récents",
-  weight: "Plus lourds",
-  usage: "Plus utilisés",
+/** Clés i18n des libellés de tri — résolues via t() à l'affichage. */
+export const SORT_LABEL_KEYS: Record<SortKey, MessageKey> = {
+  recent: "library.sort.recent",
+  weight: "library.sort.weight",
+  usage: "library.sort.usage",
 }
 
 /** Statistiques d'en-tête (chips cliquables = filtres). */

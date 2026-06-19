@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useT } from "@/lib/i18n"
 import { BrandPaletteEditor } from "./brand-color-palette"
 import { StringListEditor } from "./string-list-editor"
 import { TagInput } from "./tag-input"
@@ -24,55 +25,51 @@ export function StepBrand({
   draft: ClientDraft
   patch: (partial: Partial<ClientDraft>) => void
 }) {
+  const t = useT()
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Ces repères suivront le client partout : ils s'afficheront pendant la rédaction et serviront
-        de garde-fous. Vous pourrez les affiner à tout moment dans les réglages.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("onboarding.brand.intro")}</p>
 
       <BrandPaletteEditor palette={draft.palette} onChange={(palette) => patch({ palette })} />
 
       <div className="space-y-1.5">
-        <Label htmlFor="brand-tone">Ton éditorial</Label>
+        <Label htmlFor="brand-tone">{t("onboarding.brand.toneLabel")}</Label>
         <Select value={draft.tone} onValueChange={(v) => patch({ tone: String(v) })}>
           <SelectTrigger id="brand-tone" className="w-full sm:w-72">
-            <SelectValue placeholder="Choisir un ton" />
+            <SelectValue placeholder={t("onboarding.brand.tonePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            {TONES.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
+            {TONES.map((toneKey) => (
+              <SelectItem key={toneKey} value={toneKey}>
+                {t(toneKey)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">
-          Comment la marque s'adresse à son audience (tutoiement, vouvoiement, registre…).
-        </p>
+        <p className="text-xs text-muted-foreground">{t("onboarding.brand.toneHint")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <StringListEditor
-          label="À faire"
+          label={t("onboarding.brand.doLabel")}
           tone="do"
-          placeholder="Ex. Tutoyer la communauté"
+          placeholder={t("onboarding.brand.doPlaceholder")}
           values={draft.doList}
           onChange={(doList) => patch({ doList })}
         />
         <StringListEditor
-          label="À éviter"
+          label={t("onboarding.brand.dontLabel")}
           tone="dont"
-          placeholder="Ex. Promotions agressives"
+          placeholder={t("onboarding.brand.dontPlaceholder")}
           values={draft.dontList}
           onChange={(dontList) => patch({ dontList })}
         />
       </div>
 
       <TagInput
-        label="Mots interdits"
-        description="Termes à ne jamais utiliser (concurrents, claims, jargon). Ocean alertera s'ils apparaissent dans une légende."
-        placeholder="Ex. discount, concurrent…"
+        label={t("onboarding.brand.bannedLabel")}
+        description={t("onboarding.brand.bannedDescription")}
+        placeholder={t("onboarding.brand.bannedPlaceholder")}
         values={draft.bannedWords}
         onChange={(bannedWords) => patch({ bannedWords })}
       />

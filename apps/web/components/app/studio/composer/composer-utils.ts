@@ -1,3 +1,4 @@
+import type { MessageKey, MessageParams } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, Platform, RecurringSlot, SocialAccount } from "@/lib/mocks/types"
 import { zonedWallToUtcIso } from "@/lib/tz"
@@ -79,7 +80,10 @@ function shiftDay(wc: WallClock, days: number): { year: number; month: number; d
 
 export interface ScheduleShortcut {
   id: string
-  label: string
+  /** Clé i18n du libellé, résolue à l'affichage via t(). */
+  labelKey: MessageKey
+  /** Paramètres d'interpolation du libellé (ex. heure du créneau récurrent). */
+  labelParams?: MessageParams
   iso: string
 }
 
@@ -104,7 +108,7 @@ export function scheduleShortcuts(client: Client, slots: RecurringSlot[]): Sched
   const out: ScheduleShortcut[] = [
     {
       id: "tomorrow",
-      label: "Demain 9 h",
+      labelKey: "composer.schedule.shortcutTomorrow",
       iso: zonedToUtcIso(tomorrow.year, tomorrow.month, tomorrow.day, 9, 0, tz),
     },
   ]
@@ -113,7 +117,7 @@ export function scheduleShortcuts(client: Client, slots: RecurringSlot[]): Sched
   const saturday = shiftDay(now, toSaturday)
   out.push({
     id: "saturday",
-    label: "Samedi 11 h",
+    labelKey: "composer.schedule.shortcutSaturday",
     iso: zonedToUtcIso(saturday.year, saturday.month, saturday.day, 11, 0, tz),
   })
 
@@ -121,7 +125,12 @@ export function scheduleShortcuts(client: Client, slots: RecurringSlot[]): Sched
     const next = slots
       .map((slot) => ({ slot, iso: nextSlotIso(slot, tz) }))
       .sort((a, b) => a.iso.localeCompare(b.iso))[0]
-    out.push({ id: "slot", label: `Prochain créneau (${next.slot.time})`, iso: next.iso })
+    out.push({
+      id: "slot",
+      labelKey: "composer.schedule.shortcutNextSlot",
+      labelParams: { time: next.slot.time },
+      iso: next.iso,
+    })
   }
 
   return out

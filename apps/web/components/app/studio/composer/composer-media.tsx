@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { INTL_LOCALE, useLocale, useT } from "@/lib/i18n"
 import type { LibraryAsset, Platform } from "@/lib/mocks/types"
 import { CAROUSEL_LIMITS, ratioLabel, validateCarousel } from "@/lib/specs"
 import {
@@ -57,6 +58,9 @@ export function ComposerMediaSection({
   libraryAssets: LibraryAsset[]
   onPatch: (partial: Partial<ComposerDraft>) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const nf = new Intl.NumberFormat(INTL_LOCALE[locale])
   const [pickerOpen, setPickerOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [cropId, setCropId] = useState<string | null>(null)
@@ -76,7 +80,7 @@ export function ComposerMediaSection({
   }
 
   function handleAdd(assets: LibraryAsset[]) {
-    const added = assets.map((a, i) => mediaFromLibrary(a, media.length + i))
+    const added = assets.map((a, i) => mediaFromLibrary(a, media.length + i, locale))
     setMedia(isCarousel ? [...media, ...added] : added.slice(0, 1))
     if (added[0]) setActiveId(added[0].id)
   }
@@ -106,10 +110,13 @@ export function ComposerMediaSection({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>
-          Médias
+          {t("composer.media.title")}
           {isCarousel ? (
             <span className="ml-2 text-xs font-normal text-muted-foreground tabular-nums">
-              {media.length}/{CAROUSEL_LIMITS.max} slides (limite API Meta)
+              {t("composer.media.slidesCount", {
+                count: media.length,
+                max: CAROUSEL_LIMITS.max,
+              })}
             </span>
           ) : null}
         </CardTitle>
@@ -120,7 +127,7 @@ export function ComposerMediaSection({
           disabled={isCarousel && media.length >= CAROUSEL_LIMITS.max}
         >
           <ImagePlus />
-          Médiathèque
+          {t("composer.media.libraryButton")}
         </Button>
       </CardHeader>
 
@@ -132,9 +139,9 @@ export function ComposerMediaSection({
             className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ImagePlus className="size-5" />
-            Choisir un visuel dans la médiathèque
+            {t("composer.media.emptyChoose")}
             <span className="text-xs text-muted-foreground/70">
-              Dépôt de fichiers réel au Lot 1 — la preview pioche dans les médias mockés.
+              {t("composer.media.emptyHint")}
             </span>
           </button>
         ) : (
@@ -148,7 +155,10 @@ export function ComposerMediaSection({
                 items={media.map((m) => m.id)}
                 strategy={horizontalListSortingStrategy}
               >
-                <ul className="flex gap-3 overflow-x-auto pt-2 pb-1" aria-label="Slides du contenu">
+                <ul
+                  className="flex gap-3 overflow-x-auto pt-2 pb-1"
+                  aria-label={t("composer.media.slidesAria")}
+                >
                   {media.map((m, index) => (
                     <SortableSlide
                       key={m.id}
@@ -163,10 +173,7 @@ export function ComposerMediaSection({
               </SortableContext>
             </DndContext>
             {isCarousel ? (
-              <p className="text-xs text-muted-foreground">
-                Glisse les vignettes pour réordonner — la 1<sup>re</sup> slide est la couverture du
-                carrousel.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("composer.media.carouselReorder")}</p>
             ) : null}
 
             {active ? (
@@ -175,39 +182,43 @@ export function ComposerMediaSection({
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {ratioLabel(active.width, active.height)}
                     {active.fileSizeMb !== undefined
-                      ? ` · ${active.fileSizeMb.toLocaleString("fr-FR")} Mo`
+                      ? ` · ${t("composer.media.sizeMb", { size: nf.format(active.fileSizeMb) })}`
                       : ""}
                     {active.mimeType ? ` · ${MIME_LABELS[active.mimeType] ?? active.mimeType}` : ""}
-                    {active.durationSec !== undefined ? ` · ${active.durationSec} s` : ""}
-                    {active.crop ? ` · recadré ${active.crop}` : ""}
+                    {active.durationSec !== undefined
+                      ? ` · ${t("composer.media.duration", { count: active.durationSec })}`
+                      : ""}
+                    {active.crop
+                      ? ` · ${t("composer.media.cropped", { preset: active.crop })}`
+                      : ""}
                   </p>
                   <div className="flex items-center gap-1.5">
                     {active.type === "image" ? (
                       <Button variant="outline" size="xs" onClick={() => setCropId(active.id)}>
                         <Crop />
-                        Recadrer
+                        {t("composer.media.crop")}
                       </Button>
                     ) : null}
                     <Button variant="destructive" size="xs" onClick={() => handleRemove(active.id)}>
                       <Trash2 />
-                      Retirer
+                      {t("composer.media.remove")}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="composer-alt" className="text-xs">
-                    Texte alternatif (accessibilité)
+                    {t("composer.media.altLabel")}
                   </Label>
                   <Input
                     id="composer-alt"
                     value={active.altText}
                     onChange={(e) => patchMedia(active.id, { altText: e.target.value })}
-                    placeholder="Décris le visuel pour les lecteurs d'écran…"
+                    placeholder={t("composer.media.altPlaceholder")}
                     className="h-7 text-xs"
                   />
                   <p className="text-[11px] text-muted-foreground/70">
-                    Envoyé à Instagram et Facebook si la plateforme le supporte.
+                    {t("composer.media.altHint")}
                   </p>
                 </div>
               </div>

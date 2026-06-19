@@ -5,7 +5,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatDate } from "@/lib/format"
+import { useFormat, useT } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { ConfirmDialog } from "./confirm-dialog"
@@ -14,6 +14,8 @@ import { SectionCard } from "./section-card"
 import { TrashList } from "./trash-list"
 
 export function SectionDanger({ client, trashed }: { client: Client; trashed: ContentItem[] }) {
+  const t = useT()
+  const f = useFormat()
   const [archivedAt, setArchivedAt] = useState(client.archivedAt)
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -22,46 +24,48 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
   function archive() {
     setArchivedAt(MOCK_NOW.toISOString())
     setConfirmArchive(false)
-    toast.success("Client archivé (aperçu)", {
-      description: "Il disparaît des listes actives ; ses contenus restent conservés.",
+    toast.success(t("clientSettings.danger.archivedToast"), {
+      description: t("clientSettings.danger.archivedToastDescription"),
     })
   }
 
   function reactivate() {
     setArchivedAt(null)
-    toast.success("Client réactivé (aperçu)", {
-      description: "Il réapparaît dans la liste active et le switcher.",
+    toast.success(t("clientSettings.danger.reactivatedToast"), {
+      description: t("clientSettings.danger.reactivatedToastDescription"),
     })
   }
 
   function deleteClient() {
     setConfirmDelete(false)
-    toast.error("Suppression définitive simulée (aperçu)", {
-      description: "Aucun client n'est réellement supprimé pendant la preview.",
+    toast.error(t("clientSettings.danger.deletedToast"), {
+      description: t("clientSettings.danger.deletedToastDescription"),
     })
   }
 
   return (
     <SectionCard
       icon={Archive}
-      title="Archivage & corbeille"
-      description="Mettre le client en pause, restaurer des contenus supprimés ou tout effacer."
+      title={t("clientSettings.danger.title")}
+      description={t("clientSettings.danger.description")}
     >
       <div className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium">
-            {isArchived ? "Client archivé" : "Archiver le client"}
+            {isArchived
+              ? t("clientSettings.danger.archivedTitle")
+              : t("clientSettings.danger.archiveTitle")}
           </p>
           <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
             {isArchived && archivedAt
-              ? `Archivé le ${formatDate(archivedAt)}. Réactive-le pour reprendre la collaboration.`
-              : "Il n'apparaîtra plus dans la liste active ni le switcher ; ses contenus sont conservés."}
+              ? t("clientSettings.danger.archivedOn", { date: f.date(archivedAt) })
+              : t("clientSettings.danger.archiveHint")}
           </p>
         </div>
         {isArchived ? (
           <Button size="sm" variant="outline" onClick={reactivate} className="shrink-0">
             <ArchiveRestore />
-            Réactiver
+            {t("clientSettings.danger.reactivate")}
           </Button>
         ) : (
           <Button
@@ -71,13 +75,13 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
             className="shrink-0"
           >
             <Archive />
-            Archiver
+            {t("clientSettings.danger.archive")}
           </Button>
         )}
       </div>
 
       <div className="space-y-2.5">
-        <p className="text-sm font-medium">Corbeille</p>
+        <p className="text-sm font-medium">{t("clientSettings.danger.trashTitle")}</p>
         <TrashList items={trashed} />
       </div>
 
@@ -85,15 +89,13 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm text-destructive">
             <Trash2 className="size-4" />
-            Zone de danger
+            {t("clientSettings.danger.dangerZone")}
           </CardTitle>
-          <CardDescription>
-            Suppression définitive du client et de toutes ses données. Aucune réversibilité.
-          </CardDescription>
+          <CardDescription>{t("clientSettings.danger.dangerDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
-            Supprimer définitivement le client
+            {t("clientSettings.danger.deletePermanently")}
           </Button>
         </CardContent>
       </Card>
@@ -101,9 +103,9 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
       <ConfirmDialog
         open={confirmArchive}
         onOpenChange={setConfirmArchive}
-        title="Archiver ce client ?"
-        description="Il disparaîtra des listes actives et du switcher. Ses contenus et son historique restent conservés, et tu pourras le réactiver à tout moment."
-        confirmLabel="Archiver (aperçu)"
+        title={t("clientSettings.danger.archiveDialogTitle")}
+        description={t("clientSettings.danger.archiveDialogDescription")}
+        confirmLabel={t("clientSettings.danger.archiveConfirm")}
         destructive={false}
         onConfirm={archive}
       />

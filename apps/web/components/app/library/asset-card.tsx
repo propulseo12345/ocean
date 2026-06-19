@@ -2,7 +2,8 @@
 
 import { Check, CircleAlert, Film, TriangleAlert } from "lucide-react"
 import Image from "next/image"
-import { formatDayMonth } from "@/lib/format"
+import { useFormat, useLocale, useT } from "@/lib/i18n"
+import { pick } from "@/lib/i18n/localized"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel, type SpecIssue } from "@/lib/specs"
 import { cn } from "@/lib/utils"
@@ -30,18 +31,25 @@ export function AssetCard({
   onOpen,
   onToggleSelect,
 }: AssetCardProps) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const used = asset.usedInContentIds.length
   const errored = hasSpecErrors(issues)
   const source = sourceMeta[asset.source]
-  const label = asset.altText ?? `Média ${asset.id}`
+  const label = asset.altText ? pick(asset.altText, locale) : t("library.card.fallbackLabel", { id: asset.id })
 
   return (
     <button
       type="button"
       onClick={() => (selectMode ? onToggleSelect(asset.id) : onOpen(asset))}
       aria-pressed={selectMode ? selected : undefined}
-      aria-label={selectMode ? `Sélectionner ${label}` : `Ouvrir la fiche de ${label}`}
-      title={issues[0]?.message}
+      aria-label={
+        selectMode
+          ? t("library.card.selectAria", { label })
+          : t("library.card.openAria", { label })
+      }
+      title={issues[0] ? t(issues[0].key, issues[0].params) : undefined}
       className={cn(
         "group block w-full overflow-hidden rounded-xl border bg-card text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected ? "border-primary ring-1 ring-primary/40" : "hover:border-primary/40"
@@ -59,7 +67,7 @@ export function AssetCard({
         {asset.type === "video" ? (
           <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
             <Film className="size-3" aria-hidden />
-            {asset.durationSec !== undefined ? formatDuration(asset.durationSec) : "Vidéo"}
+            {asset.durationSec !== undefined ? formatDuration(asset.durationSec) : t("library.unit.video")}
           </span>
         ) : null}
 
@@ -69,7 +77,7 @@ export function AssetCard({
             used > 0 ? "bg-black/55 text-white" : "bg-success/90 text-success-foreground"
           )}
         >
-          {used > 0 ? `Utilisé ×${used}` : "Inédit"}
+          {used > 0 ? t("library.card.usedCount", { count: used }) : t("library.card.unused")}
         </span>
 
         {issues.length > 0 ? (
@@ -80,9 +88,9 @@ export function AssetCard({
             )}
           >
             {errored ? (
-              <CircleAlert className="size-3.5" aria-label="Hors specs Instagram" />
+              <CircleAlert className="size-3.5" aria-label={t("library.card.offSpec")} />
             ) : (
-              <TriangleAlert className="size-3.5" aria-label="Avertissement specs" />
+              <TriangleAlert className="size-3.5" aria-label={t("library.card.specWarning")} />
             )}
           </span>
         ) : null}
@@ -110,15 +118,15 @@ export function AssetCard({
               source.chipClass
             )}
           >
-            {source.label}
+            {t(source.labelKey)}
           </span>
           <span className="shrink-0 text-[10px] text-muted-foreground">
-            {formatDayMonth(asset.uploadedAt, tz)}
+            {f.dayMonth(asset.uploadedAt, tz)}
           </span>
         </span>
         <span className="block truncate text-[11px] text-muted-foreground tabular-nums">
           {asset.width}×{asset.height} · {ratioLabel(asset.width, asset.height)}
-          {asset.fileSizeMb !== undefined ? ` · ${formatMb(asset.fileSizeMb)}` : ""}
+          {asset.fileSizeMb !== undefined ? ` · ${formatMb(asset.fileSizeMb, locale, t)}` : ""}
         </span>
       </span>
     </button>

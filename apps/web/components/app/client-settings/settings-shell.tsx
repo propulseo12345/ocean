@@ -11,6 +11,7 @@ import {
   Waypoints,
 } from "lucide-react"
 import { useState } from "react"
+import { type MessageKey, useT } from "@/lib/i18n"
 import type {
   BrandKit,
   Client,
@@ -31,18 +32,18 @@ import { SectionSlots } from "./section-slots"
 
 interface NavItem {
   id: string
-  label: string
+  labelKey: MessageKey
   icon: LucideIcon
 }
 
 const NAV: NavItem[] = [
-  { id: "profil", label: "Profil", icon: UserRound },
-  { id: "comptes", label: "Comptes", icon: Waypoints },
-  { id: "marque", label: "Marque", icon: Palette },
-  { id: "validation", label: "Validation", icon: ShieldCheck },
-  { id: "creneaux", label: "Créneaux", icon: CalendarClock },
-  { id: "cadence", label: "Cadence", icon: TriangleAlert },
-  { id: "archivage", label: "Archivage", icon: Archive },
+  { id: "profil", labelKey: "clientSettings.nav.profile", icon: UserRound },
+  { id: "comptes", labelKey: "clientSettings.nav.accounts", icon: Waypoints },
+  { id: "marque", labelKey: "clientSettings.nav.brand", icon: Palette },
+  { id: "validation", labelKey: "clientSettings.nav.approval", icon: ShieldCheck },
+  { id: "creneaux", labelKey: "clientSettings.nav.slots", icon: CalendarClock },
+  { id: "cadence", labelKey: "clientSettings.nav.cadence", icon: TriangleAlert },
+  { id: "archivage", labelKey: "clientSettings.nav.archive", icon: Archive },
 ]
 
 export function SettingsShell({
@@ -102,11 +103,12 @@ function Anchor({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function SectionNav() {
+  const t = useT()
   const [active, setActive] = useState(NAV[0].id)
 
   return (
     <nav
-      aria-label="Sections des réglages"
+      aria-label={t("clientSettings.nav.ariaLabel")}
       className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-20 lg:mx-0 lg:w-44 lg:shrink-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
     >
       {NAV.map((item) => (
@@ -122,7 +124,7 @@ function SectionNav() {
           )}
         >
           <item.icon className="size-4 shrink-0" />
-          {item.label}
+          {t(item.labelKey)}
         </a>
       ))}
     </nav>

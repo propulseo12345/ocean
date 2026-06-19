@@ -6,6 +6,7 @@ import {
   ComposerScreen,
 } from "@/components/app/studio/composer/composer-screen"
 import { zonedToUtcIso } from "@/components/app/studio/composer/composer-utils"
+import { getT } from "@/lib/i18n/server"
 import {
   getBrandKit,
   getClient,
@@ -18,7 +19,10 @@ import {
 } from "@/lib/mocks"
 import type { QuotaUsage } from "@/lib/mocks/types"
 
-export const metadata: Metadata = { title: "Nouveau contenu" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaContentNew") }
+}
 
 // Préremplissage depuis une case de calendrier (?date=AAAA-MM-JJ&time=HH:mm,
 // heure murale du client) ou la médiathèque (?media=asset_id).

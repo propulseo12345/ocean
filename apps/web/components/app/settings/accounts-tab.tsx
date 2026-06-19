@@ -5,6 +5,7 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useT } from "@/lib/i18n"
 import type { Client, SocialAccount } from "@/lib/mocks/types"
 import { AccountRow } from "./account-row"
 
@@ -20,14 +21,15 @@ export function AccountsTab({
   groups: ClientAccountsGroup[]
   needsAttentionCount: number
 }) {
+  const t = useT()
   const hasAccounts = groups.some((g) => g.accounts.length > 0)
 
   if (!hasAccounts) {
     return (
       <EmptyState
         icon={Link2Off}
-        title="Aucun compte social connecté"
-        description="Connecte un compte Instagram, Facebook ou TikTok depuis un espace client pour commencer à publier."
+        title={t("settings.accounts.emptyTitle")}
+        description={t("settings.accounts.emptyDescription")}
       />
     )
   }
@@ -38,15 +40,9 @@ export function AccountsTab({
         <Alert className="text-warning">
           <TriangleAlert />
           <AlertTitle>
-            {needsAttentionCount}{" "}
-            {needsAttentionCount > 1
-              ? "comptes nécessitent une reconnexion"
-              : "compte nécessite une reconnexion"}
+            {t("settings.accounts.needsAttention", { count: needsAttentionCount })}
           </AlertTitle>
-          <AlertDescription>
-            La santé des accès est surveillée en continu : un accès expiré est détecté avant l'heure
-            de publication. Reconnecte les comptes signalés pour éviter tout échec.
-          </AlertDescription>
+          <AlertDescription>{t("settings.accounts.healthDescription")}</AlertDescription>
         </Alert>
       ) : null}
 

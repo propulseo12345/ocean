@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IG_TRUNCATE_AT } from "@/lib/caption"
+import { type Translator, useT } from "@/lib/i18n"
 import { platformMeta } from "@/lib/mocks/labels"
 import type { Client, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -27,6 +28,7 @@ export function ComposerPreview({
   draft: ComposerDraft
   platforms: Platform[]
 }) {
+  const t = useT()
   const [tab, setTab] = useState<Platform | null>(null)
   const [slide, setSlide] = useState(0)
 
@@ -40,7 +42,7 @@ export function ComposerPreview({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle>Aperçu</CardTitle>
+        <CardTitle>{t("composer.preview.title")}</CardTitle>
         {platforms.length > 1 ? (
           <Tabs value={platform} onValueChange={(v) => setTab(v as Platform)}>
             <TabsList className="h-7">
@@ -74,7 +76,7 @@ export function ComposerPreview({
               <>
                 <Image
                   src={current.fullUrl}
-                  alt={current.altText || draft.title || "Aperçu du média"}
+                  alt={current.altText || draft.title || t("composer.preview.mediaAlt")}
                   fill
                   sizes="320px"
                   className="object-cover"
@@ -87,7 +89,7 @@ export function ComposerPreview({
                     <Button
                       variant="secondary"
                       size="icon-xs"
-                      aria-label="Slide précédente"
+                      aria-label={t("composer.preview.prevSlide")}
                       className="absolute top-1/2 left-1.5 -translate-y-1/2 rounded-full opacity-90"
                       onClick={() => setSlide((slideIndex - 1 + media.length) % media.length)}
                     >
@@ -96,7 +98,7 @@ export function ComposerPreview({
                     <Button
                       variant="secondary"
                       size="icon-xs"
-                      aria-label="Slide suivante"
+                      aria-label={t("composer.preview.nextSlide")}
                       className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full opacity-90"
                       onClick={() => setSlide((slideIndex + 1) % media.length)}
                     >
@@ -119,13 +121,13 @@ export function ComposerPreview({
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
                 <ImageIcon className="size-5" />
-                <span className="text-xs">Aucun média sélectionné</span>
+                <span className="text-xs">{t("composer.preview.noMedia")}</span>
               </div>
             )}
           </div>
 
           <div className="space-y-1.5 px-3 py-2.5">
-            <CaptionPreview handle={client.handle} caption={caption} platform={platform} />
+            <CaptionPreview handle={client.handle} caption={caption} platform={platform} t={t} />
             {platform === "instagram" && draft.firstComment.trim().length > 0 ? (
               <p className="border-t pt-1.5 text-xs break-words text-muted-foreground">
                 <span className="font-semibold text-foreground/80">{client.handle}</span>{" "}
@@ -137,7 +139,7 @@ export function ComposerPreview({
 
         {platforms.length === 0 ? (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Aucune plateforme ciblée — aperçu Instagram par défaut.
+            {t("composer.preview.noTargets")}
           </p>
         ) : null}
       </CardContent>
@@ -149,13 +151,17 @@ function CaptionPreview({
   handle,
   caption,
   platform,
+  t,
 }: {
   handle: string
   caption: string
   platform: Platform
+  t: Translator
 }) {
   if (caption.trim().length === 0) {
-    return <p className="text-xs text-muted-foreground italic">Légende vide pour l'instant…</p>
+    return (
+      <p className="text-xs text-muted-foreground italic">{t("composer.preview.emptyCaption")}</p>
+    )
   }
 
   const chars = [...caption]
@@ -169,9 +175,9 @@ function CaptionPreview({
           {chars.slice(0, IG_TRUNCATE_AT).join("")}
           <span
             className="mx-0.5 rounded bg-warning/15 px-1 font-medium text-warning"
-            title={`Instagram coupe ici dans le feed (~${IG_TRUNCATE_AT} caractères)`}
+            title={t("composer.preview.moreTitle", { count: IG_TRUNCATE_AT })}
           >
-            … plus
+            {t("composer.preview.morePlus")}
           </span>
           <span className="text-muted-foreground/50">{chars.slice(IG_TRUNCATE_AT).join("")}</span>
         </>

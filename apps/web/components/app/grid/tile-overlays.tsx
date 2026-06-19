@@ -2,8 +2,8 @@ import { Ban, History, Loader2, Lock, MessageCircle, Pin, TriangleAlert } from "
 import type { ReactNode } from "react"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { PlatformIcon } from "@/components/shared/platform-badge"
-import { formatDayMonth, formatTime } from "@/lib/format"
-import { contentStatusMeta, platformMeta, toneDotClass } from "@/lib/mocks/labels"
+import { type Labels, type Translator, useFormat, useLabels, useT } from "@/lib/i18n"
+import { contentStatusMeta, toneDotClass } from "@/lib/mocks/labels"
 import type { ContentStatus } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { GridTileData } from "./grid-types"
@@ -15,7 +15,9 @@ import { cropLoss, type GridRatio } from "./grid-types"
 const CHIP = "flex items-center gap-1 rounded-full bg-black/55 p-1 text-white backdrop-blur-sm"
 
 function StatusChip({ status }: { status: ContentStatus }) {
-  const { label, tone } = contentStatusMeta[status]
+  const lbl = useLabels()
+  const { tone } = contentStatusMeta[status]
+  const label = lbl.contentStatus(status)
   return (
     <span title={label} className={CHIP}>
       <span className={cn("size-2 rounded-full", toneDotClass[tone])} />
@@ -24,11 +26,13 @@ function StatusChip({ status }: { status: ContentStatus }) {
   )
 }
 
-function failedPlatformsLabel(tile: GridTileData): string {
+function failedPlatformsLabel(tile: GridTileData, t: Translator, lbl: Labels): string {
   const failed = (tile.platforms ?? [])
     .filter((p) => p.status === "failed")
-    .map((p) => platformMeta[p.platform].label)
-  return failed.length > 0 ? `Échec : ${failed.join(", ")}` : "Échec partiel"
+    .map((p) => lbl.platform(p.platform))
+  return failed.length > 0
+    ? t("grid.tile.failedPlatforms", { platforms: failed.join(", ") })
+    : t("grid.tile.partialFailure")
 }
 
 /** Pile d'indicateurs en haut-gauche de la tuile. */
@@ -39,10 +43,12 @@ export function TileTopOverlays({
   tile: GridTileData
   finalRender: boolean
 }) {
+  const t = useT()
+  const lbl = useLabels()
   const pin = tile.pinned ? (
-    <span title="Épinglé (simulation) — l'épinglage réel se fait dans Instagram" className={CHIP}>
+    <span title={t("grid.tile.pinned")} className={CHIP}>
       <Pin className="size-3" />
-      <span className="sr-only">Épinglé (simulation)</span>
+      <span className="sr-only">{t("grid.tile.pinnedSr")}</span>
     </span>
   ) : null
 
@@ -54,9 +60,9 @@ export function TileTopOverlays({
 
   if (tile.group === "imported") {
     chips.push(
-      <span key="lock" title="Importé — feed réel verrouillé" className={CHIP}>
+      <span key="lock" title={t("grid.tile.importedLocked")} className={CHIP}>
         <Lock className="size-3" />
-        <span className="sr-only">Importé, lecture seule</span>
+        <span className="sr-only">{t("grid.tile.importedSr")}</span>
       </span>
     )
   }
@@ -65,36 +71,36 @@ export function TileTopOverlays({
     chips.push(
       <span
         key="failed"
-        title={tile.lastError ?? "Échec de publication"}
+        title={tile.lastError ?? t("grid.tile.publishFailed")}
         className={cn(CHIP, "bg-destructive/90")}
       >
         <TriangleAlert className="size-3" />
-        <span className="sr-only">Échec de publication</span>
+        <span className="sr-only">{t("grid.tile.publishFailedSr")}</span>
       </span>
     )
   } else if (tile.status === "publishing") {
     chips.push(
-      <span key="publishing" title="Publication en cours…" className={CHIP}>
+      <span key="publishing" title={t("grid.tile.publishing")} className={CHIP}>
         <Loader2 className="size-3 animate-spin" />
-        <span className="sr-only">Publication en cours</span>
+        <span className="sr-only">{t("grid.tile.publishingSr")}</span>
       </span>
     )
   } else if (tile.status === "canceled") {
     chips.push(
-      <span key="canceled" title="Annulé — ne sera pas publié" className={CHIP}>
+      <span key="canceled" title={t("grid.tile.canceled")} className={CHIP}>
         <Ban className="size-3" />
-        <span className="sr-only">Annulé</span>
+        <span className="sr-only">{t("grid.tile.canceledSr")}</span>
       </span>
     )
   } else if (tile.status === "partially_published") {
     chips.push(
       <span
         key="partial"
-        title={failedPlatformsLabel(tile)}
+        title={failedPlatformsLabel(tile, t, lbl)}
         className={cn(CHIP, "bg-warning/90 text-warning-foreground")}
       >
         <TriangleAlert className="size-3" />
-        <span className="sr-only">{failedPlatformsLabel(tile)}</span>
+        <span className="sr-only">{failedPlatformsLabel(tile, t, lbl)}</span>
       </span>
     )
   } else if (tile.group === "scheduled" && tile.status && !tile.ghost) {
@@ -107,11 +113,11 @@ export function TileTopOverlays({
     chips.push(
       <span
         key="stale"
-        title="Validation périmée — le contenu a changé depuis l'approbation"
+        title={t("grid.tile.approvalStale")}
         className={cn(CHIP, "bg-warning/90 text-warning-foreground")}
       >
         <History className="size-3" />
-        <span className="sr-only">Validation périmée</span>
+        <span className="sr-only">{t("grid.tile.approvalStaleSr")}</span>
       </span>
     )
   }
@@ -119,7 +125,7 @@ export function TileTopOverlays({
     chips.push(
       <span
         key="comments"
-        title={`${tile.commentsCount} commentaire${tile.commentsCount > 1 ? "s" : ""} client`}
+        title={t("grid.tile.comments", { count: tile.commentsCount })}
         className={cn(CHIP, "px-1.5 text-[10px] font-medium tabular-nums")}
       >
         <MessageCircle className="size-3" />
@@ -141,16 +147,15 @@ function Overlay({ children }: { children: ReactNode }) {
 
 /** Bandeau bas : date/heure (fuseau client), plateformes secondaires, format. */
 export function TileBottomOverlay({ tile }: { tile: GridTileData }) {
+  const f = useFormat()
   const extraPlatforms = (tile.platforms ?? []).filter((p) => p.platform !== "instagram")
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/65 to-transparent p-1.5 text-white">
       <span className="min-w-0 text-[11px] font-medium leading-tight tabular-nums">
         {tile.dateIso ? (
           <>
-            <span className="block truncate">{formatDayMonth(tile.dateIso, tile.tz)}</span>
-            <span className="block truncate text-white/80">
-              {formatTime(tile.dateIso, tile.tz)}
-            </span>
+            <span className="block truncate">{f.dayMonth(tile.dateIso, tile.tz)}</span>
+            <span className="block truncate text-white/80">{f.time(tile.dateIso, tile.tz)}</span>
           </>
         ) : null}
       </span>
@@ -166,6 +171,7 @@ export function TileBottomOverlay({ tile }: { tile: GridTileData }) {
 
 /** Zones perdues au recadrage (visibles au survol/focus de la tuile). */
 export function CropOverlay({ tile, ratio }: { tile: GridTileData; ratio: GridRatio }) {
+  const t = useT()
   const loss = cropLoss(tile.media, ratio)
   if (!loss) return null
   const size = `${(loss.perSide * 100).toFixed(1)}%`
@@ -175,7 +181,7 @@ export function CropOverlay({ tile, ratio }: { tile: GridTileData; ratio: GridRa
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 z-10"
-      title={`Recadrage ${ratio} : ${size} perdus de chaque côté`}
+      title={t("grid.tile.cropOverlay", { ratio, size })}
     >
       {loss.axis === "x" ? (
         <>

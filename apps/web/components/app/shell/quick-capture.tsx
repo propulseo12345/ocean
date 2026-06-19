@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { useT } from "@/lib/i18n"
 import { getClients } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell-provider"
@@ -31,6 +32,7 @@ import { useShell } from "./shell-provider"
 // « Noter une idée » (client cible + note) ou « Créer un contenu » (composer).
 
 export function QuickCapture() {
+  const t = useT()
   const { captureOpen, setCaptureOpen } = useShell()
   const clients = getClients()
   const [clientId, setClientId] = useState(clients[0]?.id ?? "")
@@ -40,16 +42,16 @@ export function QuickCapture() {
 
   function saveIdea() {
     if (!note.trim() || !targetClient) return
-    toast.success(`Idée notée pour ${targetClient.name} (aperçu)`, {
-      description: "Retrouve-la dans le studio du client, statut « Idée ».",
+    toast.success(t("nav.capture.ideaSaved", { client: targetClient.name }), {
+      description: t("nav.capture.ideaSavedDesc"),
     })
     setNote("")
     setCaptureOpen(false)
   }
 
   function mockPhotoPicker() {
-    toast.info("Picker Photos simulé (aperçu)", {
-      description: "Sur iPhone, la photo choisie rejoindra la médiathèque du client.",
+    toast.info(t("nav.capture.photoPicker"), {
+      description: t("nav.capture.photoPickerDesc"),
     })
   }
 
@@ -57,7 +59,7 @@ export function QuickCapture() {
     <>
       <Button
         size="icon-lg"
-        aria-label="Capture rapide : noter une idée ou créer un contenu"
+        aria-label={t("nav.capture.fabAria")}
         className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] z-40 size-13 rounded-full shadow-lg md:hidden"
         onClick={() => setCaptureOpen(true)}
       >
@@ -70,27 +72,25 @@ export function QuickCapture() {
           className="gap-0 rounded-t-2xl pb-[max(env(safe-area-inset-bottom,0px),1rem)]"
         >
           <SheetHeader className="pb-2">
-            <SheetTitle>Capture rapide</SheetTitle>
-            <SheetDescription>
-              Note une idée à la volée ou ouvre le composer du bon client.
-            </SheetDescription>
+            <SheetTitle>{t("nav.capture.title")}</SheetTitle>
+            <SheetDescription>{t("nav.capture.description")}</SheetDescription>
           </SheetHeader>
 
           <Tabs defaultValue="idea" className="px-4">
             <TabsList className="w-full">
               <TabsTrigger value="idea" className="flex-1 gap-1.5">
                 <Lightbulb className="size-3.5" />
-                Noter une idée
+                {t("nav.capture.tabIdea")}
               </TabsTrigger>
               <TabsTrigger value="create" className="flex-1 gap-1.5">
                 <SquarePen className="size-3.5" />
-                Créer un contenu
+                {t("nav.capture.tabCreate")}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="idea" className="space-y-3 pt-3">
               <div className="space-y-1.5">
-                <Label htmlFor="capture-client">Client cible</Label>
+                <Label htmlFor="capture-client">{t("nav.capture.targetClient")}</Label>
                 <Select value={clientId} onValueChange={(value) => setClientId(String(value))}>
                   <SelectTrigger id="capture-client" className="w-full">
                     <SelectValue />
@@ -105,22 +105,22 @@ export function QuickCapture() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="capture-note">Idée</Label>
+                <Label htmlFor="capture-note">{t("nav.capture.ideaLabel")}</Label>
                 <Textarea
                   id="capture-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ex. reel coulisses de la torréfaction du matin…"
+                  placeholder={t("nav.capture.ideaPlaceholder")}
                   rows={3}
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={mockPhotoPicker}>
                   <ImagePlus className="size-3.5" />
-                  Ajouter une photo
+                  {t("nav.capture.addPhoto")}
                 </Button>
                 <Button size="sm" className="flex-1" disabled={!note.trim()} onClick={saveIdea}>
-                  Enregistrer l'idée (aperçu)
+                  {t("nav.capture.saveIdea")}
                 </Button>
               </div>
             </TabsContent>
@@ -138,7 +138,7 @@ export function QuickCapture() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{c.name}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          Nouveau contenu · @{c.handle}
+                          {t("nav.capture.newContent", { handle: c.handle })}
                         </span>
                       </span>
                       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

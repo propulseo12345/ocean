@@ -1,10 +1,13 @@
 import { toast } from "sonner"
+import type { Locale, Translator } from "@/lib/i18n"
+import { pick } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { isMovable, movedIso, zonedToUtcIso } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek, weekdayDayMonth } from "./calendar-utils"
 
 // Actions mockées du calendrier : chaque opération applique un override local
 // et l'annonce par un toast « (aperçu) ». Aucune donnée réelle n'est modifiée.
+// Le libellé de date provient de weekdayDayMonth (util calendrier partagé).
 
 type SetOverride = (id: string, iso: string | null) => void
 type SetOverridesBatch = (entries: [string, string | null][]) => void
@@ -15,11 +18,12 @@ export function performDrop(
   dayKey: DayKey,
   todayKey: DayKey,
   tz: string,
-  setOverride: SetOverride
+  setOverride: SetOverride,
+  t: Translator
 ): void {
   if (!isMovable(item)) return
   if (dayKey < todayKey) {
-    toast.error("Impossible de planifier dans le passé")
+    toast.error(t("calendar.actions.pastError"))
     return
   }
   const wasUnscheduled = item.scheduledAt === null
@@ -28,14 +32,16 @@ export function performDrop(
   setOverride(item.id, movedIso(item, dayKey, tz))
   const label = weekdayDayMonth(dayKey, tz)
   if (item.status === "approved") {
-    toast.warning(`Replanifié au ${label} (aperçu)`, {
-      description:
-        "La validation client reste valable — le client sera notifié du changement de date.",
+    toast.warning(t("calendar.actions.rescheduledApproved", { date: label }), {
+      description: t("calendar.actions.rescheduledApprovedDesc"),
     })
   } else {
-    toast.success(`${wasUnscheduled ? "Planifié" : "Replanifié"} au ${label} (aperçu)`, {
-      description: "Aucune date n'est réellement modifiée pendant la preview.",
-    })
+    toast.success(
+      t("calendar.actions.moved", { date: label, state: wasUnscheduled ? "scheduled" : "rescheduled" }),
+      {
+        description: t("calendar.actions.movedDesc"),
+      }
+    )
   }
 }
 
@@ -45,15 +51,19 @@ export function performReschedule(
   dayKey: DayKey,
   time: string,
   tz: string,
-  setOverride: SetOverride
+  setOverride: SetOverride,
+  t: Translator
 ): void {
   setOverride(item.id, zonedToUtcIso(dayKey, time, tz))
-  toast.success(`Replanifié au ${weekdayDayMonth(dayKey, tz)} à ${time} (aperçu)`, {
-    description:
-      item.status === "approved"
-        ? "La validation client reste valable — le client sera notifié."
-        : undefined,
-  })
+  toast.success(
+    t("calendar.actions.reschedulePrecise", { date: weekdayDayMonth(dayKey, tz), time }),
+    {
+      description:
+        item.status === "approved"
+          ? t("calendar.actions.reschedulePreciseApprovedDesc")
+          : undefined,
+    }
+  )
 }
 
 /** Décalage de N jours d'une sélection (les verrouillés sont ignorés). */
@@ -62,7 +72,8 @@ export function performShift(
   days: number,
   todayKey: DayKey,
   tz: string,
-  setBatch: SetOverridesBatch
+  setBatch: SetOverridesBatch,
+  t: Translator
 ): void {
   const entries: [string, string][] = []
   let skipped = 0
@@ -82,65 +93,69 @@ export function performShift(
     entries.push([item.id, movedIso(item, targetKey, tz)])
   }
   if (entries.length > 0) setBatch(entries)
-  const dir = days > 0 ? "décalé" : "avancé"
   toast.success(
-    `${entries.length} contenu${entries.length > 1 ? "s" : ""} ${dir}${entries.length > 1 ? "s" : ""} de ${Math.abs(days)} jour${Math.abs(days) > 1 ? "s" : ""} (aperçu)`,
+    t("calendar.actions.shifted", {
+      count: entries.length,
+      dir: days > 0 ? "shift" : "advance",
+      days: Math.abs(days),
+    }),
     {
       description:
-        skipped > 0
-          ? `${skipped} ignoré${skipped > 1 ? "s" : ""} (statut verrouillé ou date passée).`
-          : undefined,
+        skipped > 0 ? t("calendar.actions.shiftedSkippedDesc", { count: skipped }) : undefined,
     }
   )
 }
 
 /** Annulation de planification d'une sélection (retour à l'étagère). */
-export function performUnschedule(items: ContentItem[], setBatch: SetOverridesBatch): void {
+export function performUnschedule(
+  items: ContentItem[],
+  setBatch: SetOverridesBatch,
+  t: Translator
+): void {
   const movable = items.filter((it) => isMovable(it) && it.scheduledAt !== null)
   const skipped = items.length - movable.length
   if (movable.length > 0) setBatch(movable.map((it) => [it.id, null]))
-  toast.success(
-    `Planification annulée pour ${movable.length} contenu${movable.length > 1 ? "s" : ""} (aperçu)`,
-    {
-      description:
-        skipped > 0
-          ? `${skipped} ignoré${skipped > 1 ? "s" : ""} (statut verrouillé ou déjà sans date). Les contenus repassent dans « À planifier ».`
-          : "Les contenus repassent dans « À planifier ».",
-    }
-  )
-}
-
-export function performSendToReview(count: number): void {
-  toast.info(
-    `Demande de validation envoyée pour ${count} contenu${count > 1 ? "s" : ""} (aperçu)`,
-    {
-      description: "Le client recevra un lien direct vers le portail de validation.",
-    }
-  )
-}
-
-export function performRetry(item: ContentItem): void {
-  toast.info(`Nouvelle tentative programmée pour « ${item.title} » (aperçu)`, {
+  toast.success(t("calendar.actions.unscheduled", { count: movable.length }), {
     description:
-      "Seules les cibles en échec seront relancées — jamais de re-publication d'une cible déjà publiée.",
+      skipped > 0
+        ? t("calendar.actions.unscheduledSkippedDesc", { count: skipped })
+        : t("calendar.actions.unscheduledDesc"),
   })
 }
 
-export function performRemind(reviewerName: string | null): void {
-  toast.info(`Relance envoyée à ${reviewerName ?? "ton client"} (aperçu)`, {
-    description: "Un rappel email pointe directement vers les contenus à valider.",
+export function performSendToReview(count: number, t: Translator): void {
+  toast.info(t("calendar.actions.sendToReview", { count }), {
+    description: t("calendar.actions.sendToReviewDesc"),
   })
+}
+
+export function performRetry(item: ContentItem, t: Translator, locale: Locale): void {
+  toast.info(t("calendar.actions.retry", { title: pick(item.title, locale) }), {
+    description: t("calendar.actions.retryDesc"),
+  })
+}
+
+export function performRemind(reviewerName: string | null, t: Translator): void {
+  toast.info(
+    t("calendar.actions.remind", { name: reviewerName ?? t("calendar.actions.remindFallbackName") }),
+    {
+      description: t("calendar.actions.remindDesc"),
+    }
+  )
 }
 
 export function performDuplicate(
   item: ContentItem,
   dayKey: DayKey,
   tz: string,
-  targetClientName: string | null
+  targetClientName: string | null,
+  t: Translator,
+  locale: Locale
 ): void {
-  toast.success(`« ${item.title} » dupliqué (aperçu)`, {
-    description: `Copie en brouillon pour le ${weekdayDayMonth(dayKey, tz)}${
-      targetClientName ? ` chez ${targetClientName}` : ""
-    } — médias, légende et ciblage repris.`,
+  toast.success(t("calendar.actions.duplicated", { title: pick(item.title, locale) }), {
+    description: t("calendar.actions.duplicatedDesc", {
+      date: weekdayDayMonth(dayKey, tz),
+      client: targetClientName ?? "none",
+    }),
   })
 }

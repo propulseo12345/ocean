@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { useT } from "@/lib/i18n"
 import { getClients } from "@/lib/mocks"
 import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -23,15 +24,15 @@ import { useShell } from "./shell/shell-provider"
 // bascule en conservant la sous-page courante (grille → grille, calendrier →
 // calendrier…).
 
-function HealthDot({ ring }: { ring: "popover" | "sidebar" }) {
+function HealthDot({ ring, label }: { ring: "popover" | "sidebar"; label: string }) {
   return (
     <span
-      title="Un compte est à reconnecter"
+      title={label}
       className={`absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive ring-2 ${
         ring === "popover" ? "ring-popover" : "ring-sidebar"
       }`}
     >
-      <span className="sr-only">Un compte est à reconnecter</span>
+      <span className="sr-only">{label}</span>
     </span>
   )
 }
@@ -40,10 +41,12 @@ function SwitcherItem({
   client,
   pathname,
   activeId,
+  reconnectLabel,
 }: {
   client: Client
   pathname: string
   activeId: string | undefined
+  reconnectLabel: string
 }) {
   const hasIssue = clientAccountIssues(client.id).length > 0
   return (
@@ -53,7 +56,7 @@ function SwitcherItem({
     >
       <span className="relative inline-flex">
         <ClientAvatar client={client} size={22} />
-        {hasIssue ? <HealthDot ring="popover" /> : null}
+        {hasIssue ? <HealthDot ring="popover" label={reconnectLabel} /> : null}
       </span>
       <span className="flex-1 truncate">{client.name}</span>
       {client.id === activeId ? <Check className="size-4" /> : null}
@@ -62,9 +65,11 @@ function SwitcherItem({
 }
 
 export function ClientSwitcher() {
+  const t = useT()
   const pathname = usePathname()
   const { recentClientIds } = useShell()
   const clients = getClients()
+  const reconnectLabel = t("nav.accountReconnect")
   const activeId = activeClientIdFromPath(pathname)
   const active = clients.find((c) => c.id === activeId)
   const activeHasIssue = active ? clientAccountIssues(active.id).length > 0 : false
@@ -87,7 +92,7 @@ export function ClientSwitcher() {
                 {active ? (
                   <span className="relative inline-flex">
                     <ClientAvatar client={active} size={28} />
-                    {activeHasIssue ? <HealthDot ring="sidebar" /> : null}
+                    {activeHasIssue ? <HealthDot ring="sidebar" label={reconnectLabel} /> : null}
                   </span>
                 ) : (
                   <span className="flex size-7 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
@@ -95,9 +100,11 @@ export function ClientSwitcher() {
                   </span>
                 )}
                 <span className="grid flex-1 text-left leading-tight">
-                  <span className="truncate text-xs text-sidebar-foreground/60">Espace client</span>
+                  <span className="truncate text-xs text-sidebar-foreground/60">
+                    {t("nav.switcher.clientSpace")}
+                  </span>
                   <span className="truncate font-medium">
-                    {active ? active.name : "Tous les espaces"}
+                    {active ? active.name : t("nav.switcher.allSpaces")}
                   </span>
                 </span>
                 <ChevronsUpDown className="ml-auto size-4 opacity-70" />
@@ -108,21 +115,35 @@ export function ClientSwitcher() {
             {recents.length > 0 ? (
               <>
                 <DropdownMenuLabel className="text-muted-foreground text-xs">
-                  Récents
+                  {t("nav.switcher.recents")}
                 </DropdownMenuLabel>
                 {recents.map((c) => (
-                  <SwitcherItem key={c.id} client={c} pathname={pathname} activeId={activeId} />
+                  <SwitcherItem
+                    key={c.id}
+                    client={c}
+                    pathname={pathname}
+                    activeId={activeId}
+                    reconnectLabel={reconnectLabel}
+                  />
                 ))}
                 {others.length > 0 ? <DropdownMenuSeparator /> : null}
               </>
             ) : null}
             {others.length > 0 ? (
               <DropdownMenuLabel className="text-muted-foreground text-xs">
-                {recents.length > 0 ? "Autres espaces" : "Espaces clients"}
+                {recents.length > 0
+                  ? t("nav.switcher.otherSpaces")
+                  : t("nav.switcher.clientSpaces")}
               </DropdownMenuLabel>
             ) : null}
             {others.map((c) => (
-              <SwitcherItem key={c.id} client={c} pathname={pathname} activeId={activeId} />
+              <SwitcherItem
+                key={c.id}
+                client={c}
+                pathname={pathname}
+                activeId={activeId}
+                reconnectLabel={reconnectLabel}
+              />
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -130,7 +151,7 @@ export function ClientSwitcher() {
               className="gap-2 text-muted-foreground"
             >
               <LayoutGrid className="size-4" />
-              Tous les clients
+              {t("nav.switcher.allClients")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

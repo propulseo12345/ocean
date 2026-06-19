@@ -7,6 +7,7 @@ import { NotificationRow } from "@/components/app/notifications/notification-row
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useT } from "@/lib/i18n"
 import type { AppNotification } from "@/lib/mocks/types"
 
 type Filter = "all" | "unread"
@@ -16,6 +17,7 @@ function isFilter(value: unknown): value is Filter {
 }
 
 export function NotificationCenter({ notifications }: { notifications: AppNotification[] }) {
+  const t = useT()
   const [filter, setFilter] = useState<Filter>("all")
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
@@ -27,11 +29,11 @@ export function NotificationCenter({ notifications }: { notifications: AppNotifi
 
   function handleMarkAllRead() {
     if (unreadCount === 0) {
-      toast("Aucune notification non lue.")
+      toast(t("notifications.noneUnreadToast"))
       return
     }
-    toast.success(`${unreadCount} notification(s) marquée(s) comme lues`, {
-      description: "Action simulée (preview)",
+    toast.success(t("notifications.markedReadToast", { count: unreadCount }), {
+      description: t("notifications.markedReadToastDescription"),
     })
   }
 
@@ -45,9 +47,9 @@ export function NotificationCenter({ notifications }: { notifications: AppNotifi
           }}
         >
           <TabsList>
-            <TabsTrigger value="all">Toutes</TabsTrigger>
+            <TabsTrigger value="all">{t("notifications.filterAll")}</TabsTrigger>
             <TabsTrigger value="unread" className="gap-1.5">
-              Non lues
+              {t("notifications.filterUnread")}
               {unreadCount > 0 ? (
                 <span className="inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
                   {unreadCount}
@@ -64,18 +66,22 @@ export function NotificationCenter({ notifications }: { notifications: AppNotifi
           disabled={unreadCount === 0}
         >
           <CheckCheck className="size-4" />
-          Tout marquer comme lu
+          {t("notifications.markAllRead")}
         </Button>
       </div>
 
       {visible.length === 0 ? (
         <EmptyState
           icon={filter === "unread" ? BellOff : Inbox}
-          title={filter === "unread" ? "Aucune notification non lue" : "Aucune notification"}
+          title={
+            filter === "unread"
+              ? t("notifications.emptyUnreadTitle")
+              : t("notifications.emptyTitle")
+          }
           description={
             filter === "unread"
-              ? "Tu es à jour — rien ne demande ton attention pour l'instant."
-              : "Les alertes de publication, validation et reconnexion apparaîtront ici."
+              ? t("notifications.emptyUnreadDescription")
+              : t("notifications.emptyDescription")
           }
         />
       ) : (

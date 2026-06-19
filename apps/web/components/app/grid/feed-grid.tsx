@@ -4,11 +4,12 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AccountAlert } from "@/components/shared/account-alert"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import { useT } from "@/lib/i18n"
 import type { QuotaUsage, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import type { CoverCompareTarget } from "./cover-compare-dialog"
 import { DemoBanner } from "./demo-banner"
-import { DEMO_PROSPECT } from "./demo-profile"
+import { demoProspect } from "./demo-profile"
 import { GridDialogs } from "./grid-dialogs"
 import { GridEmptyState } from "./grid-empty-state"
 import { GridFilters } from "./grid-filters"
@@ -60,6 +61,7 @@ export function FeedGrid({
   clientId: string
   tz: string
 }) {
+  const t = useT()
   const tiles = useGridTiles(scheduled, shelf, tz, routes.clientContent(clientId))
   const view = useGridView()
   const select = useMultiSelect()
@@ -121,9 +123,8 @@ export function FeedGrid({
     onHide: view.hideTile,
     onRetry: tiles.retryTile,
     onRecycle: (tile) =>
-      toast.info(`« ${tile.title} » prêt à être recyclé (aperçu)`, {
-        description:
-          "Légende, format et structure repris en brouillon — le média sera à re-téléverser.",
+      toast.info(t("grid.feed.recycleToast", { title: tile.title }), {
+        description: t("grid.feed.recycleToastDescription"),
       }),
   }
 
@@ -131,8 +132,8 @@ export function FeedGrid({
     tiles.resetTiles()
     view.resetSandbox()
     select.clear()
-    toast.success("Grille réinitialisée (aperçu)", {
-      description: "Masquages, covers testées, emplacements et permutations annulés.",
+    toast.success(t("grid.feed.resetToast"), {
+      description: t("grid.feed.resetToastDescription"),
     })
   }
 
@@ -150,7 +151,7 @@ export function FeedGrid({
   }
 
   const profileToShow: InstagramProfileData = view.demoMode
-    ? { ...profile, ...DEMO_PROSPECT, avatarUrl: "" }
+    ? { ...profile, ...demoProspect(t), avatarUrl: "" }
     : profile
 
   return (

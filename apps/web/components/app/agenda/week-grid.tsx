@@ -6,15 +6,28 @@ import {
   durationFraction,
   HOURS,
   minuteOffset,
-  WEEKDAY_LABELS,
+  WEEKDAY_KEYS,
   zonedParts,
 } from "@/components/app/agenda/agenda-utils"
 import { AgendaBlock } from "@/components/app/agenda/event-block"
-import { formatDayMonth, isSameDay } from "@/lib/format"
+import { isSameDay } from "@/lib/format"
+import { INTL_LOCALE, type Locale, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { AgendaItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 const ROW_HEIGHT = 56 // px par heure
+
+// Libellé d'une heure pleine dans la colonne horaire, localisé.
+// FR → « 7h », EN → « 7 AM » (format 12h naturel pour l'anglais).
+function formatHourLabel(hour: number, locale: Locale): string {
+  if (locale === "fr") return `${hour}h`
+  const d = new Date(Date.UTC(2000, 0, 1, hour))
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+    timeZone: "UTC",
+    hour: "numeric",
+    hour12: true,
+  }).format(d)
+}
 
 function endIso(item: AgendaItem): string {
   return item.kind === "event" ? item.event.endsAt : item.startsAt
@@ -35,6 +48,9 @@ export function WeekGrid({
   tz: string
   now: Date
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const dayKeys = days.map((d) => dayKeyOf(d, tz))
   const timed = items.filter((it) => !isAllDay(it))
   const allDay = items.filter(isAllDay)
@@ -62,7 +78,7 @@ export function WeekGrid({
               )}
             >
               <span className="block text-xs text-muted-foreground capitalize">
-                {WEEKDAY_LABELS[i]}
+                {t(WEEKDAY_KEYS[i])}
               </span>
               <span
                 className={cn(
@@ -70,7 +86,7 @@ export function WeekGrid({
                   today && "bg-primary text-primary-foreground"
                 )}
               >
-                {formatDayMonth(d.toISOString(), tz)}
+                {f.dayMonth(d.toISOString(), tz)}
               </span>
             </div>
           )
@@ -81,7 +97,7 @@ export function WeekGrid({
       {allDay.length > 0 ? (
         <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b bg-muted/10">
           <div className="flex items-center justify-end border-r px-1.5 py-1 text-[10px] text-muted-foreground">
-            Jour
+            {t("agenda.allDayShort")}
           </div>
           {dayKeys.map((key) => (
             <div key={key} className="space-y-1 border-r p-1 last:border-r-0">
@@ -105,7 +121,7 @@ export function WeekGrid({
               style={{ height: ROW_HEIGHT }}
               className="pr-1.5 pt-0.5 text-right text-[10px] text-muted-foreground tabular-nums"
             >
-              {`${h}h`}
+              {formatHourLabel(h, locale)}
             </div>
           ))}
         </div>

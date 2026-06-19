@@ -4,6 +4,7 @@ import { useState } from "react"
 import { SelectionBar } from "@/components/shared/selection-bar"
 import { Button } from "@/components/ui/button"
 import type { UseMultiSelectResult } from "@/hooks/use-multi-select"
+import { useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { performSendToReview, performShift, performUnschedule } from "./calendar-actions"
 import { isMovable } from "./calendar-schedule"
@@ -28,6 +29,7 @@ export function CalendarSelectionActions({
   tz: string
   setOverridesBatch: (entries: [string, string | null][]) => void
 }) {
+  const t = useT()
   const [shiftOpen, setShiftOpen] = useState(false)
   const movableSelected = selectedItems.filter((it) => isMovable(it) && it.scheduledAt !== null)
 
@@ -41,29 +43,29 @@ export function CalendarSelectionActions({
             className="rounded-full"
             onClick={() => setShiftOpen(true)}
           >
-            Décaler de N jours
+            {t("calendar.selection.shiftDays")}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              performSendToReview(selection.count)
+              performSendToReview(selection.count, t)
               selection.clear()
             }}
           >
-            Envoyer en validation
+            {t("calendar.selection.sendToReview")}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              performUnschedule(selectedItems, setOverridesBatch)
+              performUnschedule(selectedItems, setOverridesBatch, t)
               selection.clear()
             }}
           >
-            Annuler la planification
+            {t("calendar.selection.unschedule")}
           </Button>
         </SelectionBar>
       ) : null}
@@ -74,7 +76,7 @@ export function CalendarSelectionActions({
         lockedCount={selectedItems.length - movableSelected.length}
         onClose={() => setShiftOpen(false)}
         onConfirm={(days) => {
-          performShift(selectedItems, days, todayKey, tz, setOverridesBatch)
+          performShift(selectedItems, days, todayKey, tz, setOverridesBatch, t)
           setShiftOpen(false)
           selection.clear()
         }}

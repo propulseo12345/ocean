@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { API_PLATFORMS, platformMeta } from "@/lib/mocks/labels"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { API_PLATFORMS } from "@/lib/mocks/labels"
 import type { ContentPillar, Platform, RecurringSlot } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "./constants"
@@ -30,6 +31,10 @@ export function SlotRow({
   onPatch: (patch: Partial<RecurringSlot>) => void
   onRemove: () => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
+
   function togglePlatform(platform: Platform) {
     const next = slot.platforms.includes(platform)
       ? slot.platforms.filter((p) => p !== platform)
@@ -47,7 +52,7 @@ export function SlotRow({
           <SelectContent>
             {WEEKDAY_ORDER.map((d) => (
               <SelectItem key={d} value={String(d)}>
-                {WEEKDAY_LABELS[d].long}
+                {t(WEEKDAY_LABELS[d].longKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -60,7 +65,7 @@ export function SlotRow({
           value={slot.time}
           onChange={(e) => onPatch({ time: e.target.value })}
           className="w-26 tabular-nums"
-          aria-label="Heure du créneau"
+          aria-label={t("clientSettings.slots.timeAriaLabel")}
         />
       </TableCell>
 
@@ -68,14 +73,15 @@ export function SlotRow({
         <div className="flex gap-1">
           {API_PLATFORMS.map((platform) => {
             const active = slot.platforms.includes(platform)
+            const platformLabel = lbl.platform(platform)
             return (
               <button
                 key={platform}
                 type="button"
                 onClick={() => togglePlatform(platform)}
                 aria-pressed={active}
-                aria-label={platformMeta[platform].label}
-                title={platformMeta[platform].label}
+                aria-label={platformLabel}
+                title={platformLabel}
                 className={cn(
                   "flex size-7 items-center justify-center rounded-md border transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   active
@@ -99,10 +105,10 @@ export function SlotRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NO_PILLAR}>Aucun pilier</SelectItem>
+            <SelectItem value={NO_PILLAR}>{t("clientSettings.slots.noPillar")}</SelectItem>
             {pillars.map((p) => (
               <SelectItem key={p.id} value={p.id}>
-                {p.name}
+                {pick(p.name, locale)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -110,7 +116,12 @@ export function SlotRow({
       </TableCell>
 
       <TableCell className="text-right">
-        <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label="Supprimer ce créneau">
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={onRemove}
+          aria-label={t("clientSettings.slots.removeSlot")}
+        >
           <Trash2 />
         </Button>
       </TableCell>

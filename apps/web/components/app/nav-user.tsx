@@ -22,11 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { useT } from "@/lib/i18n"
 import { CURRENT_USER } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell/shell-provider"
 
 export function NavUser() {
+  const t = useT()
   const { setTheme } = useTheme()
   const { setPwaGuideOpen } = useShell()
   return (
@@ -59,37 +61,39 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem render={<Link href={routes.settings} />} className="gap-2">
                 <Settings className="size-4" />
-                Réglages
+                {t("nav.item.settings")}
               </DropdownMenuItem>
               <DropdownMenuItem render={<Link href={routes.notifications} />} className="gap-2">
                 <Bell className="size-4" />
-                Notifications
+                {t("nav.item.notifications")}
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => setPwaGuideOpen(true)}>
                 <Smartphone className="size-4" />
-                Installer l'app
+                {t("nav.user.installApp")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-muted-foreground text-xs">Thème</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              {t("nav.user.theme")}
+            </DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem className="gap-2" onClick={() => setTheme("light")}>
                 <Sun className="size-4" />
-                Clair
+                {t("nav.user.themeLight")}
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => setTheme("dark")}>
                 <Moon className="size-4" />
-                Sombre
+                {t("nav.user.themeDark")}
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => setTheme("system")}>
                 <Monitor className="size-4" />
-                Système
+                {t("nav.user.themeSystem")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href={routes.login} />} className="gap-2">
               <LogOut className="size-4" />
-              Se déconnecter
+              {t("nav.user.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

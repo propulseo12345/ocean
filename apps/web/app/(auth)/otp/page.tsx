@@ -4,16 +4,21 @@ import Link from "next/link"
 import { OtpForm } from "@/components/auth/otp-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getT } from "@/lib/i18n/server"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Vérification" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("auth.otpPage.metaTitle") }
+}
 
-export default function OtpPage() {
+export default async function OtpPage() {
+  const t = await getT()
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Entre ton code</CardTitle>
-        <CardDescription>Saisis le code à 6 chiffres envoyé à ton adresse e-mail.</CardDescription>
+        <CardTitle className="text-xl">{t("auth.otpPage.cardTitle")}</CardTitle>
+        <CardDescription>{t("auth.otpPage.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <OtpForm />
@@ -24,7 +29,7 @@ export default function OtpPage() {
           render={<Link href={routes.login} />}
         >
           <ArrowLeft />
-          Changer d'adresse e-mail
+          {t("auth.otpPage.changeEmail")}
         </Button>
       </CardContent>
     </Card>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { formatMeta } from "@/lib/mocks/labels"
+import { type Locale, useLabels, useLocale, useT } from "@/lib/i18n"
 import type {
   BrandKit,
   Client,
@@ -61,14 +61,19 @@ export interface ComposerPrefill {
   mediaAssetId?: string
 }
 
-function initialDraft(data: ComposerData, content: ContentItem | null, prefill?: ComposerPrefill) {
-  if (content) return draftFromContent(content)
+function initialDraft(
+  data: ComposerData,
+  content: ContentItem | null,
+  locale: Locale,
+  prefill?: ComposerPrefill
+) {
+  if (content) return draftFromContent(content, locale)
   const draft = emptyDraft(data.accounts)
   if (!prefill) return draft
   if (prefill.scheduledAt) draft.scheduledAt = prefill.scheduledAt
   if (prefill.mediaAssetId) {
     const asset = data.libraryAssets.find((a) => a.id === prefill.mediaAssetId)
-    if (asset) draft.media = [mediaFromLibrary(asset, 0)]
+    if (asset) draft.media = [mediaFromLibrary(asset, 0, locale)]
   }
   return draft
 }
@@ -82,9 +87,12 @@ export function ComposerScreen({
   initialContent: ContentItem | null
   prefill?: ComposerPrefill
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const router = useRouter()
   const [draft, setDraft] = useState<ComposerDraft>(() =>
-    initialDraft(data, initialContent, prefill)
+    initialDraft(data, initialContent, locale, prefill)
   )
   const [scheduleOpen, setScheduleOpen] = useState(false)
 
@@ -104,8 +112,10 @@ export function ComposerScreen({
         client: data.client,
         accounts: data.accounts,
         bannedWords: data.brandKit?.bannedWords ?? [],
+        t,
+        locale,
       }),
-    [draft, data.client, data.accounts, data.brandKit]
+    [draft, data.client, data.accounts, data.brandKit, t, locale]
   )
   const blocking = hasBlocking(preflight)
   // La date se corrige DANS le dialog : elle ne bloque pas son ouverture.
@@ -114,8 +124,8 @@ export function ComposerScreen({
   function handleFormatChange(format: ContentFormat) {
     if (format !== "carousel" && draft.media.length > 1) {
       patch({ format, media: draft.media.slice(0, 1) })
-      toast.info("Visuels supplémentaires retirés", {
-        description: `Le format ${formatMeta[format].label} n'accepte qu'un seul média (aperçu).`,
+      toast.info(t("composer.screen.extraMediaRemoved"), {
+        description: t("composer.screen.extraMediaRemovedDesc", { format: lbl.format(format) }),
       })
       return
     }
@@ -124,8 +134,8 @@ export function ComposerScreen({
 
   function handleSave() {
     toast.success(
-      draft.scheduledAt ? "Contenu programmé (aperçu)" : "Brouillon enregistré (aperçu)",
-      { description: "Aucune donnée n'est réellement écrite pendant la preview." }
+      draft.scheduledAt ? t("composer.screen.savedScheduled") : t("composer.screen.savedDraft"),
+      { description: t("composer.screen.savedDesc") }
     )
     router.push(routes.clientContent(data.client.id))
   }
@@ -144,20 +154,15 @@ export function ComposerScreen({
       {initialContent?.status === "in_review" ? (
         <Alert className="border-warning/40 bg-warning/5">
           <Send className="text-warning" />
-          <AlertTitle>Contenu en revue chez le client</AlertTitle>
-          <AlertDescription>
-            En réel, l'enregistrer le retire de la revue (règle d'éditabilité PRD) — le client en
-            sera notifié.
-          </AlertDescription>
+          <AlertTitle>{t("composer.screen.inReviewTitle")}</AlertTitle>
+          <AlertDescription>{t("composer.screen.inReviewDesc")}</AlertDescription>
         </Alert>
       ) : null}
       {initialContent?.status === "scheduled" ? (
         <Alert>
           <TriangleAlert />
-          <AlertTitle>Contenu programmé</AlertTitle>
-          <AlertDescription>
-            En réel, seule la date reste modifiable sans annuler la programmation (règle PRD §5.B).
-          </AlertDescription>
+          <AlertTitle>{t("composer.screen.scheduledTitle")}</AlertTitle>
+          <AlertDescription>{t("composer.screen.scheduledDesc")}</AlertDescription>
         </Alert>
       ) : null}
 

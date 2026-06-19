@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { contentStatusMeta, formatMeta, platformMeta } from "@/lib/mocks/labels"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import type { BoardState } from "./board-state"
 import { labelColorVar, STATUS_ORDER } from "./board-types"
@@ -59,6 +59,9 @@ export function BoardFiltersPopover({
   pillars: ContentPillar[]
   labels: string[]
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const f = board.filters
   const count = countActiveFilters(f)
 
@@ -66,34 +69,34 @@ export function BoardFiltersPopover({
     <Popover>
       <PopoverTrigger render={<Button variant="outline" size="sm" />}>
         <ListFilter />
-        Filtres
+        {t("studio.filters.button")}
         {count > 0 ? <Badge className="ml-0.5 h-4 min-w-4 px-1 tabular-nums">{count}</Badge> : null}
       </PopoverTrigger>
       <PopoverContent align="start" className="max-h-[70vh] w-80 overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Filtrer les contenus</p>
+          <p className="text-sm font-medium">{t("studio.filters.title")}</p>
           {count > 0 ? (
             <Button variant="link" size="xs" className="h-auto p-0" onClick={board.resetFilters}>
-              Réinitialiser
+              {t("studio.filters.reset")}
             </Button>
           ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-          <FilterGroup title="Statut">
+          <FilterGroup title={t("studio.filters.status")}>
             {STATUS_ORDER.map((s: ContentStatus) => (
               <FilterOption
                 key={s}
                 checked={f.statuses.includes(s)}
                 onToggle={() => board.patchFilters({ statuses: toggleValue(f.statuses, s) })}
               >
-                {contentStatusMeta[s].label}
+                {lbl.contentStatus(s)}
               </FilterOption>
             ))}
           </FilterGroup>
 
           <div className="space-y-3">
-            <FilterGroup title="Plateforme">
+            <FilterGroup title={t("studio.filters.platform")}>
               {platforms.map((p) => (
                 <FilterOption
                   key={p}
@@ -101,19 +104,19 @@ export function BoardFiltersPopover({
                   onToggle={() => board.patchFilters({ platforms: toggleValue(f.platforms, p) })}
                 >
                   <PlatformIcon platform={p} className="size-3.5" />
-                  {platformMeta[p].label}
+                  {lbl.platform(p)}
                 </FilterOption>
               ))}
             </FilterGroup>
 
-            <FilterGroup title="Format">
+            <FilterGroup title={t("studio.filters.format")}>
               {FORMATS.map((fmt) => (
                 <FilterOption
                   key={fmt}
                   checked={f.formats.includes(fmt)}
                   onToggle={() => board.patchFilters({ formats: toggleValue(f.formats, fmt) })}
                 >
-                  {formatMeta[fmt].label}
+                  {lbl.format(fmt)}
                 </FilterOption>
               ))}
             </FilterGroup>
@@ -121,7 +124,7 @@ export function BoardFiltersPopover({
         </div>
 
         {pillars.length > 0 ? (
-          <FilterGroup title="Pilier éditorial">
+          <FilterGroup title={t("studio.filters.pillar")}>
             {pillars.map((p) => (
               <FilterOption
                 key={p.id}
@@ -133,14 +136,14 @@ export function BoardFiltersPopover({
                   className="size-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: p.colorVar }}
                 />
-                {p.name}
+                {pick(p.name, locale)}
               </FilterOption>
             ))}
           </FilterGroup>
         ) : null}
 
         {labels.length > 0 ? (
-          <FilterGroup title="Étiquette">
+          <FilterGroup title={t("studio.filters.label")}>
             {labels.map((label) => (
               <FilterOption
                 key={label}

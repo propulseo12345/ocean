@@ -8,6 +8,7 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { formatTime } from "@/lib/format"
+import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn } from "@/lib/marronniers"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -15,11 +16,22 @@ import { droppableDayId, useDragActive } from "./calendar-dnd"
 import { manualKindOf } from "./calendar-insights"
 import { createContentHref } from "./calendar-schedule"
 import type { DayContext } from "./calendar-types"
-import { type DayKey, dayNumber, WEEKDAY_LABELS, weekdayDayMonth } from "./calendar-utils"
+import { type DayKey, dayNumber, weekdayDayMonth } from "./calendar-utils"
 import { EntryMarkers, entryToneClass, PlatformDots, pillarEdgeStyle } from "./entry-markers"
 import { EntryShell } from "./entry-shell"
 
 // Vue semaine : 7 cartes jour, droppables, avec statuts en toutes lettres.
+
+// Entêtes de jours (lundi → dimanche) traduits via le namespace calendar.
+const WEEKDAY_KEYS: MessageKey[] = [
+  "calendar.weekdays.mon",
+  "calendar.weekdays.tue",
+  "calendar.weekdays.wed",
+  "calendar.weekdays.thu",
+  "calendar.weekdays.fri",
+  "calendar.weekdays.sat",
+  "calendar.weekdays.sun",
+]
 
 export function WeekView({
   days,
@@ -30,13 +42,14 @@ export function WeekView({
   itemsByDay: ReadonlyMap<DayKey, ContentItem[]>
   ctx: DayContext
 }) {
+  const t = useT()
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
       {days.map((key, i) => (
         <WeekDayColumn
           key={key}
           dayKey={key}
-          weekdayLabel={WEEKDAY_LABELS[i]}
+          weekdayLabel={t(WEEKDAY_KEYS[i])}
           items={itemsByDay.get(key) ?? []}
           ctx={ctx}
         />
@@ -56,6 +69,8 @@ function WeekDayColumn({
   items: ContentItem[]
   ctx: DayContext
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const isToday = dayKey === ctx.todayKey
   const isPast = dayKey < ctx.todayKey
   const dragActive = useDragActive()
@@ -83,7 +98,7 @@ function WeekDayColumn({
         <button
           type="button"
           onClick={() => ctx.onOpenDay(dayKey)}
-          aria-label={`Voir le détail du ${weekdayDayMonth(dayKey, ctx.tz)}`}
+          aria-label={t("calendar.week.viewDay", { day: weekdayDayMonth(dayKey, ctx.tz) })}
           className="flex items-baseline gap-1.5 rounded-md transition-colors hover:bg-muted"
         >
           <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -106,7 +121,7 @@ function WeekDayColumn({
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={`Nouveau contenu le ${weekdayDayMonth(dayKey, ctx.tz)}`}
+            aria-label={t("calendar.week.newContent", { day: weekdayDayMonth(dayKey, ctx.tz) })}
             className="text-muted-foreground"
             render={<Link href={createContentHref(ctx.clientId, dayKey, ctx.tz)} />}
           >
@@ -116,33 +131,36 @@ function WeekDayColumn({
       </div>
 
       <div className={cn("flex flex-1 flex-col gap-1.5 p-2", isPast && !isToday && "opacity-80")}>
-        {marronniers.map((m) => (
-          <span
-            key={`${m.date}_${m.label}`}
-            title={m.label}
-            className="truncate rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground"
-          >
-            {m.label}
-          </span>
-        ))}
+        {marronniers.map((m) => {
+          const label = pick(m.label, locale)
+          return (
+            <span
+              key={`${m.date}_${label}`}
+              title={label}
+              className="truncate rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground"
+            >
+              {label}
+            </span>
+          )
+        })}
         {events.map((ev) => (
           <span
             key={ev.id}
-            title={ev.title}
+            title={pick(ev.title, locale)}
             className="flex items-center gap-1 truncate rounded-md border border-dashed px-1.5 py-0.5 text-[10px] text-muted-foreground"
           >
             {ev.kind === "note" ? (
-              <StickyNote className="size-2.5 shrink-0" aria-label="Note" />
+              <StickyNote className="size-2.5 shrink-0" aria-label={t("calendar.week.note")} />
             ) : (
-              <Flag className="size-2.5 shrink-0" aria-label="Événement" />
+              <Flag className="size-2.5 shrink-0" aria-label={t("calendar.week.event")} />
             )}
-            <span className="truncate">{ev.title}</span>
+            <span className="truncate">{pick(ev.title, locale)}</span>
           </span>
         ))}
 
         {items.length === 0 && events.length === 0 && marronniers.length === 0 ? (
           <p className="flex flex-1 items-center justify-center px-2 py-4 text-center text-xs text-muted-foreground/60">
-            Aucun contenu
+            {t("calendar.week.noContent")}
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">
@@ -159,6 +177,7 @@ function WeekDayColumn({
 }
 
 function WeekCard({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
+  const { locale } = useLocale()
   const hasPillar = Boolean(item.pillarId && ctx.pillarById.get(item.pillarId))
   return (
     <EntryShell
@@ -196,7 +215,7 @@ function WeekCard({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
             item.status === "canceled" && "line-through"
           )}
         >
-          {item.title}
+          {pick(item.title, locale)}
         </span>
         <span className="flex items-center justify-between gap-1">
           <ContentStatusBadge status={item.status} className="text-[10px]" />

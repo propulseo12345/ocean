@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { INTL_LOCALE, type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { ratioLabel } from "@/lib/specs"
 import { cn } from "@/lib/utils"
 import type { ComposerMedia, CropPreset } from "./composer-types"
@@ -21,10 +22,10 @@ import type { ComposerMedia, CropPreset } from "./composer-types"
 // Recadrage guidé (mock) : presets 1:1 / 4:5 / 9:16 prévisualisés en CSS
 // (object-fit + aspect-ratio). Aucun traitement d'image réel en preview.
 
-const PRESETS: Array<{ value: CropPreset; label: string; hint: string }> = [
-  { value: "1:1", label: "1:1", hint: "Carré (feed)" },
-  { value: "4:5", label: "4:5", hint: "Portrait (recommandé IG)" },
-  { value: "9:16", label: "9:16", hint: "Vertical (Reel, story)" },
+const PRESETS: Array<{ value: CropPreset; label: string; hintKey: MessageKey }> = [
+  { value: "1:1", label: "1:1", hintKey: "composer.crop.square" },
+  { value: "4:5", label: "4:5", hintKey: "composer.crop.portrait" },
+  { value: "9:16", label: "9:16", hintKey: "composer.crop.vertical" },
 ]
 
 const ASPECT_CLASS: Record<CropPreset, string> = {
@@ -43,13 +44,15 @@ export function MediaCropDialog({
   onOpenChange: (open: boolean) => void
   onApply: (preset: CropPreset) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [preset, setPreset] = useState<CropPreset>("4:5")
 
   function apply() {
     onApply(preset)
     onOpenChange(false)
-    toast.success(`Recadrage ${preset} appliqué (aperçu)`, {
-      description: "Aucun traitement d'image réel pendant la preview.",
+    toast.success(t("composer.crop.toastApplied", { preset }), {
+      description: t("composer.crop.toastDesc"),
     })
   }
 
@@ -57,14 +60,17 @@ export function MediaCropDialog({
     <Dialog open={media !== null} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Recadrer le visuel</DialogTitle>
+          <DialogTitle>{t("composer.crop.title")}</DialogTitle>
           <DialogDescription>
             {media
-              ? `Ratio actuel : ${ratioLabel(media.width, media.height)}${
-                  media.fileSizeMb !== undefined
-                    ? ` · ${media.fileSizeMb.toLocaleString("fr-FR")} Mo`
-                    : ""
-                }`
+              ? media.fileSizeMb !== undefined
+                ? t("composer.crop.currentRatioSize", {
+                    ratio: ratioLabel(media.width, media.height),
+                    size: new Intl.NumberFormat(INTL_LOCALE[locale]).format(media.fileSizeMb),
+                  })
+                : t("composer.crop.currentRatio", {
+                    ratio: ratioLabel(media.width, media.height),
+                  })
               : null}
           </DialogDescription>
         </DialogHeader>
@@ -80,7 +86,7 @@ export function MediaCropDialog({
               >
                 <Image
                   src={media.fullUrl}
-                  alt={media.altText || "Visuel à recadrer"}
+                  alt={media.altText || t("composer.crop.previewAlt")}
                   fill
                   sizes="224px"
                   className="object-cover"
@@ -99,7 +105,12 @@ export function MediaCropDialog({
                 size="sm"
               >
                 {PRESETS.map((p) => (
-                  <ToggleGroupItem key={p.value} value={p.value} title={p.hint} className="gap-1.5">
+                  <ToggleGroupItem
+                    key={p.value}
+                    value={p.value}
+                    title={t(p.hintKey)}
+                    className="gap-1.5"
+                  >
                     <Crop className="size-3.5" />
                     {p.label}
                   </ToggleGroupItem>
@@ -107,22 +118,24 @@ export function MediaCropDialog({
               </ToggleGroup>
             </div>
             <p className="text-center text-xs text-muted-foreground">
-              {PRESETS.find((p) => p.value === preset)?.hint}
+              {(() => {
+                const found = PRESETS.find((p) => p.value === preset)
+                return found ? t(found.hintKey) : null
+              })()}
             </p>
 
             <p className="flex items-start gap-1.5 rounded-lg border bg-muted/40 p-2.5 text-xs text-muted-foreground">
               <Info className="mt-px size-3.5 shrink-0" />
-              Export en JPEG ≤ 8 Mo — conversion et compression automatiques avant publication
-              (specs Instagram).
+              {t("composer.crop.exportHint")}
             </p>
           </div>
         ) : null}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
-          <Button onClick={apply}>Appliquer le recadrage</Button>
+          <Button onClick={apply}>{t("composer.crop.apply")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

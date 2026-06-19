@@ -16,8 +16,8 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import { getClients, getContentItems } from "@/lib/mocks"
-import { contentStatusMeta } from "@/lib/mocks/labels"
 import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { clientAccountIssues, clientSwitchHref } from "./client-nav"
@@ -27,22 +27,25 @@ import { useShell } from "./shell-provider"
 // conservée), recherche de contenus tous clients, navigation, actions rapides.
 
 const NAV_ITEMS = [
-  { label: "Tableau de bord", href: routes.dashboard, icon: LayoutDashboard },
-  { label: "Agenda unifié", href: routes.agenda, icon: CalendarDays },
-  { label: "Notifications", href: routes.notifications, icon: Bell },
-  { label: "Réglages — comptes connectés", href: routes.settings, icon: Settings },
+  { labelKey: "nav.item.dashboard", href: routes.dashboard, icon: LayoutDashboard },
+  { labelKey: "nav.item.agenda", href: routes.agenda, icon: CalendarDays },
+  { labelKey: "nav.item.notifications", href: routes.notifications, icon: Bell },
+  { labelKey: "nav.item.settingsAccounts", href: routes.settings, icon: Settings },
 ] as const
 
-function HealthDot() {
+function HealthDot({ label }: { label: string }) {
   return (
     <span
-      title="Un compte est à reconnecter"
+      title={label}
       className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive ring-2 ring-popover"
     />
   )
 }
 
 export function CommandPalette() {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const { paletteOpen, setPaletteOpen, setCaptureOpen, recentClientIds } = useShell()
@@ -69,16 +72,16 @@ export function CommandPalette() {
     <CommandDialog
       open={paletteOpen}
       onOpenChange={setPaletteOpen}
-      title="Recherche et commandes"
-      description="Rechercher un client, un contenu ou lancer une action"
+      title={t("nav.palette.title")}
+      description={t("nav.palette.description")}
       className="sm:max-w-lg"
     >
       <Command loop>
-        <CommandInput placeholder="Rechercher un client, un contenu, une action…" />
+        <CommandInput placeholder={t("nav.palette.inputPlaceholder")} />
         <CommandList className="max-h-80">
-          <CommandEmpty>Aucun résultat. Essaie un autre terme.</CommandEmpty>
+          <CommandEmpty>{t("nav.palette.empty")}</CommandEmpty>
 
-          <CommandGroup heading="Clients">
+          <CommandGroup heading={t("nav.palette.groupClients")}>
             {clients.map((c) => {
               const issues = clientAccountIssues(c.id)
               return (
@@ -89,11 +92,11 @@ export function CommandPalette() {
                 >
                   <span className="relative inline-flex">
                     <ClientAvatar client={c} size={20} />
-                    {issues.length > 0 ? <HealthDot /> : null}
+                    {issues.length > 0 ? <HealthDot label={t("nav.accountReconnect")} /> : null}
                   </span>
                   <span className="truncate">{c.name}</span>
                   <CommandShortcut className="truncate tracking-normal">
-                    {recentClientIds.includes(c.id) ? "Récent" : `@${c.handle}`}
+                    {recentClientIds.includes(c.id) ? t("nav.palette.recent") : `@${c.handle}`}
                   </CommandShortcut>
                 </CommandItem>
               )
@@ -101,55 +104,55 @@ export function CommandPalette() {
           </CommandGroup>
           <CommandSeparator />
 
-          <CommandGroup heading="Actions rapides">
+          <CommandGroup heading={t("nav.palette.groupQuickActions")}>
             <CommandItem
-              value="noter une idée capture rapide"
+              value="noter une idée capture rapide jot down idea quick capture"
               onSelect={() => run(() => setCaptureOpen(true))}
             >
               <Lightbulb />
-              <span>Noter une idée</span>
+              <span>{t("nav.palette.noteIdea")}</span>
             </CommandItem>
             {clients.map((c) => (
               <CommandItem
                 key={`new-${c.id}`}
-                value={`nouveau contenu pour ${c.name} ${c.id}`}
+                value={`${t("nav.palette.newContentFor")} ${c.name} ${c.id}`}
                 onSelect={() => run(() => router.push(routes.contentNew(c.id)))}
               >
                 <Plus />
                 <span className="truncate">
-                  Nouveau contenu pour <span className="font-medium">{c.name}</span>
+                  {t("nav.palette.newContentFor")} <span className="font-medium">{c.name}</span>
                 </span>
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandSeparator />
 
-          <CommandGroup heading="Navigation">
+          <CommandGroup heading={t("nav.palette.groupNavigation")}>
             {NAV_ITEMS.map((item) => (
               <CommandItem
                 key={item.href}
-                value={`aller à ${item.label}`}
+                value={t(item.labelKey)}
                 onSelect={() => run(() => router.push(item.href))}
               >
                 <item.icon />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandSeparator />
 
-          <CommandGroup heading="Contenus — tous les clients">
+          <CommandGroup heading={t("nav.palette.groupContents")}>
             {contents.map((item) => (
               <CommandItem
                 key={item.id}
-                value={`${item.title} ${clientNames.get(item.clientId) ?? ""} ${item.id}`}
-                keywords={[item.caption]}
+                value={`${pick(item.title, locale)} ${clientNames.get(item.clientId) ?? ""} ${item.id}`}
+                keywords={[pick(item.caption, locale)]}
                 onSelect={() => run(() => router.push(routes.content(item.clientId, item.id)))}
               >
                 <StatusDot status={item.status} withTooltip={false} />
-                <span className="truncate">{item.title}</span>
+                <span className="truncate">{pick(item.title, locale)}</span>
                 <CommandShortcut className="shrink-0 tracking-normal">
-                  {clientNames.get(item.clientId) ?? "—"} · {contentStatusMeta[item.status].label}
+                  {clientNames.get(item.clientId) ?? "—"} · {lbl.contentStatus(item.status)}
                 </CommandShortcut>
               </CommandItem>
             ))}

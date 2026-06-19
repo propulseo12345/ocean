@@ -12,7 +12,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/shared/empty-state"
-import { formatTime } from "@/lib/format"
+import type { Format, MessageKey } from "@/lib/i18n"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type { DashboardTask } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -34,44 +35,46 @@ const TONE_CLASS: Record<DashboardTask["tone"], string> = {
   neutral: "text-muted-foreground",
 }
 
-// Sections ordonnées par urgence.
-const GROUP_ORDER: { kind: DashboardTask["kind"]; label: string }[] = [
-  { kind: "failed", label: "Échecs à traiter" },
-  { kind: "publish_today", label: "À publier aujourd'hui" },
-  { kind: "tiktok_draft", label: "Brouillons TikTok à finaliser" },
-  { kind: "manual_due", label: "À publier manuellement" },
-  { kind: "reschedule", label: "À reprogrammer" },
-  { kind: "review_pending", label: "En attente de validation client" },
-  { kind: "reconnect", label: "Comptes à reconnecter" },
+// Sections ordonnées par urgence (libellé résolu via dashboard.group.*).
+const GROUP_ORDER: { kind: DashboardTask["kind"]; labelKey: MessageKey }[] = [
+  { kind: "failed", labelKey: "dashboard.group.failed" },
+  { kind: "publish_today", labelKey: "dashboard.group.publish_today" },
+  { kind: "tiktok_draft", labelKey: "dashboard.group.tiktok_draft" },
+  { kind: "manual_due", labelKey: "dashboard.group.manual_due" },
+  { kind: "reschedule", labelKey: "dashboard.group.reschedule" },
+  { kind: "review_pending", labelKey: "dashboard.group.review_pending" },
+  { kind: "reconnect", labelKey: "dashboard.group.reconnect" },
 ]
 
-export function TaskList({ tasks }: { tasks: DashboardTask[] }) {
+export async function TaskList({ tasks }: { tasks: DashboardTask[] }) {
+  const t = await getT()
+  const f = await getFormat()
   if (tasks.length === 0) {
     return (
       <EmptyState
         icon={CheckCircle2}
-        title="Tout est à jour"
-        description="Aucune tâche en attente pour aujourd'hui."
+        title={t("dashboard.allClear")}
+        description={t("dashboard.allClearHint")}
         className="border-0"
       />
     )
   }
   return (
     <div className="space-y-4">
-      {GROUP_ORDER.map(({ kind, label }) => {
-        const group = tasks.filter((t) => t.kind === kind)
+      {GROUP_ORDER.map(({ kind, labelKey }) => {
+        const group = tasks.filter((task) => task.kind === kind)
         if (group.length === 0) return null
         return (
           <section key={kind}>
             <h3 className="mb-1 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {label}
+              {t(labelKey)}
               <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-foreground tabular-nums">
                 {group.length}
               </span>
             </h3>
             <ul className="divide-y">
-              {group.map((t) => (
-                <TaskRow key={t.id} task={t} />
+              {group.map((task) => (
+                <TaskRow key={task.id} task={task} f={f} />
               ))}
             </ul>
           </section>
@@ -81,7 +84,7 @@ export function TaskList({ tasks }: { tasks: DashboardTask[] }) {
   )
 }
 
-function TaskRow({ task }: { task: DashboardTask }) {
+function TaskRow({ task, f }: { task: DashboardTask; f: Format }) {
   const Icon = KIND_ICON[task.kind]
   return (
     <li>
@@ -103,7 +106,7 @@ function TaskRow({ task }: { task: DashboardTask }) {
         </span>
         {task.at ? (
           <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-            {formatTime(task.at)}
+            {f.time(task.at)}
           </span>
         ) : (
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

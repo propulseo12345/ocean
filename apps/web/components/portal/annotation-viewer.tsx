@@ -4,7 +4,8 @@ import { MapPin, MessageSquare } from "lucide-react"
 import { useState } from "react"
 import { MediaCarousel } from "@/components/portal/media-carousel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { formatRelative, initials } from "@/lib/format"
+import { initials } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { Comment, MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +18,7 @@ export function AnnotationViewer({
   comments: Comment[]
   alt: string
 }) {
+  const t = useT()
   const [slideIndex, setSlideIndex] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -55,7 +57,7 @@ export function AnnotationViewer({
       {pinned.length > 0 ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="size-3.5" />
-          Touchez un repère sur le visuel pour voir la remarque associée.
+          {t("portal.annotation.pinHint")}
         </p>
       ) : null}
 
@@ -86,10 +88,11 @@ function AnnotationPin({
   active: boolean
   onClick: () => void
 }) {
+  const t = useT()
   return (
     <button
       type="button"
-      aria-label={`Repère ${label}`}
+      aria-label={t("portal.annotation.pinLabel", { label })}
       onClick={onClick}
       style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
       className={cn(
@@ -113,11 +116,14 @@ function CommentThread({
   activeId: string | null
   onSelect: (c: Comment) => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   if (comments.length === 0) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
         <MessageSquare className="size-4" />
-        Aucun échange pour le moment.
+        {t("portal.annotation.noThread")}
       </div>
     )
   }
@@ -151,7 +157,9 @@ function CommentThread({
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium">{c.authorName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {isReviewer ? "Client" : "Votre agence"}
+                    {isReviewer
+                      ? t("portal.annotation.client")
+                      : t("portal.annotation.yourAgency")}
                   </span>
                   {order ? (
                     <span className="inline-flex size-4 items-center justify-center rounded-full bg-primary/85 text-[10px] font-semibold text-primary-foreground">
@@ -159,10 +167,10 @@ function CommentThread({
                     </span>
                   ) : null}
                   <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {formatRelative(c.createdAt)}
+                    {f.relative(c.createdAt)}
                   </span>
                 </div>
-                <p className="mt-0.5 text-sm text-foreground/90">{c.body}</p>
+                <p className="mt-0.5 text-sm text-foreground/90">{pick(c.body, locale)}</p>
               </div>
             </button>
           </li>

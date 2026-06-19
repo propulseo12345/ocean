@@ -5,6 +5,7 @@ import { useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 // Liste éditable de règles courtes (« à faire » / « à éviter » du brand kit).
@@ -25,6 +26,7 @@ export function StringListEditor({
   tone?: "do" | "dont" | "neutral"
   maxItems?: number
 }) {
+  const t = useT()
   const id = useId()
   const [draft, setDraft] = useState("")
   const atMax = values.length >= maxItems
@@ -66,7 +68,7 @@ export function StringListEditor({
           size="icon"
           onClick={add}
           disabled={atMax}
-          aria-label="Ajouter"
+          aria-label={t("onboarding.listEditor.add")}
         >
           <Plus />
         </Button>
@@ -83,7 +85,7 @@ export function StringListEditor({
               <button
                 type="button"
                 onClick={() => onChange(values.filter((v) => v !== value))}
-                aria-label={`Retirer ${value}`}
+                aria-label={t("onboarding.listEditor.removeAria", { value })}
                 className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
               >
                 <X className="size-3.5" />

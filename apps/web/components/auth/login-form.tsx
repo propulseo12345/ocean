@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -15,20 +16,21 @@ const DEMO_EMAIL = "demo@studio.fr"
 
 export function LoginForm() {
   const router = useRouter()
+  const t = useT()
   const [email, setEmail] = useState(DEMO_EMAIL)
   const isValid = EMAIL_RE.test(email)
 
   function enterDemo() {
-    toast.success("Bienvenue dans la démo Ocean", {
-      description: "Compte de démonstration — données fictives.",
+    toast.success(t("auth.login.demoToastTitle"), {
+      description: t("auth.login.demoToastDetail"),
     })
     router.push(routes.dashboard)
   }
 
   function guard() {
     if (!isValid) {
-      toast.error("Adresse e-mail invalide", {
-        description: "Saisis une adresse valide pour continuer.",
+      toast.error(t("auth.login.invalidEmailTitle"), {
+        description: t("auth.login.invalidEmailDetail"),
       })
       return false
     }
@@ -37,16 +39,16 @@ export function LoginForm() {
 
   function sendMagicLink() {
     if (!guard()) return
-    toast.success("Lien magique validé (preview)", {
-      description: `Connexion simulée pour ${email} — accès à la démo.`,
+    toast.success(t("auth.login.magicLinkToastTitle"), {
+      description: t("auth.login.magicLinkToastDetail", { email }),
     })
     router.push(routes.dashboard)
   }
 
   function sendOtp() {
     if (!guard()) return
-    toast.success("Code envoyé (preview)", {
-      description: "Action simulée — saisis un code de 6 chiffres au choix.",
+    toast.success(t("auth.login.otpToastTitle"), {
+      description: t("auth.login.otpToastDetail"),
     })
     router.push(routes.otp)
   }
@@ -61,16 +63,16 @@ export function LoginForm() {
     >
       <Button type="button" size="lg" className="h-11 w-full" onClick={enterDemo}>
         <Waves />
-        Entrer dans la démo
+        {t("auth.login.enterDemo")}
       </Button>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        ou simule une connexion
+        {t("auth.login.orSimulate")}
         <span className="h-px flex-1 bg-border" />
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="email">Adresse e-mail</Label>
+        <Label htmlFor="email">{t("auth.login.emailLabel")}</Label>
         <Input
           id="email"
           name="email"
@@ -78,7 +80,7 @@ export function LoginForm() {
           inputMode="email"
           autoComplete="email"
           autoFocus
-          placeholder="toi@studio.fr"
+          placeholder={t("auth.login.emailPlaceholder")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           aria-invalid={email.length > 0 && !isValid}
@@ -89,24 +91,28 @@ export function LoginForm() {
       <div className="space-y-2">
         <Button type="submit" size="lg" className="h-10 w-full">
           <Mail />
-          Recevoir le lien magique
+          {t("auth.login.sendMagicLink")}
         </Button>
         <Button type="button" variant="outline" size="lg" className="h-10 w-full" onClick={sendOtp}>
           <KeyRound />
-          Recevoir un code à 6 chiffres
+          {t("auth.login.sendOtp")}
         </Button>
       </div>
 
       <div className="space-y-1.5 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
         <p className="flex items-center gap-2">
           <Monitor className="size-3.5 shrink-0 text-foreground" />
-          Sur ordinateur, le <strong className="font-medium text-foreground">lien magique</strong>{" "}
-          est le plus simple.
+          {t("auth.login.hintDesktopPrefix")}
+          <strong className="font-medium text-foreground">
+            {t("auth.login.hintDesktopBold")}
+          </strong>
+          {t("auth.login.hintDesktopSuffix")}
         </p>
         <p className="flex items-center gap-2">
           <Smartphone className="size-3.5 shrink-0 text-foreground" />
-          Sur mobile, préfère le{" "}
-          <strong className="font-medium text-foreground">code à 6 chiffres</strong>.
+          {t("auth.login.hintMobilePrefix")}
+          <strong className="font-medium text-foreground">{t("auth.login.hintMobileBold")}</strong>
+          {t("auth.login.hintMobileSuffix")}
         </p>
       </div>
     </form>

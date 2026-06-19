@@ -5,6 +5,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { loc, useT } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Comment } from "@/lib/mocks/types"
 import { CommentRow, NoteRow, ThreadComposer } from "./detail-thread-items"
@@ -29,6 +30,7 @@ export function DetailThread({
   internalNotes?: string
   reviewerName?: string
 }) {
+  const t = useT()
   const [replies, setReplies] = useState<Comment[]>([])
   const [notes, setNotes] = useState<InternalNote[]>([])
   const [resolved, setResolved] = useState<Record<string, boolean>>({})
@@ -51,13 +53,14 @@ export function DetailThread({
         contentId: comments[0]?.contentId ?? "local",
         authorName: "Étienne Mercier",
         role: "owner",
-        body,
+        // Réponse locale (aperçu) saisie dans la locale active, dupliquée.
+        body: loc(body, body),
         createdAt: MOCK_NOW.toISOString(),
       },
     ])
     setClientDraft("")
-    toast.success("Réponse envoyée au client", {
-      description: "Visible sur le portail — interaction simulée (aperçu).",
+    toast.success(t("studio.thread.replySent"), {
+      description: t("studio.thread.replySentDesc"),
     })
   }
 
@@ -69,8 +72,8 @@ export function DetailThread({
       { id: `note_local_${prev.length}`, body, createdAt: MOCK_NOW.toISOString() },
     ])
     setInternalDraft("")
-    toast.success("Note interne ajoutée", {
-      description: "Jamais visible par le client — interaction simulée (aperçu).",
+    toast.success(t("studio.thread.noteAdded"), {
+      description: t("studio.thread.noteAddedDesc"),
     })
   }
 
@@ -79,22 +82,27 @@ export function DetailThread({
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
           <MessageSquare className="size-4 text-muted-foreground" />
-          Discussion
+          {t("studio.thread.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="client">
           <TabsList className="w-full">
-            <TabsTrigger value="client">Client ({clientThread.length})</TabsTrigger>
-            <TabsTrigger value="internal">Interne ({internalCount})</TabsTrigger>
+            <TabsTrigger value="client">
+              {t("studio.thread.tabClient", { count: clientThread.length })}
+            </TabsTrigger>
+            <TabsTrigger value="internal">
+              {t("studio.thread.tabInternal", { count: internalCount })}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="client" className="space-y-3">
             {reviewerComments.length > 0 ? (
               <p className="text-[11px] font-medium text-muted-foreground tabular-nums">
-                {resolvedCount}/{reviewerComments.length} retour
-                {reviewerComments.length > 1 ? "s" : ""} traité
-                {reviewerComments.length > 1 ? "s" : ""}
+                {t("studio.thread.reviewsHandled", {
+                  resolved: resolvedCount,
+                  total: reviewerComments.length,
+                })}
               </p>
             ) : null}
 
@@ -117,7 +125,7 @@ export function DetailThread({
               </ul>
             ) : (
               <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                Pas encore d'échange avec le client sur ce contenu.
+                {t("studio.thread.noClientThread")}
               </p>
             )}
 
@@ -125,22 +133,30 @@ export function DetailThread({
               value={clientDraft}
               onChange={setClientDraft}
               onSubmit={sendReply}
-              placeholder={`Répondre à ${reviewerName ?? "ton client"}…`}
-              hint={`Visible par ${reviewerName ?? "le client"} sur le portail de validation.`}
-              submitLabel="Répondre"
+              placeholder={t("studio.thread.replyPlaceholder", {
+                name: reviewerName ?? t("studio.thread.fallbackName"),
+              })}
+              hint={t("studio.thread.replyHint", {
+                name: reviewerName ?? t("studio.thread.fallbackNameShort"),
+              })}
+              submitLabel={t("studio.thread.reply")}
             />
           </TabsContent>
 
           <TabsContent value="internal" className="space-y-3">
             <p className="flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-2 text-[11px] font-medium text-muted-foreground">
               <EyeOff className="size-3.5 shrink-0" />
-              Notes internes — jamais visibles par le client.
+              {t("studio.thread.internalBanner")}
             </p>
 
             {internalCount > 0 ? (
               <ul className="space-y-3.5">
                 {internalNotes ? (
-                  <NoteRow body={internalNotes} label="Note du contenu" createdAt={null} />
+                  <NoteRow
+                    body={internalNotes}
+                    label={t("studio.thread.contentNote")}
+                    createdAt={null}
+                  />
                 ) : null}
                 {notes.map((note) => (
                   <NoteRow key={note.id} body={note.body} createdAt={note.createdAt} />
@@ -148,7 +164,7 @@ export function DetailThread({
               </ul>
             ) : (
               <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                Aucune note interne pour l'instant.
+                {t("studio.thread.noInternal")}
               </p>
             )}
 
@@ -156,9 +172,9 @@ export function DetailThread({
               value={internalDraft}
               onChange={setInternalDraft}
               onSubmit={addNote}
-              placeholder="Ajouter une note interne…"
-              hint="Réservé à l'équipe — n'apparaît jamais sur le portail."
-              submitLabel="Ajouter"
+              placeholder={t("studio.thread.notePlaceholder")}
+              hint={t("studio.thread.noteHint")}
+              submitLabel={t("studio.thread.noteAdd")}
             />
           </TabsContent>
         </Tabs>

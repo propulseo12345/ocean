@@ -6,13 +6,14 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { type MessageKey, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { CADENCE_DEFAULTS, DENSITY_BOUNDS, GAP_BOUNDS } from "./constants"
 import { SaveBar, SectionCard } from "./section-card"
 
 interface AlertToggle {
   id: string
-  label: string
+  labelKey: MessageKey
   enabled: boolean
 }
 
@@ -24,16 +25,13 @@ const DEFAULT_ALERTS: Record<string, boolean> = {
 }
 
 export function SectionCadence() {
+  const t = useT()
   const [gapDays, setGapDays] = useState<number>(CADENCE_DEFAULTS.gapDays)
   const [maxPerDay, setMaxPerDay] = useState<number>(CADENCE_DEFAULTS.maxPerDay)
   const [alerts, setAlerts] = useState<AlertToggle[]>([
-    { id: "empty_week", label: "Me prévenir si le calendrier est vide à J-7", enabled: true },
-    { id: "gap", label: "Signaler un trou de cadence au-delà du seuil ci-dessus", enabled: true },
-    {
-      id: "collision",
-      label: "Avertir si deux posts du même jour sont à moins d'une heure",
-      enabled: false,
-    },
+    { id: "empty_week", labelKey: "clientSettings.cadence.alertEmptyWeek", enabled: true },
+    { id: "gap", labelKey: "clientSettings.cadence.alertGap", enabled: true },
+    { id: "collision", labelKey: "clientSettings.cadence.alertCollision", enabled: false },
   ])
 
   const dirty =
@@ -42,8 +40,11 @@ export function SectionCadence() {
     alerts.some((a) => a.enabled !== DEFAULT_ALERTS[a.id])
 
   function save() {
-    toast.success("Seuils de cadence enregistrés (aperçu)", {
-      description: `Trou : ${gapDays} j · densité max : ${maxPerDay}/jour`,
+    toast.success(t("clientSettings.cadence.savedToast"), {
+      description: t("clientSettings.cadence.savedToastDescription", {
+        gap: gapDays,
+        density: maxPerDay,
+      }),
     })
   }
 
@@ -54,24 +55,24 @@ export function SectionCadence() {
   return (
     <SectionCard
       icon={TriangleAlert}
-      title="Cadence & alertes"
-      description="Seuils de détection des trous et de la densité, pour protéger la régularité vendue au client."
+      title={t("clientSettings.cadence.title")}
+      description={t("clientSettings.cadence.description")}
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <Stepper
-          label="Trou de cadence"
-          hint="Alerter après ce nombre de jours sans aucun post planifié."
+          labelKey="clientSettings.cadence.gapLabel"
+          hint={t("clientSettings.cadence.gapHint")}
           value={gapDays}
-          unit="jours"
+          unit={t("clientSettings.cadence.gapUnit")}
           min={GAP_BOUNDS.min}
           max={GAP_BOUNDS.max}
           onChange={setGapDays}
         />
         <Stepper
-          label="Densité maximale"
-          hint="Avertir au-delà de ce nombre de posts le même jour."
+          labelKey="clientSettings.cadence.densityLabel"
+          hint={t("clientSettings.cadence.densityHint")}
           value={maxPerDay}
-          unit="/ jour"
+          unit={t("clientSettings.cadence.densityUnit")}
           min={DENSITY_BOUNDS.min}
           max={DENSITY_BOUNDS.max}
           onChange={setMaxPerDay}
@@ -79,19 +80,22 @@ export function SectionCadence() {
       </div>
 
       <ul className="space-y-3 border-t pt-4">
-        {alerts.map((alert) => (
-          <li key={alert.id} className="flex items-center justify-between gap-3">
-            <Label htmlFor={`alert-${alert.id}`} className="font-normal">
-              {alert.label}
-            </Label>
-            <Switch
-              id={`alert-${alert.id}`}
-              checked={alert.enabled}
-              onCheckedChange={(checked) => toggle(alert.id, checked)}
-              aria-label={alert.label}
-            />
-          </li>
-        ))}
+        {alerts.map((alert) => {
+          const label = t(alert.labelKey)
+          return (
+            <li key={alert.id} className="flex items-center justify-between gap-3">
+              <Label htmlFor={`alert-${alert.id}`} className="font-normal">
+                {label}
+              </Label>
+              <Switch
+                id={`alert-${alert.id}`}
+                checked={alert.enabled}
+                onCheckedChange={(checked) => toggle(alert.id, checked)}
+                aria-label={label}
+              />
+            </li>
+          )
+        })}
       </ul>
 
       <SaveBar dirty={dirty} onSave={save} />
@@ -100,7 +104,7 @@ export function SectionCadence() {
 }
 
 function Stepper({
-  label,
+  labelKey,
   hint,
   value,
   unit,
@@ -108,7 +112,7 @@ function Stepper({
   max,
   onChange,
 }: {
-  label: string
+  labelKey: MessageKey
   hint: string
   value: number
   unit: string
@@ -116,6 +120,8 @@ function Stepper({
   max: number
   onChange: (next: number) => void
 }) {
+  const t = useT()
+  const label = t(labelKey)
   const clamp = (n: number) => Math.min(max, Math.max(min, n))
 
   return (
@@ -128,7 +134,7 @@ function Stepper({
           variant="outline"
           onClick={() => onChange(clamp(value - 1))}
           disabled={value <= min}
-          aria-label={`Diminuer ${label}`}
+          aria-label={t("clientSettings.cadence.decrease", { label })}
         >
           <Minus />
         </Button>
@@ -140,7 +146,7 @@ function Stepper({
           variant="outline"
           onClick={() => onChange(clamp(value + 1))}
           disabled={value >= max}
-          aria-label={`Augmenter ${label}`}
+          aria-label={t("clientSettings.cadence.increase", { label })}
         >
           <Plus />
         </Button>

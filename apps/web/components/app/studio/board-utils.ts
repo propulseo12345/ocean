@@ -1,8 +1,11 @@
+import { type Locale, pick } from "@/lib/i18n"
 import { days, MOCK_NOW } from "@/lib/mocks/time"
 import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/mocks/types"
 import { type BoardFilters, type SortKey, STATUS_ORDER } from "./board-types"
 
 // Helpers purs du board studio : recherche, tri, priorités, suivi de revue.
+// Les étiquettes (L<string>) sont résolues dans la locale active avant toute
+// comparaison/affichage — le board manipule des libellés `string` résolus.
 
 const LATE_DRAFT_AFTER_DAYS = 7
 const REMIND_AFTER_DAYS = 2
@@ -15,25 +18,32 @@ function normalize(text: string): string {
 }
 
 /** Recherche plein texte : titre, légende, étiquettes et hashtags. */
-export function matchesSearch(item: ContentItem, query: string): boolean {
+export function matchesSearch(item: ContentItem, query: string, locale: Locale): boolean {
   if (query.trim().length === 0) return true
   const haystack = normalize(
-    [item.title, item.caption, ...(item.labels ?? []), ...item.hashtags].join(" ")
+    [
+      pick(item.title, locale),
+      pick(item.caption, locale),
+      ...(item.labels ?? []).map((l) => pick(l, locale)),
+      ...item.hashtags,
+    ].join(" ")
   )
   return normalize(query)
     .split(/\s+/)
     .every((word) => haystack.includes(word))
 }
 
-export function matchesFilters(item: ContentItem, f: BoardFilters): boolean {
-  if (!matchesSearch(item, f.search)) return false
+export function matchesFilters(item: ContentItem, f: BoardFilters, locale: Locale): boolean {
+  if (!matchesSearch(item, f.search, locale)) return false
   if (f.statuses.length > 0 && !f.statuses.includes(item.status)) return false
   if (f.formats.length > 0 && !f.formats.includes(item.format)) return false
   if (f.platforms.length > 0 && !item.targets.some((t) => f.platforms.includes(t.platform))) {
     return false
   }
   if (f.pillarIds.length > 0 && !f.pillarIds.includes(item.pillarId ?? "")) return false
-  if (f.labels.length > 0 && !(item.labels ?? []).some((l) => f.labels.includes(l))) return false
+  if (f.labels.length > 0 && !(item.labels ?? []).some((l) => f.labels.includes(pick(l, locale)))) {
+    return false
+  }
   return true
 }
 
@@ -132,8 +142,8 @@ export function sortItems(items: ContentItem[], sort: SortKey): ContentItem[] {
 // Suivi de validation (ReviewRequest + Reviewer)
 
 export interface CardReviewMeta {
-  /** Badge « En attente depuis N j » (in_review uniquement). */
-  waitLabel: string | null
+  /** Nombre de jours d'attente (in_review) ; null = pas en attente. */
+  waitDays: number | null
   /** Relance proposée : attente > 2 j ou reviewer jamais venu depuis l'envoi. */
   canRemind: boolean
 }
@@ -143,7 +153,7 @@ export function cardReviewMeta(
   request: ReviewRequest | null,
   reviewer: Reviewer | null
 ): CardReviewMeta {
-  if (item.status !== "in_review") return { waitLabel: null, canRemind: false }
+  if (item.status !== "in_review") return { waitDays: null, canRemind: false }
   const sentAt = request?.contentIds.includes(item.id) ? request.sentAt : item.createdAt
   const waitDays = Math.max(
     0,
@@ -152,7 +162,7 @@ export function cardReviewMeta(
   const reviewerSilent =
     reviewer !== null && (reviewer.lastActiveAt === null || reviewer.lastActiveAt < sentAt)
   return {
-    waitLabel: waitDays >= 1 ? `En attente depuis ${waitDays} j` : "Envoyé aujourd'hui",
+    waitDays,
     canRemind: waitDays > REMIND_AFTER_DAYS || reviewerSilent,
   }
 }
@@ -169,9 +179,9 @@ export const canSchedule = (item: ContentItem) => SCHEDULABLE.includes(item.stat
 export const canCancel = (item: ContentItem) =>
   !LOCKED.includes(item.status) && item.status !== "canceled"
 
-/** Étiquettes disponibles : celles déjà posées chez ce client + canoniques. */
-export function collectLabels(items: ContentItem[], canonical: string[]): string[] {
+/** Étiquettes disponibles (résolues dans la locale) : posées chez ce client + canoniques. */
+export function collectLabels(items: ContentItem[], canonical: string[], locale: Locale): string[] {
   const set = new Set<string>(canonical)
-  for (const item of items) for (const label of item.labels ?? []) set.add(label)
-  return [...set].sort((a, b) => a.localeCompare(b, "fr"))
+  for (const item of items) for (const label of item.labels ?? []) set.add(pick(label, locale))
+  return [...set].sort((a, b) => a.localeCompare(b, locale))
 }

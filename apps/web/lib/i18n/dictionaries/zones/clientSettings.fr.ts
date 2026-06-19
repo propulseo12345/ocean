@@ -1,4 +1,260 @@
-// Namespace i18n « clientSettings » (FR). Rempli par le lot UI correspondant.
+// Namespace i18n « clientSettings » (FR) — réglages d'un client.
 export const clientSettingsFr = {
-  clientSettings: {},
+  clientSettings: {
+    nav: {
+      ariaLabel: "Sections des réglages",
+      profile: "Profil",
+      accounts: "Comptes",
+      brand: "Marque",
+      approval: "Validation",
+      slots: "Créneaux",
+      cadence: "Cadence",
+      archive: "Archivage",
+    },
+    saveBar: {
+      dirty: "Modifications non enregistrées.",
+      clean: "Tout est à jour.",
+      save: "Enregistrer (aperçu)",
+    },
+    hues: {
+      coffee: "Terre de café",
+      caramel: "Caramel",
+      brick: "Brique",
+      magenta: "Magenta",
+      lavender: "Lavande",
+      indigo: "Indigo",
+      ocean: "Océan",
+      forest: "Vert forêt",
+      olive: "Olive",
+      amber: "Ambre",
+      slate: "Ardoise",
+      ink: "Encre",
+    },
+    weekday: {
+      monShort: "Lun",
+      monLong: "Lundi",
+      tueShort: "Mar",
+      tueLong: "Mardi",
+      wedShort: "Mer",
+      wedLong: "Mercredi",
+      thuShort: "Jeu",
+      thuLong: "Jeudi",
+      friShort: "Ven",
+      friLong: "Vendredi",
+      satShort: "Sam",
+      satLong: "Samedi",
+      sunShort: "Dim",
+      sunLong: "Dimanche",
+    },
+    profile: {
+      title: "Profil du client",
+      description:
+        "Identité affichée dans l'app, l'aperçu de profil et le portail de validation.",
+      noName: "Sans nom",
+      handleFallback: "handle",
+      nameLabel: "Nom",
+      handleLabel: "Identifiant (@handle)",
+      categoryLabel: "Catégorie",
+      categoryPlaceholder: "Ex. : Café · Torréfaction artisanale",
+      timezoneLabel: "Fuseau horaire",
+      timezoneHint: "Utilisé pour dater les publications du client.",
+      bioLabel: "Bio",
+      brandColorLabel: "Couleur de marque",
+      notesLabel: "Notes internes",
+      notesHint:
+        "Visible uniquement par toi (forfait, délais, préférences) — jamais partagé au client.",
+      notesPlaceholder: "Ex. : Forfait 12 posts/mois. Prévoir 48 h de validation.",
+      savedToast: "Profil enregistré (aperçu)",
+      savedToastDescription: "Aucune donnée n'est réellement modifiée pendant la preview.",
+    },
+    accounts: {
+      title: "Comptes connectés",
+      description:
+        "Réseaux sur lesquels ce client publie. La connexion OAuth se fait dans les réglages globaux.",
+      manage: "Gérer les connexions",
+      emptyTitle: "Aucun compte connecté",
+      emptyDescription:
+        "Connecte Instagram, Facebook ou TikTok depuis les réglages des connexions pour publier pour ce client.",
+      healthNote:
+        "La santé des accès est surveillée en continu : un accès expiré est détecté avant l'heure de publication, jamais après.",
+      followers: "{count} abonnés",
+      reconnect: "Reconnecter",
+      reconnectToast: "Reconnexion {platform} simulée (aperçu)",
+      reconnectToastDescription:
+        "Aucun compte n'est réellement reconnecté pendant la preview.",
+      noteInstagram:
+        "Nécessite un compte Pro relié à une Page Facebook (variante Instagram Login).",
+      noteFacebook:
+        "Publication via la Page liée, attribuée par le client dans la Business Suite.",
+      noteTiktok:
+        "Mode brouillon uniquement : le post est poussé, le client le finalise dans l'app TikTok.",
+    },
+    brandKit: {
+      title: "Identité de marque",
+      description:
+        "Palette, ton et règles éditoriales du client. Rappelés dans le studio pendant la rédaction.",
+      paletteLabel: "Palette de couleurs",
+      paletteHint:
+        "Clique une pastille pour copier sa valeur, la croix pour la retirer, « + » pour en ajouter une.",
+      toneLabel: "Ton de voix",
+      tonePlaceholder:
+        "Ex. : Chaleureux et artisanal — tutoiement, vocabulaire sensoriel, jamais de jargon.",
+      doLabel: "À faire",
+      dontLabel: "À éviter",
+      addLabel: "Ajouter",
+      doPlaceholder: "Ex. : Tutoyer la communauté",
+      dontPlaceholder: "Ex. : Promotions agressives",
+      doEmpty: "Aucune règle « à faire » pour l'instant.",
+      dontEmpty: "Aucune règle « à éviter » pour l'instant.",
+      bannedLabel: "Mots interdits",
+      bannedHint:
+        "Ces termes alimentent les garde-fous de légende du composer : tout mot interdit y est surligné en temps réel pendant la rédaction.",
+      savedToast: "Identité de marque enregistrée (aperçu)",
+      savedToastDescription:
+        "Le composer s'appuie sur ces règles pour guider la rédaction des légendes.",
+    },
+    approval: {
+      title: "Niveau de validation",
+      description:
+        "Définit qui doit approuver un contenu avant publication pour ce client.",
+      requiredLabel: "Validation obligatoire",
+      requiredImpact:
+        "Aucune publication sans l'accord du relecteur. Chaque contenu passe par le portail avant d'être programmé.",
+      optionalLabel: "Validation optionnelle",
+      optionalImpact:
+        "L'envoi en revue est proposé par défaut mais tu peux programmer directement, contenu par contenu.",
+      autoLabel: "Publication directe",
+      autoImpact:
+        "Aucun passage par le portail : les contenus programmés partent à l'heure prévue, sous ta seule responsabilité.",
+      seenAt: "Vu {when}",
+      neverVisited: "Jamais venu sur le portail",
+      noReviewer: "Aucun relecteur rattaché à ce client.",
+      invite: "Inviter",
+      reminderLabel: "Relancer le relecteur sans réponse après",
+      reminderUnit: "jour(s)",
+      lateNote:
+        "Une approbation tardive ne déclenche jamais de publication automatique : passé l'heure, le contenu te revient pour reprogrammation.",
+      savedToast: "Niveau de validation enregistré (aperçu)",
+      inviteToast: "Invitation relecteur simulée (aperçu)",
+      inviteToastDescription:
+        "Un email d'invitation au portail partira via Brevo une fois le backend câblé.",
+    },
+    cadence: {
+      title: "Cadence & alertes",
+      description:
+        "Seuils de détection des trous et de la densité, pour protéger la régularité vendue au client.",
+      gapLabel: "Trou de cadence",
+      gapHint: "Alerter après ce nombre de jours sans aucun post planifié.",
+      gapUnit: "jours",
+      densityLabel: "Densité maximale",
+      densityHint: "Avertir au-delà de ce nombre de posts le même jour.",
+      densityUnit: "/ jour",
+      alertEmptyWeek: "Me prévenir si le calendrier est vide à J-7",
+      alertGap: "Signaler un trou de cadence au-delà du seuil ci-dessus",
+      alertCollision: "Avertir si deux posts du même jour sont à moins d'une heure",
+      decrease: "Diminuer {label}",
+      increase: "Augmenter {label}",
+      savedToast: "Seuils de cadence enregistrés (aperçu)",
+      savedToastDescription: "Trou : {gap} j · densité max : {density}/jour",
+    },
+    slots: {
+      title: "Créneaux de publication récurrents",
+      description: "Les rendez-vous hebdomadaires convenus avec le client.",
+      add: "Ajouter",
+      empty:
+        "Aucun créneau défini. Ajoute les rendez-vous récurrents pour préremplir le batch mensuel.",
+      colDay: "Jour",
+      colTime: "Heure",
+      colPlatforms: "Réseaux",
+      colPillar: "Pilier",
+      colRemove: "Retirer",
+      note:
+        "Ces créneaux préremplissent les dates suggérées dans le studio et matérialisent les trous à combler dans le calendrier.",
+      weekPreviewTitle: "Aperçu de la semaine type",
+      timeAriaLabel: "Heure du créneau",
+      noPillar: "Aucun pilier",
+      removeSlot: "Supprimer ce créneau",
+      removedToast: "Créneau supprimé (aperçu)",
+      addedToast: "Créneau ajouté (aperçu)",
+      addedToastDescription: "Ajuste le jour, l'heure et les réseaux.",
+    },
+    danger: {
+      title: "Archivage & corbeille",
+      description:
+        "Mettre le client en pause, restaurer des contenus supprimés ou tout effacer.",
+      archivedTitle: "Client archivé",
+      archiveTitle: "Archiver le client",
+      archivedOn:
+        "Archivé le {date}. Réactive-le pour reprendre la collaboration.",
+      archiveHint:
+        "Il n'apparaîtra plus dans la liste active ni le switcher ; ses contenus sont conservés.",
+      reactivate: "Réactiver",
+      archive: "Archiver",
+      trashTitle: "Corbeille",
+      dangerZone: "Zone de danger",
+      dangerDescription:
+        "Suppression définitive du client et de toutes ses données. Aucune réversibilité.",
+      deletePermanently: "Supprimer définitivement le client",
+      archiveDialogTitle: "Archiver ce client ?",
+      archiveDialogDescription:
+        "Il disparaîtra des listes actives et du switcher. Ses contenus et son historique restent conservés, et tu pourras le réactiver à tout moment.",
+      archiveConfirm: "Archiver (aperçu)",
+      archivedToast: "Client archivé (aperçu)",
+      archivedToastDescription:
+        "Il disparaît des listes actives ; ses contenus restent conservés.",
+      reactivatedToast: "Client réactivé (aperçu)",
+      reactivatedToastDescription:
+        "Il réapparaît dans la liste active et le switcher.",
+      deletedToast: "Suppression définitive simulée (aperçu)",
+      deletedToastDescription:
+        "Aucun client n'est réellement supprimé pendant la preview.",
+    },
+    deleteDialog: {
+      title: "Supprimer définitivement le client ?",
+      description:
+        "Cette action est irréversible : le client, ses contenus, son historique et ses médias sont supprimés. Préfère l'archivage si tu veux conserver les preuves.",
+      confirm: "Supprimer définitivement (aperçu)",
+      confirmLabel: "Saisis « {name} » pour confirmer",
+    },
+    confirmDialog: {
+      cancel: "Annuler",
+    },
+    palette: {
+      copyTitle: "Copier {value}",
+      copyAria: "Copier la teinte {value}",
+      removeAria: "Retirer la teinte {value}",
+      addAria: "Ajouter une teinte",
+      addHueAria: "Ajouter la teinte {value}",
+      allAdded: "Toutes les teintes sont ajoutées.",
+      copiedToast: "Teinte copiée (aperçu)",
+    },
+    stringList: {
+      removeAria: "Retirer « {value} »",
+    },
+    brandColor: {
+      groupLabel: "Couleur de marque",
+    },
+    banned: {
+      empty: "Aucun mot interdit pour ce client.",
+      placeholder: "Ex. : promo flash",
+      add: "Ajouter",
+      removeAria: "Retirer « {value} »",
+    },
+    trash: {
+      emptyTitle: "Corbeille vide",
+      emptyDescription:
+        "Les contenus supprimés sont conservés {days} jours avant purge des médias, puis restaurables jusque-là.",
+      retentionNote:
+        "Les contenus supprimés sont conservés {days} jours avant la purge des médias.",
+      restore: "Restaurer",
+      restoredToast: "Contenu restauré (aperçu)",
+      purgedToast: "Contenu supprimé définitivement (aperçu)",
+      deletedRelative: "· supprimé {when}",
+      purgeAria: "Supprimer définitivement {title}",
+      purgeDialogTitle: "Supprimer définitivement ?",
+      purgeDialogDescription:
+        "« {title} » sera retiré de la corbeille sans possibilité de restauration. En réel, les médias associés sont purgés.",
+      purgeConfirm: "Supprimer définitivement (aperçu)",
+    },
+  },
 } as const

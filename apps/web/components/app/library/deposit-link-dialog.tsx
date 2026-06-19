@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useT } from "@/lib/i18n"
 import { buildDepositUrl } from "./library-utils"
 
 // Lien de dépôt client (P1 audit §4) : le client envoie ses médias via un
@@ -44,6 +45,7 @@ export function DepositLinkDialog({
   receivedCount: number
   onShowReceived: () => void
 }) {
+  const t = useT()
   const [validity, setValidity] = useState<number>(30)
   const [copied, setCopied] = useState(false)
   const url = buildDepositUrl(clientHandle, validity)
@@ -52,10 +54,10 @@ export function DepositLinkDialog({
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      toast.success("Lien copié dans le presse-papier")
+      toast.success(t("library.deposit.copied"))
       setTimeout(() => setCopied(false), COPY_FEEDBACK_MS)
     } catch {
-      toast.error("Copie impossible — sélectionne le lien manuellement.")
+      toast.error(t("library.deposit.copyError"))
     }
   }
 
@@ -63,17 +65,15 @@ export function DepositLinkDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Lien de dépôt client</DialogTitle>
+          <DialogTitle>{t("library.deposit.title")}</DialogTitle>
           <DialogDescription>
-            {clientName} dépose ses photos et vidéos via ce lien sécurisé reçu par email — sans mot
-            de passe à retenir. Tout arrive directement dans « Reçus du client », et tu es notifié à
-            chaque dépôt.
+            {t("library.deposit.description", { name: clientName })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="deposit-url">Lien de dépôt</Label>
+            <Label htmlFor="deposit-url">{t("library.deposit.urlLabel")}</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="deposit-url"
@@ -86,7 +86,7 @@ export function DepositLinkDialog({
                 variant="outline"
                 size="icon"
                 onClick={copy}
-                aria-label="Copier le lien de dépôt"
+                aria-label={t("library.deposit.copyAria")}
               >
                 {copied ? <Check className="text-success" /> : <Copy />}
               </Button>
@@ -94,7 +94,7 @@ export function DepositLinkDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="deposit-validity">Durée de validité</Label>
+            <Label htmlFor="deposit-validity">{t("library.deposit.validityLabel")}</Label>
             <Select value={String(validity)} onValueChange={(value) => setValidity(Number(value))}>
               <SelectTrigger id="deposit-validity" className="w-full">
                 <SelectValue />
@@ -102,14 +102,12 @@ export function DepositLinkDialog({
               <SelectContent>
                 {VALIDITY_OPTIONS.map((days) => (
                   <SelectItem key={days} value={String(days)}>
-                    {days} jours
+                    {t("library.deposit.validityDays", { count: days })}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Passé ce délai, le lien expire — tu pourras en générer un nouveau ici.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("library.deposit.validityHint")}</p>
           </div>
 
           {receivedCount > 0 ? (
@@ -123,9 +121,8 @@ export function DepositLinkDialog({
             >
               <Inbox className="size-4 shrink-0 text-info" aria-hidden />
               <span>
-                {receivedCount} média{receivedCount > 1 ? "s" : ""} déjà reçu
-                {receivedCount > 1 ? "s" : ""} du client —{" "}
-                <span className="font-medium text-info">voir dans la médiathèque</span>
+                {t("library.deposit.received", { count: receivedCount })} —{" "}
+                <span className="font-medium text-info">{t("library.deposit.seeInLibrary")}</span>
               </span>
             </button>
           ) : null}
@@ -135,17 +132,17 @@ export function DepositLinkDialog({
           <Button
             variant="outline"
             onClick={() =>
-              toast.info("Email de dépôt envoyé (aperçu)", {
-                description: `Ton client recevra le lien valable ${validity} jours, avec les consignes de format.`,
+              toast.info(t("library.deposit.emailToastTitle"), {
+                description: t("library.deposit.emailToastDesc", { count: validity }),
               })
             }
           >
             <Mail />
-            Envoyer par email (aperçu)
+            {t("library.deposit.sendEmail")}
           </Button>
           <Button onClick={copy}>
             <Copy />
-            Copier le lien
+            {t("library.deposit.copyLink")}
           </Button>
         </DialogFooter>
       </DialogContent>

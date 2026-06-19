@@ -1,9 +1,12 @@
+"use client"
+
+import { useLabels } from "@/lib/i18n"
 import { contentStatusMeta, targetStatusMeta, toneDotClass } from "@/lib/mocks/labels"
 import type { ContentStatus, TargetStatus } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Pastille de statut compacte (tuiles de grille, cases du calendrier).
-// Server-compatible : tooltip natif via title, libellé pour lecteurs d'écran.
+// Tooltip natif via title, libellé pour lecteurs d'écran.
 
 const SIZE_CLASS = {
   sm: "size-2",
@@ -49,10 +52,11 @@ export function StatusDot({
   withTooltip?: boolean
   className?: string
 }) {
+  const lbl = useLabels()
   const m = contentStatusMeta[status]
   return (
     <Dot
-      label={m.label}
+      label={lbl.contentStatus(status)}
       tone={m.tone}
       size={size}
       withTooltip={withTooltip}
@@ -72,10 +76,11 @@ export function TargetStatusDot({
   withTooltip?: boolean
   className?: string
 }) {
+  const lbl = useLabels()
   const m = targetStatusMeta[status]
   return (
     <Dot
-      label={m.label}
+      label={lbl.targetStatus(status)}
       tone={m.tone}
       size={size}
       withTooltip={withTooltip}

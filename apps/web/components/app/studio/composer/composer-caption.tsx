@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { useLabels, useT } from "@/lib/i18n"
 import { platformMeta } from "@/lib/mocks/labels"
 import type { HashtagGroup, Platform } from "@/lib/mocks/types"
 import { BannedWordsHint, CaptionCounters, HashtagStatsLine } from "./caption-tools"
@@ -35,6 +36,8 @@ export function ComposerCaption({
   bannedWords: string[]
   onPatch: (partial: Partial<ComposerDraft>) => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
   const [tab, setTab] = useState<string>(COMMON_TAB)
   const activeTab = tab !== COMMON_TAB && !platforms.includes(tab as Platform) ? COMMON_TAB : tab
 
@@ -54,13 +57,13 @@ export function ComposerCaption({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Légende</CardTitle>
+        <CardTitle>{t("composer.caption.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={activeTab} onValueChange={(v) => setTab(String(v))}>
           <div className="-mx-1 overflow-x-auto px-1">
             <TabsList>
-              <TabsTrigger value={COMMON_TAB}>Commune</TabsTrigger>
+              <TabsTrigger value={COMMON_TAB}>{t("composer.caption.commonTab")}</TabsTrigger>
               {platforms.map((p) => (
                 <TabsTrigger key={p} value={p} className="gap-1.5">
                   <PlatformIcon platform={p} className="size-3.5" />
@@ -77,14 +80,14 @@ export function ComposerCaption({
             <Textarea
               value={draft.caption}
               onChange={(e) => onPatch({ caption: e.target.value })}
-              placeholder="Écris la légende commune à toutes les plateformes…"
-              aria-label="Légende commune"
+              placeholder={t("composer.caption.commonPlaceholder")}
+              aria-label={t("composer.caption.commonAria")}
               className="min-h-36"
             />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <HashtagPopover
                 groups={hashtagGroups}
-                destinationLabel="la légende"
+                destinationLabel={t("composer.caption.destinationCaption")}
                 onInsert={(tags) => onPatch({ caption: appendHashtags(draft.caption, tags) })}
               />
               <CaptionCounters texts={effectiveTexts} platforms={platforms} />
@@ -104,7 +107,9 @@ export function ComposerCaption({
                       customized ? "border-primary/40 text-primary" : "text-muted-foreground"
                     }
                   >
-                    {customized ? "Personnalisée" : "Héritée de la légende commune"}
+                    {customized
+                      ? t("composer.caption.customized")
+                      : t("composer.caption.inherited")}
                   </Badge>
                   {customized ? (
                     <Button
@@ -113,7 +118,7 @@ export function ComposerCaption({
                       onClick={() => setOverride(platform, undefined)}
                     >
                       <RotateCcw />
-                      Revenir à la commune
+                      {t("composer.caption.backToCommon")}
                     </Button>
                   ) : (
                     <Button
@@ -121,7 +126,7 @@ export function ComposerCaption({
                       size="xs"
                       onClick={() => setOverride(platform, draft.caption)}
                     >
-                      Personnaliser pour {platformMeta[platform].label}
+                      {t("composer.caption.customizeFor", { platform: lbl.platform(platform) })}
                     </Button>
                   )}
                 </div>
@@ -130,12 +135,16 @@ export function ComposerCaption({
                   <Textarea
                     value={override}
                     onChange={(e) => setOverride(platform, e.target.value)}
-                    aria-label={`Légende ${platformMeta[platform].label}`}
+                    aria-label={t("composer.caption.captionFor", {
+                      platform: lbl.platform(platform),
+                    })}
                     className="min-h-36"
                   />
                 ) : (
                   <div className="min-h-24 rounded-lg border border-dashed bg-muted/30 p-2.5 text-sm whitespace-pre-line text-muted-foreground">
-                    {draft.caption.trim().length > 0 ? draft.caption : "Légende commune vide."}
+                    {draft.caption.trim().length > 0
+                      ? draft.caption
+                      : t("composer.caption.commonEmpty")}
                   </div>
                 )}
 
@@ -150,19 +159,19 @@ export function ComposerCaption({
           <div className="space-y-2 border-t pt-4">
             <Label htmlFor="composer-first-comment" className="gap-1.5">
               <MessageCircle className="size-3.5" />
-              Premier commentaire (Instagram)
+              {t("composer.caption.firstComment")}
             </Label>
             <Textarea
               id="composer-first-comment"
               value={draft.firstComment}
               onChange={(e) => onPatch({ firstComment: e.target.value })}
-              placeholder="Hashtags hors légende, lien d'épingle… posté juste après la publication."
+              placeholder={t("composer.caption.firstCommentPlaceholder")}
               className="min-h-20"
             />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <HashtagPopover
                 groups={hashtagGroups}
-                destinationLabel="le premier commentaire"
+                destinationLabel={t("composer.caption.destinationFirstComment")}
                 onInsert={(tags) =>
                   onPatch({ firstComment: appendHashtags(draft.firstComment, tags) })
                 }

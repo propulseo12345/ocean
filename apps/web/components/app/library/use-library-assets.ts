@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import { toast } from "sonner"
+import { useT } from "@/lib/i18n"
 import { IMAGES } from "@/lib/mocks/images"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, LibraryAsset } from "@/lib/mocks/types"
@@ -22,6 +23,7 @@ export interface UseLibraryAssetsResult {
 }
 
 export function useLibraryAssets(client: Client, initial: LibraryAsset[]): UseLibraryAssetsResult {
+  const t = useT()
   const [assets, setAssets] = useState<LibraryAsset[]>(initial)
   const counter = useRef(0)
 
@@ -46,17 +48,18 @@ export function useLibraryAssets(client: Client, initial: LibraryAsset[]): UseLi
       }
     })
     setAssets((prev) => [...created, ...prev])
-    toast.success(`${created.length} médias ajoutés (aperçu)`, {
-      description: "Aucun fichier téléversé — assets fictifs pour valider le parcours.",
+    toast.success(t("library.toast.added", { count: created.length }), {
+      description: t("library.toast.addedDesc"),
     })
   }
 
   function updateAltText(id: string, altText: string) {
     const trimmed = altText.trim()
-    setAssets((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, altText: trimmed === "" ? undefined : trimmed } : a))
-    )
-    toast.success("Texte alternatif enregistré (aperçu)")
+    // Preview : l'édition se fait dans la langue active — on stocke la même
+    // valeur sur les deux langues (la vraie i18n du contenu viendra du backend).
+    const value = trimmed === "" ? undefined : { fr: trimmed, en: trimmed }
+    setAssets((prev) => prev.map((a) => (a.id === id ? { ...a, altText: value } : a)))
+    toast.success(t("library.toast.altSaved"))
   }
 
   function removeAssets(ids: string[]) {

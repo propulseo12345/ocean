@@ -3,9 +3,11 @@ import type { ReactNode } from "react"
 import { LocaleToggle } from "@/components/app/locale-toggle"
 import { ThemeToggle } from "@/components/app/theme-toggle"
 import { ClientAvatar } from "@/components/shared/client-avatar"
+import { getT } from "@/lib/i18n/server"
 import { DEMO_REVIEWER_CLIENT_ID, getClient, getReviewer } from "@/lib/mocks"
 
-export default function PortalLayout({ children }: { children: ReactNode }) {
+export default async function PortalLayout({ children }: { children: ReactNode }) {
+  const t = await getT()
   const client = getClient(DEMO_REVIEWER_CLIENT_ID)
   const reviewer = getReviewer(DEMO_REVIEWER_CLIENT_ID)
 
@@ -22,7 +24,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
-              <p className="text-xs text-muted-foreground">Espace de validation</p>
+              <p className="text-xs text-muted-foreground">{t("portal.layout.reviewSpace")}</p>
               {client ? <p className="text-sm font-medium leading-none">{client.name}</p> : null}
             </div>
             {client ? <ClientAvatar client={client} size={32} /> : null}
@@ -37,9 +39,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
       <footer className="border-t">
         <div className="mx-auto w-full max-w-5xl px-4 py-4 text-xs text-muted-foreground sm:px-6">
           {reviewer ? (
-            <span>Connecté en tant que {reviewer.name} · Ocean — espace sécurisé</span>
+            <span>{t("portal.layout.connectedAs", { name: reviewer.name })}</span>
           ) : (
-            <span>Ocean — espace de validation</span>
+            <span>{t("portal.layout.reviewSecuredSpace")}</span>
           )}
         </div>
       </footer>

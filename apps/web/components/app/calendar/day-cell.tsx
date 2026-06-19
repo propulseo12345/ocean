@@ -10,7 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getMarronniersOn, MARRONNIER_KIND_LABELS, type MarronnierKind } from "@/lib/marronniers"
+import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
+import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
 import { contentStatusMeta, toneDotClass } from "@/lib/mocks/labels"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,14 @@ import {
 } from "./calendar-types"
 import { type DayKey, dayNumber, weekdayDayMonth } from "./calendar-utils"
 import { DayEntry } from "./day-entry"
+
+// Clé i18n du libellé d'un type de marronnier.
+const MARRONNIER_KIND_KEY: Record<MarronnierKind, MessageKey> = {
+  ferie: "marronnier.kind.ferie",
+  fete: "marronnier.kind.fete",
+  soldes: "marronnier.kind.soldes",
+  marketing: "marronnier.kind.marketing",
+}
 
 // Couleur de pastille par type de marronnier (tokens chart uniquement).
 const MARRONNIER_DOT: Record<MarronnierKind, string> = {
@@ -48,6 +57,8 @@ export function DayCell({
   isToday: boolean
   isOutside: boolean
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const isPast = dayKey < ctx.todayKey
   const dragActive = useDragActive()
   const { setNodeRef, isOver } = useDroppable({ id: droppableDayId(dayKey), disabled: isPast })
@@ -75,7 +86,7 @@ export function DayCell({
       {ctx.gapDays.has(dayKey) ? (
         <span
           aria-hidden
-          title="Trou de cadence (plus de 4 jours sans publication)"
+          title={t("calendar.dayCell.gapTitle")}
           className="pointer-events-none absolute inset-x-1.5 bottom-1 border-t-2 border-dashed border-warning/60"
         />
       ) : null}
@@ -84,7 +95,7 @@ export function DayCell({
         <button
           type="button"
           onClick={() => ctx.onOpenDay(dayKey)}
-          aria-label={`Voir le détail du ${dayLabel}`}
+          aria-label={t("calendar.dayCell.viewDay", { day: dayLabel })}
           className={cn(
             "inline-flex size-6 items-center justify-center rounded-full text-xs font-medium tabular-nums transition-colors hover:bg-muted",
             isToday
@@ -102,8 +113,8 @@ export function DayCell({
             <span
               title={
                 density >= DENSITY_WARN_AT
-                  ? `${density} publications Instagram ce jour — densité élevée (le quota IG s'évalue sur 24 h glissantes)`
-                  : `${density} publications Instagram ce jour`
+                  ? t("calendar.dayCell.densityHigh", { count: density })
+                  : t("calendar.dayCell.densityNormal", { count: density })
               }
               className={cn(
                 "hidden rounded-full px-1.5 py-px text-[10px] font-medium tabular-nums sm:inline",
@@ -112,7 +123,7 @@ export function DayCell({
                   : "bg-muted text-muted-foreground"
               )}
             >
-              {density} posts
+              {t("calendar.dayCell.posts", { count: density })}
             </span>
           ) : null}
           {!isPast ? (
@@ -122,7 +133,7 @@ export function DayCell({
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Ajouter au ${dayLabel}`}
+                    aria-label={t("calendar.dayCell.addTo", { day: dayLabel })}
                     className="hidden opacity-0 transition-opacity group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 sm:inline-flex"
                   />
                 }
@@ -133,10 +144,10 @@ export function DayCell({
                 <DropdownMenuItem
                   render={<Link href={createContentHref(ctx.clientId, dayKey, ctx.tz)} />}
                 >
-                  Créer un contenu (date préremplie)
+                  {t("calendar.dayCell.createContent")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => ctx.onOpenDay(dayKey)}>
-                  Ajouter une note
+                  {t("calendar.dayCell.addNote")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -148,7 +159,7 @@ export function DayCell({
       <button
         type="button"
         onClick={() => ctx.onOpenDay(dayKey)}
-        aria-label={`${items.length} contenu${items.length > 1 ? "s" : ""} le ${dayLabel}`}
+        aria-label={t("calendar.dayCell.itemsOnDay", { count: items.length, day: dayLabel })}
         className="flex flex-1 flex-col items-center justify-start gap-1 pt-0.5 sm:hidden"
       >
         <span className="flex max-w-full flex-wrap items-center justify-center gap-0.5">
@@ -174,33 +185,37 @@ export function DayCell({
 
       {/* Desktop : contenu complet de la case. */}
       <div className="hidden min-w-0 flex-1 flex-col gap-1 sm:flex">
-        {marronniers.map((m) => (
-          <Link
-            key={`${m.date}_${m.label}`}
-            href={createContentHref(ctx.clientId, dayKey, ctx.tz)}
-            title={`${m.label} · ${MARRONNIER_KIND_LABELS[m.kind]} — créer un contenu pour cette date`}
-            className="flex items-center gap-1 truncate rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground transition-colors hover:bg-secondary/70"
-          >
-            <span className={cn("size-1.5 shrink-0 rounded-full", MARRONNIER_DOT[m.kind])} />
-            <span className="truncate">{m.label}</span>
-            <span className="sr-only">({MARRONNIER_KIND_LABELS[m.kind]})</span>
-          </Link>
-        ))}
+        {marronniers.map((m) => {
+          const label = pick(m.label, locale)
+          const kind = t(MARRONNIER_KIND_KEY[m.kind])
+          return (
+            <Link
+              key={`${m.date}_${label}`}
+              href={createContentHref(ctx.clientId, dayKey, ctx.tz)}
+              title={t("calendar.dayCell.marronnierTitle", { label, kind })}
+              className="flex items-center gap-1 truncate rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground transition-colors hover:bg-secondary/70"
+            >
+              <span className={cn("size-1.5 shrink-0 rounded-full", MARRONNIER_DOT[m.kind])} />
+              <span className="truncate">{label}</span>
+              <span className="sr-only">{t("calendar.dayCell.marronnierKindSr", { kind })}</span>
+            </Link>
+          )
+        })}
 
         {events.map((ev) => (
           <button
             key={ev.id}
             type="button"
             onClick={() => ctx.onOpenDay(dayKey)}
-            title={ev.title}
+            title={pick(ev.title, locale)}
             className="flex items-center gap-1 truncate rounded-md border border-dashed bg-card px-1.5 py-0.5 text-left text-[10px] text-muted-foreground transition-colors hover:bg-muted"
           >
             {ev.kind === "note" ? (
-              <StickyNote className="size-2.5 shrink-0" aria-label="Note" />
+              <StickyNote className="size-2.5 shrink-0" aria-label={t("calendar.dayCell.note")} />
             ) : (
-              <Flag className="size-2.5 shrink-0" aria-label="Événement" />
+              <Flag className="size-2.5 shrink-0" aria-label={t("calendar.dayCell.event")} />
             )}
-            <span className="truncate">{ev.title}</span>
+            <span className="truncate">{pick(ev.title, locale)}</span>
           </button>
         ))}
 
@@ -217,7 +232,7 @@ export function DayCell({
                 onClick={() => ctx.onOpenDay(dayKey)}
                 className="block w-full rounded-md px-1.5 py-0.5 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                +{overflow} autre{overflow > 1 ? "s" : ""}
+                {t("calendar.dayCell.moreOthers", { count: overflow })}
               </button>
             </li>
           ) : null}

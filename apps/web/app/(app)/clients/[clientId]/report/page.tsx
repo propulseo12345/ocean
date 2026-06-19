@@ -2,9 +2,13 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getReportData } from "@/components/app/performance/report-data"
 import { ReportWorkspace } from "@/components/app/performance/report-workspace"
+import { getT } from "@/lib/i18n/server"
 import { getClient } from "@/lib/mocks"
 
-export const metadata: Metadata = { title: "Rapport client" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaReport") }
+}
 
 // Rapport client brandé partageable (audit §5, P1) — one-pager présentable,
 // imprimable en PDF. Données mockées d'illustration, aucune API réelle.

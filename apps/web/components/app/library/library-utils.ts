@@ -1,3 +1,4 @@
+import { INTL_LOCALE, type Locale, type MessageKey, type Translator } from "@/lib/i18n"
 import type { LibraryAsset, LibraryAssetSource } from "@/lib/mocks/types"
 import { type SpecIssue, validateMedia } from "@/lib/specs"
 import type { LibraryFilters, SortKey } from "./library-types"
@@ -24,19 +25,29 @@ export function hasSpecErrors(issues: SpecIssue[]): boolean {
   return issues.some((i) => i.severity === "error")
 }
 
+/** Métadonnées de source : clés i18n (résolues via t()) + classe de chip. */
 export const sourceMeta: Record<
   LibraryAssetSource,
-  { label: string; verb: string; chipClass: string }
+  { labelKey: MessageKey; verbKey: MessageKey; chipClass: string }
 > = {
-  upload: { label: "Upload", verb: "Ajouté le", chipClass: "bg-muted text-muted-foreground" },
+  upload: {
+    labelKey: "library.source.upload",
+    verbKey: "library.source.uploadVerb",
+    chipClass: "bg-muted text-muted-foreground",
+  },
   depot_client: {
-    label: "Déposé par le client",
-    verb: "Reçu le",
+    labelKey: "library.source.depositClient",
+    verbKey: "library.source.depositVerb",
     chipClass: "bg-info/10 text-info",
   },
-  import: { label: "Importé", verb: "Importé le", chipClass: "bg-secondary text-foreground/70" },
+  import: {
+    labelKey: "library.source.import",
+    verbKey: "library.source.importVerb",
+    chipClass: "bg-secondary text-foreground/70",
+  },
 }
 
+// label = nom universel du format (non traduit) ; ext = extension de fichier.
 const MIME_EXT: Record<string, { ext: string; label: string }> = {
   "image/jpeg": { ext: "jpg", label: "JPEG" },
   "image/jpg": { ext: "jpg", label: "JPEG" },
@@ -52,12 +63,16 @@ export function assetFileName(asset: LibraryAsset): string {
   return `${asset.id.replace(/^la_/, "")}.${ext}`
 }
 
-export function mimeLabel(asset: LibraryAsset): string {
-  return MIME_EXT[asset.mimeType ?? ""]?.label ?? (asset.type === "video" ? "Vidéo" : "Image")
+/** Libellé de format : nom universel (JPEG, MOV…) ou repli traduit (image/vidéo). */
+export function mimeLabel(asset: LibraryAsset, t: Translator): string {
+  return (
+    MIME_EXT[asset.mimeType ?? ""]?.label ??
+    t(asset.type === "video" ? "library.mime.video" : "library.mime.image")
+  )
 }
 
-export function formatMb(mb: number): string {
-  return `${mb.toLocaleString("fr-FR")} Mo`
+export function formatMb(mb: number, locale: Locale, t: Translator): string {
+  return t("library.unit.mb", { value: mb.toLocaleString(INTL_LOCALE[locale]) })
 }
 
 export function formatDuration(sec: number): string {
@@ -78,7 +93,9 @@ export function matchesFilters(
   if (filters.specs === "issues" && !offSpec) return false
   if (filters.search.trim()) {
     const needle = filters.search.trim().toLowerCase()
-    const haystack = `${asset.altText ?? ""} ${assetFileName(asset)}`.toLowerCase()
+    // Recherche bilingue : on indexe les deux langues du texte alternatif.
+    const alt = asset.altText ? `${asset.altText.fr} ${asset.altText.en}` : ""
+    const haystack = `${alt} ${assetFileName(asset)}`.toLowerCase()
     if (!haystack.includes(needle)) return false
   }
   return true

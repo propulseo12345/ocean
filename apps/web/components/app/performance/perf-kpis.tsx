@@ -1,4 +1,6 @@
 import { Eye, FileStack, Heart, type LucideIcon, TrendingDown, TrendingUp } from "lucide-react"
+import type { Locale, MessageKey } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { KpiWithDelta, PerfPeriod } from "./perf-data"
 import { PERIOD_META } from "./perf-data"
@@ -6,33 +8,46 @@ import { compactNumber, fullNumber, percent, signedPercent } from "./perf-utils"
 
 interface KpiDef {
   key: keyof KpiWithDelta["current"]
-  label: string
+  labelKey: MessageKey
   icon: LucideIcon
   /** true → une hausse est positive (vert) ; false → une baisse est positive. */
   upIsGood: boolean
-  format: (n: number) => string
+  format: (n: number, locale: Locale) => string
 }
 
 const KPIS: KpiDef[] = [
-  { key: "reach", label: "Portée totale", icon: Eye, upIsGood: true, format: compactNumber },
-  { key: "engagement", label: "Engagements", icon: Heart, upIsGood: true, format: compactNumber },
+  {
+    key: "reach",
+    labelKey: "performance.kpi.reach",
+    icon: Eye,
+    upIsGood: true,
+    format: compactNumber,
+  },
+  {
+    key: "engagement",
+    labelKey: "performance.kpi.engagement",
+    icon: Heart,
+    upIsGood: true,
+    format: compactNumber,
+  },
   {
     key: "rate",
-    label: "Taux d'engagement",
+    labelKey: "performance.kpi.rate",
     icon: TrendingUp,
     upIsGood: true,
-    format: (n) => percent(n),
+    format: (n, locale) => percent(n, locale),
   },
   {
     key: "count",
-    label: "Publications",
+    labelKey: "performance.kpi.count",
     icon: FileStack,
     upIsGood: true,
-    format: (n) => fullNumber(n),
+    format: (n, locale) => fullNumber(n, locale),
   },
 ]
 
 function DeltaPill({ value, upIsGood }: { value: number; upIsGood: boolean }) {
+  const { locale } = useLocale()
   const positive = upIsGood ? value >= 0 : value <= 0
   const Icon = value >= 0 ? TrendingUp : TrendingDown
   return (
@@ -43,13 +58,15 @@ function DeltaPill({ value, upIsGood }: { value: number; upIsGood: boolean }) {
       )}
     >
       <Icon className="size-3" />
-      {signedPercent(value)}
+      {signedPercent(value, locale)}
     </span>
   )
 }
 
 export function PerfKpis({ data, period }: { data: KpiWithDelta; period: PerfPeriod }) {
-  const prev = PERIOD_META[period].previous
+  const t = useT()
+  const { locale } = useLocale()
+  const prev = t(PERIOD_META[period].previousKey)
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {KPIS.map((kpi) => {
@@ -67,10 +84,12 @@ export function PerfKpis({ data, period }: { data: KpiWithDelta; period: PerfPer
               <DeltaPill value={delta} upIsGood={kpi.upIsGood} />
             </div>
             <p className="mt-3 font-heading text-2xl font-semibold leading-none tabular-nums">
-              {kpi.format(value)}
+              {kpi.format(value, locale)}
             </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground/70">vs {prev}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">{t(kpi.labelKey)}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+              {t("performance.kpi.vsPrevious", { previous: prev })}
+            </p>
           </div>
         )
       })}

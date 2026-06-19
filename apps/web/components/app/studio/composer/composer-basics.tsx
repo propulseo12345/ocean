@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { formatMeta } from "@/lib/mocks/labels"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import type { ContentFormat, ContentPillar } from "@/lib/mocks/types"
 import type { ComposerDraft, DraftState } from "./composer-types"
 
@@ -37,6 +37,9 @@ export function ComposerBasics({
   onPatch: (partial: Partial<ComposerDraft>) => void
   onFormatChange: (format: ContentFormat) => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const [labelInput, setLabelInput] = useState("")
 
   function addLabel() {
@@ -49,22 +52,22 @@ export function ComposerBasics({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contenu</CardTitle>
+        <CardTitle>{t("composer.basics.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="composer-title">Titre interne</Label>
+          <Label htmlFor="composer-title">{t("composer.basics.internalTitle")}</Label>
           <Input
             id="composer-title"
             value={draft.title}
             onChange={(e) => onPatch({ title: e.target.value })}
-            placeholder="Ex. : Nouveau single origin Éthiopie"
+            placeholder={t("composer.basics.internalTitlePlaceholder")}
           />
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
           <div className="space-y-1.5">
-            <Label>Format</Label>
+            <Label>{t("composer.basics.format")}</Label>
             <div className="-mx-1 overflow-x-auto px-1 pb-1">
               <ToggleGroup
                 value={[draft.format]}
@@ -78,7 +81,7 @@ export function ComposerBasics({
                 {FORMATS.map((f) => (
                   <ToggleGroupItem key={f} value={f} className="gap-1.5">
                     <FormatIcon format={f} className="size-3.5" />
-                    {formatMeta[f].label}
+                    {lbl.format(f)}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
@@ -86,7 +89,7 @@ export function ComposerBasics({
           </div>
 
           <div className="space-y-1.5">
-            <Label>État</Label>
+            <Label>{t("composer.basics.state")}</Label>
             <ToggleGroup
               value={[draft.state]}
               onValueChange={(v) => {
@@ -96,14 +99,14 @@ export function ComposerBasics({
               variant="outline"
               size="sm"
             >
-              <ToggleGroupItem value="idea">Idée</ToggleGroupItem>
-              <ToggleGroupItem value="draft">Brouillon</ToggleGroupItem>
+              <ToggleGroupItem value="idea">{t("composer.basics.stateIdea")}</ToggleGroupItem>
+              <ToggleGroupItem value="draft">{t("composer.basics.stateDraft")}</ToggleGroupItem>
             </ToggleGroup>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Pilier éditorial</Label>
+          <Label>{t("composer.basics.pillar")}</Label>
           <Select
             value={draft.pillarId ?? NO_PILLAR}
             onValueChange={(value) =>
@@ -114,7 +117,7 @@ export function ComposerBasics({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_PILLAR}>Aucun pilier</SelectItem>
+              <SelectItem value={NO_PILLAR}>{t("composer.basics.noPillar")}</SelectItem>
               {pillars.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   <span
@@ -122,7 +125,7 @@ export function ComposerBasics({
                     style={{ backgroundColor: p.colorVar }}
                     aria-hidden
                   />
-                  {p.name}
+                  {pick(p.name, locale)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -130,7 +133,7 @@ export function ComposerBasics({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="composer-labels">Étiquettes</Label>
+          <Label htmlFor="composer-labels">{t("composer.basics.labels")}</Label>
           <div className="flex flex-wrap items-center gap-1.5">
             {draft.labels.map((label) => (
               <Badge key={label} variant="secondary" className="gap-1 pr-1">
@@ -140,7 +143,7 @@ export function ComposerBasics({
                   variant="ghost"
                   size="icon-xs"
                   className="size-4 rounded-sm"
-                  aria-label={`Retirer l'étiquette ${label}`}
+                  aria-label={t("composer.basics.removeLabel", { label })}
                   onClick={() => onPatch({ labels: draft.labels.filter((l) => l !== label) })}
                 >
                   <X />
@@ -158,19 +161,19 @@ export function ComposerBasics({
                 }
               }}
               onBlur={addLabel}
-              placeholder="Ajouter (Entrée)…"
+              placeholder={t("composer.basics.addLabelPlaceholder")}
               className="h-7 w-36 text-xs"
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="composer-notes">Notes internes</Label>
+          <Label htmlFor="composer-notes">{t("composer.basics.internalNotes")}</Label>
           <Textarea
             id="composer-notes"
             value={draft.internalNotes}
             onChange={(e) => onPatch({ internalNotes: e.target.value })}
-            placeholder="Jamais visibles par le client — brief, rappels, liens…"
+            placeholder={t("composer.basics.internalNotesPlaceholder")}
             className="min-h-20"
           />
         </div>

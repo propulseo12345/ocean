@@ -7,29 +7,36 @@ import { TodayPanel } from "@/components/app/dashboard/today-panel"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatDate, formatRelative } from "@/lib/format"
+import { pick } from "@/lib/i18n"
+import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import { CURRENT_USER, getDashboardTasks, getNotifications } from "@/lib/mocks"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Tableau de bord" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("dashboard.metaTitle") }
+}
 
-export default function DashboardPage() {
-  const tasks = getDashboardTasks()
-  const count = (kind: DashboardTask["kind"]) => tasks.filter((t) => t.kind === kind).length
+export default async function DashboardPage() {
+  const t = await getT()
+  const f = await getFormat()
+  const locale = await getLocale()
+  const tasks = getDashboardTasks(t, locale)
+  const count = (kind: DashboardTask["kind"]) => tasks.filter((task) => task.kind === kind).length
   const firstName = CURRENT_USER.name.split(" ")[0]
-  const today = formatDate(MOCK_NOW.toISOString(), CURRENT_USER.timezone)
+  const today = f.date(MOCK_NOW.toISOString(), CURRENT_USER.timezone)
   const recent = getNotifications("owner").slice(0, 5)
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Bonjour ${firstName}`}
-        description={`Voici ta journée — ${today}.`}
+        title={t("dashboard.greeting", { name: firstName })}
+        description={t("dashboard.yourDay", { date: today })}
         actions={
           <Button variant="outline" render={<Link href={routes.clients} />}>
-            Voir les clients
+            {t("dashboard.seeClients")}
           </Button>
         }
       />
@@ -38,28 +45,28 @@ export default function DashboardPage() {
         <KpiCard
           icon={Send}
           value={count("publish_today")}
-          label="À publier aujourd'hui"
+          label={t("dashboard.kpiPublishToday")}
           tone="info"
           href={routes.agenda}
         />
         <KpiCard
           icon={Clock}
           value={count("review_pending")}
-          label="En attente de validation"
+          label={t("dashboard.kpiReviewPending")}
           tone="warning"
           href={routes.clients}
         />
         <KpiCard
           icon={OctagonAlert}
           value={count("failed")}
-          label="Échecs à traiter"
+          label={t("dashboard.kpiFailed")}
           tone="danger"
           href={routes.clients}
         />
         <KpiCard
           icon={PlugZap}
           value={count("reconnect")}
-          label="Comptes à reconnecter"
+          label={t("dashboard.kpiReconnect")}
           tone="warning"
           href={routes.settings}
         />
@@ -68,9 +75,11 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Tâches du jour</CardTitle>
+            <CardTitle>{t("dashboard.tasksTitle")}</CardTitle>
             <CardAction>
-              <span className="text-xs text-muted-foreground">{tasks.length} au total</span>
+              <span className="text-xs text-muted-foreground">
+                {t("dashboard.tasksTotal", { count: tasks.length })}
+              </span>
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -81,10 +90,10 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Aujourd'hui</CardTitle>
+              <CardTitle>{t("dashboard.today")}</CardTitle>
               <CardAction>
                 <Button variant="link" size="sm" render={<Link href={routes.agenda} />}>
-                  Agenda
+                  {t("dashboard.agenda")}
                 </Button>
               </CardAction>
             </CardHeader>
@@ -95,7 +104,7 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Activité récente</CardTitle>
+              <CardTitle>{t("dashboard.recentActivity")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2.5">
@@ -105,13 +114,13 @@ export default function DashboardPage() {
                       <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm group-hover:underline">
-                          {n.title}
+                          {pick(n.title, locale)}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {n.body}
+                          {pick(n.body, locale)}
                         </span>
                         <span className="text-[11px] text-muted-foreground/70">
-                          {formatRelative(n.createdAt)}
+                          {f.relative(n.createdAt)}
                         </span>
                       </span>
                     </Link>

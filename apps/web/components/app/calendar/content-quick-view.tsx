@@ -17,7 +17,7 @@ import { ContentStatusBadge, TargetStatusBadge } from "@/components/shared/statu
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatDateTime } from "@/lib/format"
-import { platformMeta } from "@/lib/mocks/labels"
+import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { manualKindOf } from "./calendar-insights"
@@ -30,10 +30,15 @@ import type { DayContext } from "./calendar-types"
 const CAPTION_PREVIEW_LENGTH = 140
 
 export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
+  const tr = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
+  const title = pick(item.title, locale)
+  const rawCaption = pick(item.caption, locale)
   const caption =
-    item.caption.length > CAPTION_PREVIEW_LENGTH
-      ? `${item.caption.slice(0, CAPTION_PREVIEW_LENGTH).trimEnd()}…`
-      : item.caption
+    rawCaption.length > CAPTION_PREVIEW_LENGTH
+      ? `${rawCaption.slice(0, CAPTION_PREVIEW_LENGTH).trimEnd()}…`
+      : rawCaption
   const waiting = ctx.waitingDays.get(item.id)
   const manual = manualKindOf(item)
   const pillar = item.pillarId ? ctx.pillarById.get(item.pillarId) : undefined
@@ -43,7 +48,7 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
       {item.media[0] ? (
         <MediaThumb
           media={item.media[0]}
-          alt={item.title}
+          alt={title}
           count={item.media.length}
           className="aspect-video rounded-lg"
           sizes="288px"
@@ -51,7 +56,7 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
       ) : null}
 
       <div className="space-y-1">
-        <p className="text-sm leading-snug font-medium">{item.title}</p>
+        <p className="text-sm leading-snug font-medium">{title}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <ContentStatusBadge status={item.status} />
           {item.scheduledAt ? (
@@ -67,7 +72,7 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
               style={{ backgroundColor: pillar.colorVar }}
               aria-hidden
             />
-            {pillar.name}
+            {pick(pillar.name, locale)}
           </p>
         ) : null}
       </div>
@@ -75,39 +80,41 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
       {caption ? <p className="text-xs leading-relaxed text-muted-foreground">{caption}</p> : null}
 
       <ul className="space-y-1">
-        {item.targets.map((t) => (
-          <li key={t.id} className="flex items-center gap-1.5 text-xs">
-            <PlatformIcon platform={t.platform} className="size-3.5" />
+        {item.targets.map((tg) => (
+          <li key={tg.id} className="flex items-center gap-1.5 text-xs">
+            <PlatformIcon platform={tg.platform} className="size-3.5" />
             <span className="min-w-0 flex-1 truncate text-muted-foreground">
-              {platformMeta[t.platform].label}
+              {lbl.platform(tg.platform)}
             </span>
-            <TargetStatusBadge status={t.status} className="text-[10px]" />
+            <TargetStatusBadge status={tg.status} className="text-[10px]" />
           </li>
         ))}
       </ul>
 
       {item.lastError ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
-          {item.lastError}
+          {pick(item.lastError, locale)}
         </p>
       ) : null}
 
       {manual === "tiktok" ? (
         <p className="flex items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground">
           <BellRing className="size-3.5 shrink-0" aria-hidden />
-          Brouillon TikTok — à finaliser dans l'app à l'heure du rappel.
+          {tr("calendar.quickView.tiktokDraft")}
         </p>
       ) : null}
       {manual === "manual" ? (
         <p className="flex items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground">
           <BellRing className="size-3.5 shrink-0" aria-hidden />
-          Publication manuelle — un rappel sera envoyé à l'heure prévue.
+          {tr("calendar.quickView.manualPublish")}
         </p>
       ) : null}
 
       {waiting !== undefined ? (
         <p className="text-xs text-warning">
-          En attente de validation client{waiting >= 1 ? ` depuis ${waiting} j` : ""}.
+          {waiting >= 1
+            ? tr("calendar.quickView.awaitingReviewSince", { days: waiting })
+            : tr("calendar.quickView.awaitingReview")}
         </p>
       ) : null}
 
@@ -120,22 +127,22 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
           render={<Link href={routes.content(ctx.clientId, item.id)} />}
         >
           <ExternalLink data-icon="inline-start" />
-          Ouvrir le studio
+          {tr("calendar.quickView.openStudio")}
         </Button>
         {isMovable(item) ? (
           <Button size="xs" variant="outline" onClick={() => ctx.callbacks.onReschedule(item)}>
             <CalendarClock data-icon="inline-start" />
-            Replanifier
+            {tr("calendar.quickView.reschedule")}
           </Button>
         ) : null}
         <Button size="xs" variant="outline" onClick={() => ctx.callbacks.onDuplicate(item)}>
           <Copy data-icon="inline-start" />
-          Dupliquer
+          {tr("calendar.quickView.duplicate")}
         </Button>
         {item.status === "failed" || item.status === "partially_published" ? (
           <Button size="xs" variant="destructive" onClick={() => ctx.callbacks.onRetry(item)}>
             <RotateCcw data-icon="inline-start" />
-            Réessayer
+            {tr("calendar.quickView.retry")}
           </Button>
         ) : null}
         {manual !== null ? (
@@ -143,20 +150,20 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
             size="xs"
             variant="outline"
             onClick={() => {
-              navigator.clipboard?.writeText(`${item.caption}\n\n${item.hashtags.join(" ")}`)
-              toast.success("Légende copiée", {
-                description: "Colle-la dans l'app à l'heure du rappel.",
+              navigator.clipboard?.writeText(`${rawCaption}\n\n${item.hashtags.join(" ")}`)
+              toast.success(tr("calendar.quickView.captionCopied"), {
+                description: tr("calendar.quickView.captionCopiedDesc"),
               })
             }}
           >
             <ClipboardCopy data-icon="inline-start" />
-            Copier la légende
+            {tr("calendar.quickView.copyCaption")}
           </Button>
         ) : null}
         {waiting !== undefined ? (
           <Button size="xs" variant="outline" onClick={() => ctx.callbacks.onRemind(item)}>
             <Send data-icon="inline-start" />
-            Relancer le client
+            {tr("calendar.quickView.remindClient")}
           </Button>
         ) : null}
       </div>

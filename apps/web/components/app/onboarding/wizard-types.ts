@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n"
 import type { ApprovalMode, Platform } from "@/lib/mocks/types"
 
 // État centralisé du wizard de création d'un client (preview, en mémoire).
@@ -54,57 +55,60 @@ export interface ClientDraft {
 export const CONNECTABLE_PLATFORMS: Platform[] = ["instagram", "facebook", "tiktok"]
 
 // Catégories d'activité courantes pour un freelance SMM en France.
-export const CATEGORIES = [
-  "Restaurant / Café",
-  "Mode / Boutique",
-  "Beauté / Bien-être",
-  "Artisan / Atelier",
-  "Services / Conseil",
-  "Sport / Studio",
-  "Immobilier",
-  "Santé",
-  "Association / Culture",
-  "Autre",
-] as const
+// `value` = identifiant stable (stocké, sert de clé PILLAR_SUGGESTIONS) ;
+// `labelKey` = clé i18n du libellé affiché.
+export const CATEGORIES: { value: string; labelKey: MessageKey }[] = [
+  { value: "restaurant", labelKey: "onboarding.category.restaurant" },
+  { value: "fashion", labelKey: "onboarding.category.fashion" },
+  { value: "beauty", labelKey: "onboarding.category.beauty" },
+  { value: "craft", labelKey: "onboarding.category.craft" },
+  { value: "services", labelKey: "onboarding.category.services" },
+  { value: "sport", labelKey: "onboarding.category.sport" },
+  { value: "realEstate", labelKey: "onboarding.category.realEstate" },
+  { value: "health", labelKey: "onboarding.category.health" },
+  { value: "culture", labelKey: "onboarding.category.culture" },
+  { value: "other", labelKey: "onboarding.category.other" },
+]
 
 // Fuseaux courants côté clients FR + DOM-TOM (le freelance garde le sien).
-export const TIMEZONES: { value: string; label: string }[] = [
-  { value: "Europe/Paris", label: "Europe/Paris (métropole)" },
-  { value: "Europe/Brussels", label: "Europe/Bruxelles" },
-  { value: "Europe/Luxembourg", label: "Europe/Luxembourg" },
-  { value: "Indian/Reunion", label: "La Réunion (UTC+4)" },
-  { value: "America/Martinique", label: "Martinique (UTC−4)" },
-  { value: "America/Guadeloupe", label: "Guadeloupe (UTC−4)" },
-  { value: "America/Cayenne", label: "Guyane (UTC−3)" },
-  { value: "Pacific/Tahiti", label: "Tahiti (UTC−10)" },
-  { value: "America/Montreal", label: "Montréal (UTC−4/−5)" },
+export const TIMEZONES: { value: string; labelKey: MessageKey }[] = [
+  { value: "Europe/Paris", labelKey: "onboarding.timezone.paris" },
+  { value: "Europe/Brussels", labelKey: "onboarding.timezone.brussels" },
+  { value: "Europe/Luxembourg", labelKey: "onboarding.timezone.luxembourg" },
+  { value: "Indian/Reunion", labelKey: "onboarding.timezone.reunion" },
+  { value: "America/Martinique", labelKey: "onboarding.timezone.martinique" },
+  { value: "America/Guadeloupe", labelKey: "onboarding.timezone.guadeloupe" },
+  { value: "America/Cayenne", labelKey: "onboarding.timezone.guiana" },
+  { value: "Pacific/Tahiti", labelKey: "onboarding.timezone.tahiti" },
+  { value: "America/Montreal", labelKey: "onboarding.timezone.montreal" },
 ]
 
 // Tons éditoriaux proposés (BrandKit.tone résumé en une phrase à l'usage réel).
-export const TONES = [
-  "Chaleureux & proche",
-  "Professionnel & posé",
-  "Décontracté & spontané",
-  "Premium & raffiné",
-  "Engagé & militant",
-  "Pédagogique & rassurant",
-] as const
+// `value` = clé i18n du ton (stockée dans le draft + libellé affiché).
+export const TONES: MessageKey[] = [
+  "onboarding.tone.warm",
+  "onboarding.tone.professional",
+  "onboarding.tone.casual",
+  "onboarding.tone.premium",
+  "onboarding.tone.committed",
+  "onboarding.tone.educational",
+]
 
 // Palette de teintes de marque (oklch) — cliquables, jamais de picker hex.
 // Couleurs lisibles en avatar (texte blanc) dans les deux thèmes.
-export const BRAND_COLORS: { value: string; label: string }[] = [
-  { value: "oklch(0.46 0.09 62)", label: "Café" },
-  { value: "oklch(0.53 0.12 150)", label: "Vert" },
-  { value: "oklch(0.58 0.16 352)", label: "Rose" },
-  { value: "oklch(0.56 0.13 292)", label: "Violet" },
-  { value: "oklch(0.55 0.15 25)", label: "Corail" },
-  { value: "oklch(0.55 0.13 235)", label: "Bleu" },
-  { value: "oklch(0.6 0.12 200)", label: "Cyan" },
-  { value: "oklch(0.58 0.11 145)", label: "Émeraude" },
-  { value: "oklch(0.6 0.13 85)", label: "Ambre" },
-  { value: "oklch(0.5 0.07 48)", label: "Terre" },
-  { value: "oklch(0.5 0.05 280)", label: "Ardoise" },
-  { value: "oklch(0.45 0.02 250)", label: "Graphite" },
+export const BRAND_COLORS: { value: string; labelKey: MessageKey }[] = [
+  { value: "oklch(0.46 0.09 62)", labelKey: "onboarding.color.cafe" },
+  { value: "oklch(0.53 0.12 150)", labelKey: "onboarding.color.green" },
+  { value: "oklch(0.58 0.16 352)", labelKey: "onboarding.color.pink" },
+  { value: "oklch(0.56 0.13 292)", labelKey: "onboarding.color.purple" },
+  { value: "oklch(0.55 0.15 25)", labelKey: "onboarding.color.coral" },
+  { value: "oklch(0.55 0.13 235)", labelKey: "onboarding.color.blue" },
+  { value: "oklch(0.6 0.12 200)", labelKey: "onboarding.color.cyan" },
+  { value: "oklch(0.58 0.11 145)", labelKey: "onboarding.color.emerald" },
+  { value: "oklch(0.6 0.13 85)", labelKey: "onboarding.color.amber" },
+  { value: "oklch(0.5 0.07 48)", labelKey: "onboarding.color.earth" },
+  { value: "oklch(0.5 0.05 280)", labelKey: "onboarding.color.slate" },
+  { value: "oklch(0.45 0.02 250)", labelKey: "onboarding.color.graphite" },
 ]
 
 // Couleurs de piliers sur les tokens de thème (cohérent avec lib/mocks/pillars).
@@ -117,25 +121,62 @@ export const PILLAR_COLOR_VARS = [
 ] as const
 
 // Suggestions de piliers selon la catégorie choisie (réflexe pro du batch).
-export const PILLAR_SUGGESTIONS: Record<string, string[]> = {
-  "Restaurant / Café": ["Produit & menu", "Coulisses", "Avis clients", "Événements"],
-  "Mode / Boutique": ["Collection", "Lookbook & styling", "Atelier", "Communauté & UGC"],
-  "Beauté / Bien-être": ["Soins & produits", "Conseils", "Avant / après", "Témoignages"],
-  "Artisan / Atelier": ["Savoir-faire", "Coulisses", "Nouveautés", "Sur-mesure"],
-  "Services / Conseil": ["Expertise", "Cas clients", "Coulisses", "Conseils pratiques"],
-  "Sport / Studio": ["Cours & ateliers", "Pédagogie", "Bien-être", "Vie du studio"],
-  default: ["Produit", "Coulisses", "Conseils", "Communauté"],
+// Clé = `value` de CATEGORIES ; valeurs = clés i18n des libellés de piliers.
+export const PILLAR_SUGGESTIONS: Record<string, MessageKey[]> = {
+  restaurant: [
+    "onboarding.pillarSuggestion.productMenu",
+    "onboarding.pillarSuggestion.backstage",
+    "onboarding.pillarSuggestion.reviews",
+    "onboarding.pillarSuggestion.events",
+  ],
+  fashion: [
+    "onboarding.pillarSuggestion.collection",
+    "onboarding.pillarSuggestion.lookbook",
+    "onboarding.pillarSuggestion.workshop",
+    "onboarding.pillarSuggestion.communityUgc",
+  ],
+  beauty: [
+    "onboarding.pillarSuggestion.careProducts",
+    "onboarding.pillarSuggestion.tips",
+    "onboarding.pillarSuggestion.beforeAfter",
+    "onboarding.pillarSuggestion.testimonials",
+  ],
+  craft: [
+    "onboarding.pillarSuggestion.craft",
+    "onboarding.pillarSuggestion.backstage",
+    "onboarding.pillarSuggestion.novelties",
+    "onboarding.pillarSuggestion.bespoke",
+  ],
+  services: [
+    "onboarding.pillarSuggestion.expertise",
+    "onboarding.pillarSuggestion.caseStudies",
+    "onboarding.pillarSuggestion.backstage",
+    "onboarding.pillarSuggestion.practicalTips",
+  ],
+  sport: [
+    "onboarding.pillarSuggestion.classes",
+    "onboarding.pillarSuggestion.teaching",
+    "onboarding.pillarSuggestion.wellbeing",
+    "onboarding.pillarSuggestion.studioLife",
+  ],
+  default: [
+    "onboarding.pillarSuggestion.product",
+    "onboarding.pillarSuggestion.backstage",
+    "onboarding.pillarSuggestion.tips",
+    "onboarding.pillarSuggestion.community",
+  ],
 }
 
-export const WEEKDAYS = [
-  { value: 1, label: "Lundi", short: "Lun" },
-  { value: 2, label: "Mardi", short: "Mar" },
-  { value: 3, label: "Mercredi", short: "Mer" },
-  { value: 4, label: "Jeudi", short: "Jeu" },
-  { value: 5, label: "Vendredi", short: "Ven" },
-  { value: 6, label: "Samedi", short: "Sam" },
-  { value: 7, label: "Dimanche", short: "Dim" },
-] as const
+// `labelKey`/`shortKey` = clés i18n ; `value` reste l'identifiant numérique.
+export const WEEKDAYS: { value: number; labelKey: MessageKey; shortKey: MessageKey }[] = [
+  { value: 1, labelKey: "onboarding.weekday.mondayLong", shortKey: "onboarding.weekday.mondayShort" },
+  { value: 2, labelKey: "onboarding.weekday.tuesdayLong", shortKey: "onboarding.weekday.tuesdayShort" },
+  { value: 3, labelKey: "onboarding.weekday.wednesdayLong", shortKey: "onboarding.weekday.wednesdayShort" },
+  { value: 4, labelKey: "onboarding.weekday.thursdayLong", shortKey: "onboarding.weekday.thursdayShort" },
+  { value: 5, labelKey: "onboarding.weekday.fridayLong", shortKey: "onboarding.weekday.fridayShort" },
+  { value: 6, labelKey: "onboarding.weekday.saturdayLong", shortKey: "onboarding.weekday.saturdayShort" },
+  { value: 7, labelKey: "onboarding.weekday.sundayLong", shortKey: "onboarding.weekday.sundayShort" },
+]
 
 export function emptyDraft(): ClientDraft {
   return {

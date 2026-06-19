@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { formatFollowers } from "@/lib/format"
+import { useFormat, useLabels, useT } from "@/lib/i18n"
 import { platformMeta } from "@/lib/mocks/labels"
 import type { Platform, QuotaUsage, SocialAccount } from "@/lib/mocks/types"
 import type { ComposerDraft } from "./composer-types"
@@ -27,6 +27,9 @@ export function ComposerTargets({
   quotas: Record<string, QuotaUsage | null>
   onPatch: (partial: Partial<ComposerDraft>) => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl = useLabels()
   function toggleAccount(id: string, checked: boolean) {
     onPatch({
       accountIds: checked ? [...draft.accountIds, id] : draft.accountIds.filter((a) => a !== id),
@@ -46,7 +49,7 @@ export function ComposerTargets({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Diffusion</CardTitle>
+        <CardTitle>{t("composer.targets.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ul className="divide-y rounded-xl border">
@@ -65,7 +68,10 @@ export function ComposerTargets({
                       <AccountAlert account={account} variant="inline" />
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      @{account.username} · {formatFollowers(account.followers)} abonnés
+                      @{account.username} ·{" "}
+                      {t("composer.targets.followers", {
+                        count: f.followers(account.followers),
+                      })}
                     </p>
                   </div>
                   {quota && checked ? (
@@ -74,7 +80,10 @@ export function ComposerTargets({
                   <Switch
                     checked={checked}
                     onCheckedChange={(next) => toggleAccount(account.id, next)}
-                    aria-label={`Cibler ${platformMeta[account.platform].label} @${account.username}`}
+                    aria-label={t("composer.targets.targetAria", {
+                      platform: lbl.platform(account.platform),
+                      username: account.username,
+                    })}
                   />
                 </div>
                 {quota && checked ? <QuotaGauge usage={quota} className="sm:hidden" /> : null}
@@ -84,7 +93,9 @@ export function ComposerTargets({
         </ul>
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Canaux manuels</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {t("composer.targets.manualChannels")}
+          </p>
           <ul className="divide-y rounded-xl border">
             <li className="space-y-2.5 p-3">
               <div className="flex items-center gap-3">
@@ -92,27 +103,27 @@ export function ComposerTargets({
                   <Mail className="size-4" style={{ color: platformMeta.newsletter.colorVar }} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">Newsletter</p>
+                  <p className="text-sm font-medium">{t("composer.targets.newsletter")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Publication manuelle assistée à l'heure programmée.
+                    {t("composer.targets.newsletterDesc")}
                   </p>
                 </div>
                 <Switch
                   checked={newsletterOn}
                   onCheckedChange={(next) => toggleManual("newsletter", next)}
-                  aria-label="Cibler la newsletter"
+                  aria-label={t("composer.targets.newsletterAria")}
                 />
               </div>
               {newsletterOn ? (
                 <div className="space-y-1.5 pl-11">
                   <Label htmlFor="composer-nl-subject" className="text-xs">
-                    Objet de la newsletter
+                    {t("composer.targets.newsletterSubject")}
                   </Label>
                   <Input
                     id="composer-nl-subject"
                     value={draft.newsletterSubject}
                     onChange={(e) => onPatch({ newsletterSubject: e.target.value })}
-                    placeholder="Ex. : Le cold brew arrive en bouteille ☀️"
+                    placeholder={t("composer.targets.newsletterSubjectPlaceholder")}
                   />
                 </div>
               ) : null}
@@ -122,15 +133,13 @@ export function ComposerTargets({
                 <Megaphone className="size-4" style={{ color: platformMeta.custom.colorVar }} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">Sur mesure</p>
-                <p className="text-xs text-muted-foreground">
-                  Canal libre (affichage, print, story avec stickers…) — checklist manuelle.
-                </p>
+                <p className="text-sm font-medium">{t("composer.targets.custom")}</p>
+                <p className="text-xs text-muted-foreground">{t("composer.targets.customDesc")}</p>
               </div>
               <Switch
                 checked={draft.manualPlatforms.includes("custom")}
                 onCheckedChange={(next) => toggleManual("custom", next)}
-                aria-label="Cibler le canal sur mesure"
+                aria-label={t("composer.targets.customAria")}
               />
             </li>
           </ul>

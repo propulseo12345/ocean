@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { PerfBestTimes } from "./perf-best-times"
 import type { PerfPeriod, PerfPeriodData } from "./perf-data"
@@ -16,10 +17,13 @@ import { PerfTopPosts } from "./perf-top-posts"
 import { PerfTrendChart } from "./perf-trend-chart"
 
 const PERIODS: PerfPeriod[] = ["30d", "month", "90d"]
-const SHORT_LABEL: Record<PerfPeriod, string> = {
-  "30d": "30 j",
-  month: "Mois en cours",
-  "90d": "90 j",
+const SHORT_KEY: Record<
+  PerfPeriod,
+  "performance.period.short30d" | "performance.period.shortMonth" | "performance.period.short90d"
+> = {
+  "30d": "performance.period.short30d",
+  month: "performance.period.shortMonth",
+  "90d": "performance.period.short90d",
 }
 
 export function PerfWorkspace({
@@ -29,6 +33,7 @@ export function PerfWorkspace({
   clientId: string
   byPeriod: Record<PerfPeriod, PerfPeriodData>
 }) {
+  const t = useT()
   const [period, setPeriod] = useState<PerfPeriod>("30d")
   const data = byPeriod[period]
 
@@ -36,10 +41,8 @@ export function PerfWorkspace({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-heading text-lg font-semibold">Performance</h2>
-          <p className="text-sm text-muted-foreground">
-            Aperçu de l'audience et de l'engagement, par période.
-          </p>
+          <h2 className="font-heading text-lg font-semibold">{t("performance.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("performance.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ToggleGroup
@@ -51,28 +54,24 @@ export function PerfWorkspace({
             variant="outline"
             size="sm"
             spacing={0}
-            aria-label="Période d'analyse"
+            aria-label={t("performance.periodAriaLabel")}
           >
             {PERIODS.map((p) => (
-              <ToggleGroupItem key={p} value={p} aria-label={PERIOD_META[p].label}>
-                {SHORT_LABEL[p]}
+              <ToggleGroupItem key={p} value={p} aria-label={t(PERIOD_META[p].labelKey)}>
+                {t(SHORT_KEY[p])}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
           <Button size="sm" render={<Link href={routes.clientReport(clientId)} />}>
             <FileText />
-            Générer le rapport client
+            {t("performance.generateReport")}
           </Button>
         </div>
       </div>
 
       <div className="flex items-start gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <Info className="mt-px size-3.5 shrink-0" />
-        <p>
-          Données d'illustration. Les statistiques réelles (portée, engagement, créneaux)
-          s'afficheront une fois les comptes connectés — certaines métriques dépendent d'un accès
-          avancé Meta, et TikTok en mode brouillon ne fournit aucune statistique via l'API.
-        </p>
+        <p>{t("performance.mockNotice")}</p>
       </div>
 
       <PerfKpis data={data.kpis} period={period} />

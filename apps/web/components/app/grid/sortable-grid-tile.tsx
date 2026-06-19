@@ -12,6 +12,7 @@ import {
   TileInfoButton,
   TileQuickView,
 } from "@/components/app/grid/tile-quick-view"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 export interface TileSelection {
@@ -35,6 +36,7 @@ export function SortableGridTile({
   ctx: QuickViewCtx
   selection: TileSelection
 }) {
+  const t = useT()
   const draggable = isSortableTile(tile) && !selection.active && !finalRender
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tile.id,
@@ -59,7 +61,9 @@ export function SortableGridTile({
         <button
           type="button"
           aria-pressed={selected}
-          aria-label={`${selected ? "Désélectionner" : "Sélectionner"} ${tile.title}`}
+          aria-label={`${
+            selected ? t("grid.sortableTile.deselect") : t("grid.sortableTile.select")
+          } ${tile.title}`}
           onClick={() => selection.onToggle(tile.id)}
           className={cn(
             "block w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -83,7 +87,7 @@ export function SortableGridTile({
             {tile.href ? (
               <Link
                 href={tile.href}
-                aria-label={`Ouvrir ${tile.title}`}
+                aria-label={t("grid.sortableTile.open", { title: tile.title })}
                 // Le clic n'est suivi que s'il n'y a pas eu de drag (dnd-kit absorbe le drag).
                 className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 draggable={false}

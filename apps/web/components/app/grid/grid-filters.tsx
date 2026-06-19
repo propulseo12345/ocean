@@ -5,7 +5,8 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
-import { contentStatusMeta, formatMeta, toneDotClass } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
+import { contentStatusMeta, toneDotClass } from "@/lib/mocks/labels"
 import type { ContentFormat, ContentStatus } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { GridTileData } from "./grid-types"
@@ -58,17 +59,19 @@ export function GridFilters({
   hiddenCount: number
   onRestoreHidden: () => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
   const hasFilter = view.statusFilter.size > 0 || view.formatFilter.size > 0
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <ListFilter className="size-3.5 text-muted-foreground" aria-hidden />
-      <span className="sr-only">Filtres de la grille</span>
+      <span className="sr-only">{t("grid.filters.label")}</span>
 
       {statuses.map((s) => (
         <Chip key={s} pressed={view.statusFilter.has(s)} onClick={() => view.toggleStatus(s)}>
           <span className={cn("size-2 rounded-full", toneDotClass[contentStatusMeta[s].tone])} />
-          {contentStatusMeta[s].label}
+          {lbl.contentStatus(s)}
         </Chip>
       ))}
 
@@ -76,14 +79,14 @@ export function GridFilters({
 
       {formats.map((f) => (
         <Chip key={f} pressed={view.formatFilter.has(f)} onClick={() => view.toggleFormat(f)}>
-          {formatMeta[f].label}
+          {lbl.format(f)}
         </Chip>
       ))}
 
       {hasFilter ? (
         <Button variant="ghost" size="xs" onClick={view.clearFilters}>
           <X />
-          Effacer
+          {t("grid.filters.clear")}
         </Button>
       ) : null}
 
@@ -99,13 +102,10 @@ export function GridFilters({
               }
             >
               <Film className="size-3" />
-              {excludedReels.length} reel{excludedReels.length > 1 ? "s" : ""} hors grille
+              {t("grid.filters.reelsOffGrid", { count: excludedReels.length })}
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72">
-              <p className="text-xs text-muted-foreground">
-                Comme sur Instagram, ces Reels n'apparaissent pas dans la grille principale mais
-                restent dans l'onglet Reels.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("grid.filters.reelsOffGridHint")}</p>
               <ul className="space-y-1.5">
                 {excludedReels.map((tile) => (
                   <li key={tile.id} className="flex items-center justify-between gap-2 text-sm">
@@ -114,7 +114,7 @@ export function GridFilters({
                       size="sm"
                       checked={false}
                       onCheckedChange={() => view.toggleExcluded(tile)}
-                      aria-label={`Réafficher ${tile.title} dans la grille`}
+                      aria-label={t("grid.filters.showAgain", { title: tile.title })}
                     />
                   </li>
                 ))}
@@ -126,13 +126,13 @@ export function GridFilters({
         {hiddenCount > 0 ? (
           <span className="inline-flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground">
             <EyeOff className="size-3" />
-            {hiddenCount} masqué{hiddenCount > 1 ? "s" : ""}
+            {t("grid.filters.hidden", { count: hiddenCount })}
             <button
               type="button"
               onClick={onRestoreHidden}
               className="font-medium text-primary hover:underline"
             >
-              Rétablir
+              {t("grid.filters.restore")}
             </button>
           </span>
         ) : null}

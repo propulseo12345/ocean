@@ -1,4 +1,7 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
+import { useLabels } from "@/lib/i18n"
 import type { StatusTone } from "@/lib/mocks/labels"
 import {
   accountStatusMeta,
@@ -26,11 +29,12 @@ export function ContentStatusBadge({
   status: ContentStatus
   className?: string
 }) {
+  const lbl = useLabels()
   const m = contentStatusMeta[status]
   return (
     <Badge variant="outline" className={cn("gap-1.5 font-medium", className)}>
       <Dot tone={m.tone} />
-      {m.label}
+      {lbl.contentStatus(status)}
     </Badge>
   )
 }
@@ -42,11 +46,12 @@ export function TargetStatusBadge({
   status: TargetStatus
   className?: string
 }) {
+  const lbl = useLabels()
   const m = targetStatusMeta[status]
   return (
     <Badge variant="outline" className={cn("gap-1.5 font-medium", className)}>
       <Dot tone={m.tone} />
-      {m.label}
+      {lbl.targetStatus(status)}
     </Badge>
   )
 }
@@ -58,11 +63,12 @@ export function AccountStatusBadge({
   status: AccountStatus
   className?: string
 }) {
+  const lbl = useLabels()
   const m = accountStatusMeta[status]
   return (
     <Badge variant="outline" className={cn("gap-1.5 font-medium", className)}>
       <Dot tone={m.tone} />
-      {m.label}
+      {lbl.accountStatus(status)}
     </Badge>
   )
 }
@@ -74,11 +80,12 @@ export function ReviewStateBadge({
   state: ReviewRequestState
   className?: string
 }) {
+  const lbl = useLabels()
   const m = reviewStateMeta[state]
   return (
     <Badge variant="outline" className={cn("gap-1.5 font-medium", className)}>
       <Dot tone={m.tone} />
-      {m.label}
+      {lbl.reviewState(state)}
     </Badge>
   )
 }

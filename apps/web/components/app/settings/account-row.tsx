@@ -5,17 +5,19 @@ import { toast } from "sonner"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
-import { formatFollowers } from "@/lib/format"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useFormat, useLabels, useT } from "@/lib/i18n"
 import type { SocialAccount } from "@/lib/mocks/types"
 
 export function AccountRow({ account }: { account: SocialAccount }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl = useLabels()
   const needsAttention = account.status !== "connected"
-  const platformLabel = platformMeta[account.platform].label
+  const platformLabel = lbl.platform(account.platform)
 
   function handleReconnect() {
-    toast.warning(`Reconnexion ${platformLabel}`, {
-      description: "Action simulée (preview) — l'authentification s'ouvrira ici.",
+    toast.warning(t("settings.accounts.reconnectToast", { platform: platformLabel }), {
+      description: t("settings.accounts.reconnectToastDescription"),
     })
   }
 
@@ -31,7 +33,7 @@ export function AccountRow({ account }: { account: SocialAccount }) {
           <span className="truncate font-normal text-muted-foreground">@{account.username}</span>
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {formatFollowers(account.followers)} abonnés
+          {t("settings.accounts.followers", { count: f.followers(account.followers) })}
         </p>
       </div>
 
@@ -40,7 +42,7 @@ export function AccountRow({ account }: { account: SocialAccount }) {
         {needsAttention ? (
           <Button size="sm" variant="outline" onClick={handleReconnect}>
             <RefreshCw />
-            Reconnecter
+            {t("settings.accounts.reconnect")}
           </Button>
         ) : null}
       </div>

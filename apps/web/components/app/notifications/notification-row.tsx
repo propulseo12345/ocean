@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Bell,
   CheckCircle2,
@@ -12,7 +14,8 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import Link from "next/link"
-import { formatRelative } from "@/lib/format"
+import type { MessageKey } from "@/lib/i18n"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { AppNotification, NotificationChannel } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -42,24 +45,28 @@ const TYPE_TONE: Record<string, string> = {
   watchdog: "text-destructive",
 }
 
-const CHANNEL_META: Record<NotificationChannel, { label: string; icon: LucideIcon }> = {
-  in_app: { label: "In-app", icon: Bell },
-  push: { label: "Push", icon: Smartphone },
-  email: { label: "E-mail", icon: Mail },
+const CHANNEL_META: Record<NotificationChannel, { labelKey: MessageKey; icon: LucideIcon }> = {
+  in_app: { labelKey: "notifications.channelInApp", icon: Bell },
+  push: { labelKey: "notifications.channelPush", icon: Smartphone },
+  email: { labelKey: "notifications.channelEmail", icon: Mail },
 }
 
 function ChannelBadge({ channel }: { channel: NotificationChannel }) {
+  const t = useT()
   const m = CHANNEL_META[channel]
   const Icon = m.icon
   return (
     <span className="inline-flex items-center gap-1 rounded-md border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
       <Icon className="size-3" />
-      {m.label}
+      {t(m.labelKey)}
     </span>
   )
 }
 
 export function NotificationRow({ notification }: { notification: AppNotification }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const Icon = TYPE_ICON[notification.type] ?? Bell
   const tone = TYPE_TONE[notification.type] ?? "text-muted-foreground"
   return (
@@ -79,22 +86,24 @@ export function NotificationRow({ notification }: { notification: AppNotificatio
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start gap-2">
           <p className="min-w-0 flex-1 truncate text-sm font-medium group-hover:underline">
-            {notification.title}
+            {pick(notification.title, locale)}
           </p>
           {!notification.read ? (
             <span
               role="img"
-              aria-label="Non lue"
+              aria-label={t("notifications.unreadDot")}
               className="mt-1.5 size-2 shrink-0 rounded-full bg-primary"
             />
           ) : null}
         </div>
 
-        <p className="line-clamp-2 text-xs text-muted-foreground">{notification.body}</p>
+        <p className="line-clamp-2 text-xs text-muted-foreground">
+          {pick(notification.body, locale)}
+        </p>
 
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span className="text-[11px] text-muted-foreground/80 tabular-nums">
-            {formatRelative(notification.createdAt)}
+            {f.relative(notification.createdAt)}
           </span>
           <span className="text-muted-foreground/40">·</span>
           {notification.channels.map((c) => (

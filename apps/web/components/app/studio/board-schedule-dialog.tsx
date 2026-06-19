@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { formatDateTime } from "@/lib/format"
+import { type MessageKey, useFormat, useT } from "@/lib/i18n"
 import { days, fromNow, hours } from "@/lib/mocks/time"
 import type { Client } from "@/lib/mocks/types"
 import { wallClockIn, zonedToUtcIso } from "./composer/composer-utils"
@@ -28,11 +28,11 @@ import { wallClockIn, zonedToUtcIso } from "./composer/composer-utils"
 // Programmation en série (lot) : date/heure de départ dans le fuseau du
 // client + espacement échelonné. Mutation locale visible (aperçu).
 
-const GAPS = [
-  { value: "0", label: "Toutes les heures (même journée)" },
-  { value: "1", label: "Un par jour" },
-  { value: "2", label: "Tous les 2 jours" },
-  { value: "7", label: "Un par semaine" },
+const GAPS: { value: string; labelKey: MessageKey }[] = [
+  { value: "0", labelKey: "studio.scheduleDialog.gapHourly" },
+  { value: "1", labelKey: "studio.scheduleDialog.gapDaily" },
+  { value: "2", labelKey: "studio.scheduleDialog.gap2Days" },
+  { value: "7", labelKey: "studio.scheduleDialog.gapWeekly" },
 ]
 
 const pad = (n: number) => String(n).padStart(2, "0")
@@ -50,6 +50,8 @@ export function BoardScheduleDialog({
   client: Client
   onConfirm: (startIso: string, gapDays: number) => void
 }) {
+  const t = useT()
+  const f = useFormat()
   const tz = client.timezone
   const [date, setDate] = useState("")
   const [time, setTime] = useState("09:00")
@@ -83,17 +85,16 @@ export function BoardScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Programmer en série</DialogTitle>
+          <DialogTitle>{t("studio.scheduleDialog.title")}</DialogTitle>
           <DialogDescription>
-            {count} contenu{count > 1 ? "s" : ""} échelonné{count > 1 ? "s" : ""} dans le fuseau du
-            client ({tz}).
+            {t("studio.scheduleDialog.description", { count, tz })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1.5">
-              <Label htmlFor="board-schedule-date">Premier créneau</Label>
+              <Label htmlFor="board-schedule-date">{t("studio.scheduleDialog.firstSlot")}</Label>
               <Input
                 id="board-schedule-date"
                 type="date"
@@ -102,7 +103,9 @@ export function BoardScheduleDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="board-schedule-time">Heure ({tz})</Label>
+              <Label htmlFor="board-schedule-time">
+                {t("studio.scheduleDialog.timeLabel", { tz })}
+              </Label>
               <Input
                 id="board-schedule-time"
                 type="time"
@@ -114,7 +117,7 @@ export function BoardScheduleDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="board-schedule-gap">Espacement</Label>
+            <Label htmlFor="board-schedule-gap">{t("studio.scheduleDialog.spacing")}</Label>
             <Select value={gap} onValueChange={(v) => setGap(String(v))}>
               <SelectTrigger id="board-schedule-gap" className="w-full">
                 <SelectValue />
@@ -122,7 +125,7 @@ export function BoardScheduleDialog({
               <SelectContent>
                 {GAPS.map((g) => (
                   <SelectItem key={g.value} value={g.value}>
-                    {g.label}
+                    {t(g.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -131,28 +134,29 @@ export function BoardScheduleDialog({
 
           {startIso ? (
             <p className="rounded-lg border bg-muted/40 p-2.5 text-xs text-muted-foreground tabular-nums">
-              Du <strong className="text-foreground">{formatDateTime(startIso, tz)}</strong>
+              <strong className="text-foreground">
+                {t("studio.scheduleDialog.rangeFrom", { start: f.dateTime(startIso, tz) })}
+              </strong>
               {endIso ? (
-                <>
-                  {" "}
-                  au <strong className="text-foreground">{formatDateTime(endIso, tz)}</strong>
-                </>
-              ) : null}{" "}
-              — les statuts passent en « Programmé » (aperçu).
+                <strong className="text-foreground">
+                  {t("studio.scheduleDialog.rangeTo", { end: f.dateTime(endIso, tz) })}
+                </strong>
+              ) : null}
+              {t("studio.scheduleDialog.rangeSuffix")}
             </p>
           ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button
             disabled={startIso === null}
             onClick={() => startIso && onConfirm(startIso, gapDays)}
           >
             <CalendarClock />
-            Programmer (aperçu)
+            {t("studio.scheduleDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,27 +2,29 @@
 // valeurs oklch prédéfinies (jamais de color picker hex) — appliquées en style
 // inline, comme client-avatar.tsx, pour ne hardcoder aucune couleur en classe.
 
+import type { MessageKey } from "@/lib/i18n"
+
 export interface BrandHue {
   /** Valeur oklch appliquée en style inline. */
   value: string
-  /** Libellé accessible de la teinte. */
-  name: string
+  /** Clé i18n du libellé accessible de la teinte. */
+  nameKey: MessageKey
 }
 
 // Palette de teintes de marque proposées (couvre les marques des mocks).
 export const BRAND_HUES: BrandHue[] = [
-  { value: "oklch(0.46 0.09 62)", name: "Terre de café" },
-  { value: "oklch(0.5 0.07 48)", name: "Caramel" },
-  { value: "oklch(0.55 0.15 30)", name: "Brique" },
-  { value: "oklch(0.58 0.16 352)", name: "Magenta" },
-  { value: "oklch(0.56 0.13 292)", name: "Lavande" },
-  { value: "oklch(0.5 0.14 264)", name: "Indigo" },
-  { value: "oklch(0.55 0.12 230)", name: "Océan" },
-  { value: "oklch(0.53 0.12 150)", name: "Vert forêt" },
-  { value: "oklch(0.6 0.13 130)", name: "Olive" },
-  { value: "oklch(0.62 0.14 95)", name: "Ambre" },
-  { value: "oklch(0.45 0.04 250)", name: "Ardoise" },
-  { value: "oklch(0.3 0.02 280)", name: "Encre" },
+  { value: "oklch(0.46 0.09 62)", nameKey: "clientSettings.hues.coffee" },
+  { value: "oklch(0.5 0.07 48)", nameKey: "clientSettings.hues.caramel" },
+  { value: "oklch(0.55 0.15 30)", nameKey: "clientSettings.hues.brick" },
+  { value: "oklch(0.58 0.16 352)", nameKey: "clientSettings.hues.magenta" },
+  { value: "oklch(0.56 0.13 292)", nameKey: "clientSettings.hues.lavender" },
+  { value: "oklch(0.5 0.14 264)", nameKey: "clientSettings.hues.indigo" },
+  { value: "oklch(0.55 0.12 230)", nameKey: "clientSettings.hues.ocean" },
+  { value: "oklch(0.53 0.12 150)", nameKey: "clientSettings.hues.forest" },
+  { value: "oklch(0.6 0.13 130)", nameKey: "clientSettings.hues.olive" },
+  { value: "oklch(0.62 0.14 95)", nameKey: "clientSettings.hues.amber" },
+  { value: "oklch(0.45 0.04 250)", nameKey: "clientSettings.hues.slate" },
+  { value: "oklch(0.3 0.02 280)", nameKey: "clientSettings.hues.ink" },
 ]
 
 // Teintes de palette du brand kit (éditeur — ajout/suppression de pastilles).
@@ -41,15 +43,15 @@ export const PALETTE_SWATCHES: string[] = [
   "oklch(0.3 0.02 280)",
 ]
 
-// Jours ISO (1 = lundi) → libellés courts FR pour les créneaux récurrents.
-export const WEEKDAY_LABELS: Record<number, { short: string; long: string }> = {
-  1: { short: "Lun", long: "Lundi" },
-  2: { short: "Mar", long: "Mardi" },
-  3: { short: "Mer", long: "Mercredi" },
-  4: { short: "Jeu", long: "Jeudi" },
-  5: { short: "Ven", long: "Vendredi" },
-  6: { short: "Sam", long: "Samedi" },
-  7: { short: "Dim", long: "Dimanche" },
+// Jours ISO (1 = lundi) → clés i18n des libellés court/long pour les créneaux récurrents.
+export const WEEKDAY_LABELS: Record<number, { shortKey: MessageKey; longKey: MessageKey }> = {
+  1: { shortKey: "clientSettings.weekday.monShort", longKey: "clientSettings.weekday.monLong" },
+  2: { shortKey: "clientSettings.weekday.tueShort", longKey: "clientSettings.weekday.tueLong" },
+  3: { shortKey: "clientSettings.weekday.wedShort", longKey: "clientSettings.weekday.wedLong" },
+  4: { shortKey: "clientSettings.weekday.thuShort", longKey: "clientSettings.weekday.thuLong" },
+  5: { shortKey: "clientSettings.weekday.friShort", longKey: "clientSettings.weekday.friLong" },
+  6: { shortKey: "clientSettings.weekday.satShort", longKey: "clientSettings.weekday.satLong" },
+  7: { shortKey: "clientSettings.weekday.sunShort", longKey: "clientSettings.weekday.sunLong" },
 }
 
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 7] as const

@@ -16,11 +16,13 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 
 // Duplication d'un contenu : copie pour le même client, ou vers un autre
 // client avec adaptation des hashtags. Les médias ne traversent JAMAIS d'un
 // client à l'autre (étanchéité par tenant) — re-sélection en médiathèque.
+// Le titre arrive déjà résolu (string).
 
 export function DetailDuplicateDialog({
   open,
@@ -35,6 +37,7 @@ export function DetailDuplicateDialog({
   currentClientId: string
   contentTitle: string
 }) {
+  const t = useT()
   const [targetId, setTargetId] = useState(currentClientId)
   const [adaptHashtags, setAdaptHashtags] = useState(true)
 
@@ -43,10 +46,12 @@ export function DetailDuplicateDialog({
 
   function confirm() {
     if (!target) return
-    toast.success(`Contenu dupliqué vers ${target.name}`, {
+    toast.success(t("studio.duplicate.done", { name: target.name }), {
       description: crossClient
-        ? `Copie en brouillon${adaptHashtags ? ", hashtags adaptés au client cible" : ""} — médias à re-sélectionner dans sa médiathèque (aperçu).`
-        : "Copie en brouillon, médias et légende inclus (aperçu).",
+        ? t("studio.duplicate.doneCross", {
+            adapted: adaptHashtags ? t("studio.duplicate.doneCrossAdapted") : "",
+          })
+        : t("studio.duplicate.doneSame"),
     })
     onOpenChange(false)
   }
@@ -55,14 +60,14 @@ export function DetailDuplicateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dupliquer le contenu</DialogTitle>
+          <DialogTitle>{t("studio.duplicate.title")}</DialogTitle>
           <DialogDescription className="truncate">{contentTitle}</DialogDescription>
         </DialogHeader>
 
         <RadioGroup
           value={targetId}
           onValueChange={(v) => setTargetId(String(v))}
-          aria-label="Client de destination"
+          aria-label={t("studio.duplicate.destinationAria")}
           className="gap-1.5"
         >
           {clients.map((client) => (
@@ -75,7 +80,7 @@ export function DetailDuplicateDialog({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">
                   {client.name}
-                  {client.id === currentClientId ? " (ce client)" : ""}
+                  {client.id === currentClientId ? t("studio.duplicate.thisClient") : ""}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   @{client.handle}
@@ -92,9 +97,9 @@ export function DetailDuplicateDialog({
             className="mt-0.5"
           />
           <span>
-            <span className="block text-sm">Adapter les hashtags au client cible</span>
+            <span className="block text-sm">{t("studio.duplicate.adaptHashtags")}</span>
             <span className="block text-xs text-muted-foreground">
-              Remplace les hashtags par les groupes du client de destination (aperçu).
+              {t("studio.duplicate.adaptHashtagsDesc")}
             </span>
           </span>
         </Label>
@@ -102,16 +107,15 @@ export function DetailDuplicateDialog({
         {crossClient && target ? (
           <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-            Les médias ne traversent jamais d'un client à l'autre : re-sélectionne les visuels dans
-            la médiathèque de {target.name}.
+            {t("studio.duplicate.crossClientWarning", { name: target.name })}
           </p>
         ) : null}
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
-          <Button onClick={confirm}>Dupliquer (aperçu)</Button>
+          <Button onClick={confirm}>{t("studio.duplicate.confirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -5,7 +5,9 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { formatDateTime } from "@/lib/format"
+import { pick } from "@/lib/i18n"
+import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import type { Translator } from "@/lib/i18n/translator"
 import { contentStatusMeta } from "@/lib/mocks/labels"
 import type { ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -23,7 +25,7 @@ export function clientFacingStatus(status: ContentStatus): ContentStatus {
   return NEUTRAL_STATUS[status] ?? status
 }
 
-export function PortalCard({
+export async function PortalCard({
   content,
   timezone,
   emphasis = false,
@@ -32,9 +34,13 @@ export function PortalCard({
   timezone: string
   emphasis?: boolean
 }) {
+  const t = await getT()
+  const f = await getFormat()
+  const locale = await getLocale()
   const cover = content.media[0]
   const status = clientFacingStatus(content.status)
-  const caption = content.caption.trim()
+  const title = pick(content.title, locale)
+  const caption = pick(content.caption, locale).trim()
 
   return (
     <Card
@@ -44,20 +50,20 @@ export function PortalCard({
         {cover ? (
           <MediaThumb
             media={cover}
-            alt={content.title}
+            alt={title}
             count={content.media.length}
             className="size-20 shrink-0 rounded-lg sm:size-24"
             sizes="96px"
           />
         ) : (
           <div className="flex size-20 shrink-0 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground sm:size-24">
-            Texte
+            {t("portal.card.textOnly")}
           </div>
         )}
 
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-start justify-between gap-2">
-            <p className="font-heading line-clamp-1 font-medium leading-snug">{content.title}</p>
+            <p className="font-heading line-clamp-1 font-medium leading-snug">{title}</p>
             <ContentStatusBadge status={status} className="shrink-0" />
           </div>
 
@@ -66,7 +72,7 @@ export function PortalCard({
           <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-muted-foreground">
             <FormatLabel format={content.format} />
             {content.scheduledAt ? (
-              <span className="tabular-nums">{formatDateTime(content.scheduledAt, timezone)}</span>
+              <span className="tabular-nums">{f.dateTime(content.scheduledAt, timezone)}</span>
             ) : null}
           </div>
         </div>
@@ -78,7 +84,7 @@ export function PortalCard({
           size="sm"
           render={<Link href={routes.portalContent(content.id)} />}
         >
-          {emphasis ? "Relire et valider" : "Relire"}
+          {emphasis ? t("portal.card.reviewAndApprove") : t("portal.card.review")}
           <ChevronRight />
         </Button>
       </div>
@@ -86,6 +92,8 @@ export function PortalCard({
   )
 }
 
-export function statusBadgeLabel(status: ContentStatus): string {
-  return contentStatusMeta[clientFacingStatus(status)].label
+// Libellé client du statut (états techniques masqués). Prend un Translator
+// (server: await getT(), ou client: useT()) car les libellés de statut sont i18n.
+export function statusBadgeLabel(status: ContentStatus, t: Translator): string {
+  return t(contentStatusMeta[clientFacingStatus(status)].labelKey)
 }

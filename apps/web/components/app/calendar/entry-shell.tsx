@@ -4,6 +4,7 @@ import { useDraggable } from "@dnd-kit/core"
 import { Check } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useLabels, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { isMovable } from "./calendar-schedule"
@@ -46,12 +47,16 @@ export function EntryShell({
   style?: CSSProperties
   children: ReactNode
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const draggable = isMovable(item) && !ctx.selectionMode
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     disabled: !draggable,
   })
 
+  const ariaLabel = entryAriaLabel(item, lbl, locale, t)
   const base = "relative flex w-full items-center gap-1.5 text-left outline-none"
 
   if (ctx.selectionMode) {
@@ -60,7 +65,7 @@ export function EntryShell({
       <button
         type="button"
         aria-pressed={selected}
-        aria-label={`Sélectionner : ${entryAriaLabel(item)}`}
+        aria-label={t("calendar.entryShell.select", { label: ariaLabel })}
         onClick={() => ctx.onToggleSelect(item.id)}
         style={style}
         className={cn(base, className, selected && "ring-2 ring-primary/60")}
@@ -80,7 +85,7 @@ export function EntryShell({
             type="button"
             {...listeners}
             {...attributes}
-            aria-label={entryAriaLabel(item)}
+            aria-label={ariaLabel}
             style={style}
             className={cn(
               base,

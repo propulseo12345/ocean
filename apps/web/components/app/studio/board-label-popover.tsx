@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useLocale, useT } from "@/lib/i18n"
 import { labelColorVar } from "./board-types"
 
 // Éditeur d'étiquettes transverses (état local) : liste cochable + création
@@ -24,11 +25,13 @@ export function LabelEditor({
   applyLabel: string
   onApply: (labels: string[]) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [checked, setChecked] = useState<string[]>(initial)
   const [extra, setExtra] = useState<string[]>([])
   const [draft, setDraft] = useState("")
 
-  const options = [...new Set([...allLabels, ...extra])].sort((a, b) => a.localeCompare(b, "fr"))
+  const options = [...new Set([...allLabels, ...extra])].sort((a, b) => a.localeCompare(b, locale))
 
   function toggle(label: string) {
     setChecked((prev) =>
@@ -67,14 +70,14 @@ export function LabelEditor({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addDraft()}
-          placeholder="Nouvelle étiquette…"
-          aria-label="Nouvelle étiquette"
+          placeholder={t("studio.labels.newPlaceholder")}
+          aria-label={t("studio.labels.newAria")}
           className="h-7 text-xs"
         />
         <Button
           variant="outline"
           size="icon-sm"
-          aria-label="Ajouter l'étiquette"
+          aria-label={t("studio.labels.add")}
           onClick={addDraft}
           disabled={draft.trim().length === 0}
         >
@@ -100,6 +103,7 @@ export function CardLabelPopover({
   allLabels: string[]
   onApply: (labels: string[]) => void
 }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
 
   return (
@@ -115,7 +119,7 @@ export function CardLabelPopover({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={`Étiquettes de « ${title} »`}
+              aria-label={t("studio.labels.forTitle", { title })}
               className="text-muted-foreground"
             />
           }
@@ -123,17 +127,17 @@ export function CardLabelPopover({
           <Tag />
         </PopoverTrigger>
         <PopoverContent align="end" className="w-60">
-          <p className="text-sm font-medium">Étiquettes</p>
+          <p className="text-sm font-medium">{t("studio.labels.heading")}</p>
           <LabelEditor
             key={open ? "open" : "closed"}
             allLabels={allLabels}
             initial={labels}
-            applyLabel="Appliquer (aperçu)"
+            applyLabel={t("studio.labels.apply")}
             onApply={(next) => {
               onApply(next)
               setOpen(false)
-              toast.success("Étiquettes mises à jour (aperçu)", {
-                description: next.length > 0 ? next.join(" · ") : "Aucune étiquette.",
+              toast.success(t("studio.labels.updated"), {
+                description: next.length > 0 ? next.join(" · ") : t("studio.labels.none"),
               })
             }}
           />

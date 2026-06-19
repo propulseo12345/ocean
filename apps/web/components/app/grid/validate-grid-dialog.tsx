@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useT } from "@/lib/i18n"
 
 // Demande de validation de la grille ENTIÈRE : le client juge la cohérence
 // visuelle du mois, pas des posts isolés (audit §1, P1).
@@ -28,37 +29,39 @@ export function ValidateGridDialog({
   reviewerName: string | null
   onConfirm: () => void
 }) {
+  const t = useT()
+
   function confirm() {
     onConfirm()
     onOpenChange(false)
-    toast.success("Grille envoyée en validation (aperçu)", {
+    toast.success(t("grid.validate.toastTitle"), {
       description: reviewerName
-        ? `${reviewerName} recevrait un lien vers l'aperçu en lecture seule dans le portail.`
-        : "Le client recevrait un lien vers l'aperçu en lecture seule dans le portail.",
+        ? t("grid.validate.toastWithReviewer", { name: reviewerName })
+        : t("grid.validate.toastNoReviewer"),
     })
   }
+
+  const reviewer = reviewerName ? t("grid.validate.reviewerSuffix", { name: reviewerName }) : ""
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Demander la validation de la grille</DialogTitle>
+          <DialogTitle>{t("grid.validate.title")}</DialogTitle>
           <DialogDescription>
-            {plannedCount} publication{plannedCount > 1 ? "s" : ""} planifiée
-            {plannedCount > 1 ? "s" : ""} seront partagées en lecture seule
-            {reviewerName ? ` avec ${reviewerName}` : ""} dans le portail de validation.
+            {t("grid.validate.description", { count: plannedCount, reviewer })}
           </DialogDescription>
         </DialogHeader>
         <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-          <li>Le client voit la grille telle qu'elle sera publiée (rendu final).</li>
-          <li>Il peut approuver ou commenter tuile par tuile.</li>
-          <li>Aperçu — aucun email n'est envoyé pendant la preview.</li>
+          <li>{t("grid.validate.bulletFinal")}</li>
+          <li>{t("grid.validate.bulletTileByTile")}</li>
+          <li>{t("grid.validate.bulletNoEmail")}</li>
         </ul>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Annuler</DialogClose>
+          <DialogClose render={<Button variant="outline" />}>{t("common.cancel")}</DialogClose>
           <Button onClick={confirm}>
             <Send />
-            Envoyer la demande
+            {t("grid.validate.send")}
           </Button>
         </DialogFooter>
       </DialogContent>

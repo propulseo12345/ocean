@@ -3,6 +3,7 @@
 import { Ban, CalendarRange, Send } from "lucide-react"
 import { SelectionBar } from "@/components/shared/selection-bar"
 import { Button } from "@/components/ui/button"
+import { useT } from "@/lib/i18n"
 
 // Actions par lot sur les tuiles planifiées sélectionnées (batch mensuel).
 export function GridSelectionBar({
@@ -18,20 +19,26 @@ export function GridSelectionBar({
   onShiftWeek: (ids: string[]) => void
   onCancel: (ids: string[]) => void
 }) {
+  const t = useT()
+
   function run(action: (ids: string[]) => void) {
     action(selectedIds)
     onClear()
   }
 
   return (
-    <SelectionBar count={selectedIds.length} onClear={onClear} itemLabel="sélectionné">
+    <SelectionBar
+      count={selectedIds.length}
+      onClear={onClear}
+      itemLabel={t("grid.selectionBar.itemLabel")}
+    >
       <Button variant="ghost" size="sm" className="rounded-full" onClick={() => run(onSendReview)}>
         <Send />
-        Envoyer en validation
+        {t("grid.selectionBar.sendReview")}
       </Button>
       <Button variant="ghost" size="sm" className="rounded-full" onClick={() => run(onShiftWeek)}>
         <CalendarRange />
-        Décaler d'une semaine
+        {t("grid.selectionBar.shiftWeek")}
       </Button>
       <Button
         variant="ghost"
@@ -40,7 +47,7 @@ export function GridSelectionBar({
         onClick={() => run(onCancel)}
       >
         <Ban />
-        Annuler la planification
+        {t("grid.selectionBar.cancelSchedule")}
       </Button>
     </SelectionBar>
   )

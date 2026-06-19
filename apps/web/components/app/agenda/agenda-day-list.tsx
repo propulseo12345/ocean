@@ -4,12 +4,13 @@ import { CalendarOff } from "lucide-react"
 import {
   agendaStart,
   dayKeyOf,
-  WEEKDAY_LABELS,
+  WEEKDAY_KEYS,
   zonedParts,
 } from "@/components/app/agenda/agenda-utils"
 import { AgendaBlock } from "@/components/app/agenda/event-block"
 import { EmptyState } from "@/components/shared/empty-state"
-import { formatDayMonth, isSameDay } from "@/lib/format"
+import { isSameDay } from "@/lib/format"
+import { useFormat, useT } from "@/lib/i18n"
 import type { AgendaItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -25,12 +26,14 @@ export function AgendaDayList({
   tz: string
   now: Date
 }) {
+  const t = useT()
+  const f = useFormat()
   if (items.length === 0) {
     return (
       <EmptyState
         icon={CalendarOff}
-        title="Semaine libre"
-        description="Aucun rendez-vous ni publication sur cette semaine."
+        title={t("agenda.freeWeek")}
+        description={t("agenda.freeWeekHint")}
       />
     )
   }
@@ -52,11 +55,11 @@ export function AgendaDayList({
                   today && "text-primary"
                 )}
               >
-                {WEEKDAY_LABELS[i]} {formatDayMonth(d.toISOString(), tz)}
+                {t(WEEKDAY_KEYS[i])} {f.dayMonth(d.toISOString(), tz)}
               </h3>
               {today ? (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  Aujourd'hui
+                  {t("agenda.today")}
                 </span>
               ) : null}
             </div>

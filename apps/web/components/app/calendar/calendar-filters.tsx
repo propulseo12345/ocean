@@ -9,7 +9,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { contentStatusMeta, formatMeta, platformMeta } from "@/lib/mocks/labels"
+import { useLabels, useLocale, useT } from "@/lib/i18n"
+import { pick } from "@/lib/i18n"
+import { contentStatusMeta, formatLabelKey, platformMeta } from "@/lib/mocks/labels"
 import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { type CalendarFilters, hasActiveFilters } from "./calendar-types"
@@ -19,7 +21,7 @@ import { type CalendarFilters, hasActiveFilters } from "./calendar-types"
 
 const ALL_STATUSES = Object.keys(contentStatusMeta) as ContentStatus[]
 const ALL_PLATFORMS = Object.keys(platformMeta) as Platform[]
-const ALL_FORMATS = Object.keys(formatMeta) as ContentFormat[]
+const ALL_FORMATS = Object.keys(formatLabelKey) as ContentFormat[]
 
 function toggleValue<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
@@ -71,13 +73,16 @@ export function CalendarFiltersBar({
   visibleCount: number
   maskedCount: number
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const active = hasActiveFilters(filters)
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <ListFilter className="size-4 text-muted-foreground" aria-hidden />
 
-      <FilterMenu label="Statut" selectedCount={filters.statuses.length}>
+      <FilterMenu label={t("calendar.filters.status")} selectedCount={filters.statuses.length}>
         {ALL_STATUSES.map((s) => (
           <DropdownMenuCheckboxItem
             key={s}
@@ -87,12 +92,12 @@ export function CalendarFiltersBar({
             }
             closeOnClick={false}
           >
-            {contentStatusMeta[s].label}
+            {lbl.contentStatus(s)}
           </DropdownMenuCheckboxItem>
         ))}
       </FilterMenu>
 
-      <FilterMenu label="Plateforme" selectedCount={filters.platforms.length}>
+      <FilterMenu label={t("calendar.filters.platform")} selectedCount={filters.platforms.length}>
         {ALL_PLATFORMS.map((p) => (
           <DropdownMenuCheckboxItem
             key={p}
@@ -102,12 +107,12 @@ export function CalendarFiltersBar({
             }
             closeOnClick={false}
           >
-            {platformMeta[p].label}
+            {lbl.platform(p)}
           </DropdownMenuCheckboxItem>
         ))}
       </FilterMenu>
 
-      <FilterMenu label="Format" selectedCount={filters.formats.length}>
+      <FilterMenu label={t("calendar.filters.format")} selectedCount={filters.formats.length}>
         {ALL_FORMATS.map((f) => (
           <DropdownMenuCheckboxItem
             key={f}
@@ -117,13 +122,13 @@ export function CalendarFiltersBar({
             }
             closeOnClick={false}
           >
-            {formatMeta[f].label}
+            {lbl.format(f)}
           </DropdownMenuCheckboxItem>
         ))}
       </FilterMenu>
 
       {pillars.length > 0 ? (
-        <FilterMenu label="Pilier" selectedCount={filters.pillarIds.length}>
+        <FilterMenu label={t("calendar.filters.pillar")} selectedCount={filters.pillarIds.length}>
           {pillars.map((p) => (
             <DropdownMenuCheckboxItem
               key={p.id}
@@ -138,7 +143,7 @@ export function CalendarFiltersBar({
                 style={{ backgroundColor: p.colorVar }}
                 aria-hidden
               />
-              {p.name}
+              {pick(p.name, locale)}
             </DropdownMenuCheckboxItem>
           ))}
         </FilterMenu>
@@ -147,13 +152,15 @@ export function CalendarFiltersBar({
       {active ? (
         <Button variant="ghost" size="sm" onClick={onClear}>
           <X data-icon="inline-start" />
-          Effacer
+          {t("calendar.filters.clear")}
         </Button>
       ) : null}
 
       <p className="ml-auto text-xs text-muted-foreground tabular-nums">
-        {visibleCount} affiché{visibleCount > 1 ? "s" : ""}
-        {active && maskedCount > 0 ? ` · ${maskedCount} masqué${maskedCount > 1 ? "s" : ""}` : ""}
+        {t("calendar.filters.counts", {
+          count: visibleCount,
+          masked: active ? maskedCount : 0,
+        })}
       </p>
     </div>
   )

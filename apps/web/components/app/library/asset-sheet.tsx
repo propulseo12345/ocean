@@ -13,7 +13,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { formatDayMonth } from "@/lib/format"
+import { useFormat, useLocale, useT } from "@/lib/i18n"
+import { pick } from "@/lib/i18n/localized"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import type { SpecIssue } from "@/lib/specs"
@@ -43,6 +44,9 @@ export function AssetSheet({
   onSaveAlt: (id: string, altText: string) => void
   onDelete: (asset: LibraryAsset) => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   return (
     <Sheet open={asset !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-md">
@@ -51,8 +55,8 @@ export function AssetSheet({
             <SheetHeader className="pr-12">
               <SheetTitle className="truncate">{assetFileName(asset)}</SheetTitle>
               <SheetDescription>
-                {sourceMeta[asset.source].label} · {sourceMeta[asset.source].verb.toLowerCase()}{" "}
-                {formatDayMonth(asset.uploadedAt, tz)}
+                {t(sourceMeta[asset.source].labelKey)} ·{" "}
+                {t(sourceMeta[asset.source].verbKey).toLowerCase()} {f.dayMonth(asset.uploadedAt, tz)}
               </SheetDescription>
             </SheetHeader>
 
@@ -60,7 +64,7 @@ export function AssetSheet({
               <div className="relative aspect-square w-full overflow-hidden rounded-xl border bg-muted">
                 <Image
                   src={asset.fullUrl}
-                  alt={asset.altText ?? assetFileName(asset)}
+                  alt={asset.altText ? pick(asset.altText, locale) : assetFileName(asset)}
                   fill
                   sizes="(max-width: 640px) 100vw, 420px"
                   className="object-contain"
@@ -68,7 +72,9 @@ export function AssetSheet({
                 {asset.type === "video" ? (
                   <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
                     <Film className="size-3.5" aria-hidden />
-                    {asset.durationSec !== undefined ? formatDuration(asset.durationSec) : "Vidéo"}
+                    {asset.durationSec !== undefined
+                      ? formatDuration(asset.durationSec)
+                      : t("library.unit.video")}
                   </span>
                 ) : null}
               </div>
@@ -80,31 +86,30 @@ export function AssetSheet({
               ) : (
                 <p className="flex items-center gap-1.5 text-xs text-success">
                   <BadgeCheck className="size-3.5" aria-hidden />
-                  Conforme aux specs Instagram.
+                  {t("library.sheet.conform")}
                 </p>
               )}
 
               <div className="flex flex-col gap-2">
                 <Button render={<Link href={`${routes.contentNew(clientId)}?media=${asset.id}`} />}>
                   <ImagePlus />
-                  Créer un contenu avec ce média
+                  {t("library.sheet.createContent")}
                 </Button>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
                     onClick={() =>
-                      toast.info("Recadrage simulé (aperçu)", {
-                        description:
-                          "L'éditeur de recadrage 4:5 · 1:1 · 9:16 s'ouvrira ici en réel.",
+                      toast.info(t("library.sheet.cropToastTitle"), {
+                        description: t("library.sheet.cropToastDesc"),
                       })
                     }
                   >
                     <Crop />
-                    Recadrer (aperçu)
+                    {t("library.sheet.crop")}
                   </Button>
                   <Button variant="destructive" onClick={() => onDelete(asset)}>
                     <Trash2 />
-                    Supprimer (aperçu)
+                    {t("library.sheet.delete")}
                   </Button>
                 </div>
               </div>

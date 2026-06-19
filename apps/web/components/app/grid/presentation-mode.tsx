@@ -4,7 +4,7 @@ import { X } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { formatFollowers } from "@/lib/format"
+import { INTL_LOCALE, useFormat, useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { GridRatio, GridTileData } from "./grid-types"
 import { RATIO_CLASS } from "./grid-types"
@@ -36,13 +36,16 @@ export function PresentationMode({
   tiles: GridTileData[]
   ratio: GridRatio
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="w-auto max-w-none border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
       >
-        <DialogTitle className="sr-only">Mode présentation — aperçu du feed</DialogTitle>
+        <DialogTitle className="sr-only">{t("grid.presentation.title")}</DialogTitle>
 
         <div className="flex flex-col items-center gap-3">
           {/* Cadre iPhone (CSS pur) */}
@@ -65,9 +68,15 @@ export function PresentationMode({
                     ) : null}
                   </div>
                   <div className="flex flex-1 items-center justify-around text-center">
-                    <Stat value={String(profile.postCount)} label="publications" />
-                    <Stat value={formatFollowers(profile.followers)} label="abonnés" />
-                    <Stat value={profile.following.toLocaleString("fr-FR")} label="abonnements" />
+                    <Stat value={String(profile.postCount)} label={t("grid.presentation.posts")} />
+                    <Stat
+                      value={f.followers(profile.followers)}
+                      label={t("grid.presentation.followers")}
+                    />
+                    <Stat
+                      value={profile.following.toLocaleString(INTL_LOCALE[locale])}
+                      label={t("grid.presentation.following")}
+                    />
                   </div>
                 </div>
                 <p className="mt-2 text-xs font-semibold">{profile.name}</p>
@@ -86,7 +95,7 @@ export function PresentationMode({
 
           <Button variant="secondary" size="sm" onClick={() => onOpenChange(false)}>
             <X />
-            Quitter la présentation
+            {t("grid.presentation.quit")}
           </Button>
         </div>
       </DialogContent>

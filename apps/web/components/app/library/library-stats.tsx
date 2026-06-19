@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react"
 import { CircleAlert, Images, Inbox, Sparkles } from "lucide-react"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { LibraryFilters, LibraryStatsData } from "./library-types"
 
@@ -64,6 +65,7 @@ export function LibraryStats({
   onToggleDeposit: () => void
   onToggleOffSpec: () => void
 }) {
+  const t = useT()
   const noFilter =
     filters.type === "all" &&
     filters.source === "all" &&
@@ -76,14 +78,14 @@ export function LibraryStats({
       <StatChip
         icon={Images}
         count={stats.total}
-        label={stats.total > 1 ? "médias" : "média"}
+        label={t("library.stats.total", { count: stats.total })}
         pressed={noFilter}
         onClick={onResetFilters}
       />
       <StatChip
         icon={Sparkles}
         count={stats.unused}
-        label={stats.unused > 1 ? "inédits" : "inédit"}
+        label={t("library.stats.unused", { count: stats.unused })}
         pressed={filters.usage === "unused"}
         tone="success"
         onClick={onToggleUnused}
@@ -91,7 +93,7 @@ export function LibraryStats({
       <StatChip
         icon={Inbox}
         count={stats.deposit}
-        label={`reçu${stats.deposit > 1 ? "s" : ""} du client`}
+        label={t("library.stats.deposit", { count: stats.deposit })}
         pressed={filters.source === "depot_client"}
         tone="info"
         onClick={onToggleDeposit}
@@ -99,7 +101,7 @@ export function LibraryStats({
       <StatChip
         icon={CircleAlert}
         count={stats.offSpec}
-        label="hors specs"
+        label={t("library.stats.offSpec")}
         pressed={filters.specs === "issues"}
         tone="danger"
         onClick={onToggleOffSpec}

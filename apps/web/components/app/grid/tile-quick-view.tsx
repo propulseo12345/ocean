@@ -4,6 +4,7 @@ import { Info } from "lucide-react"
 import type { ReactElement } from "react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useT } from "@/lib/i18n"
 import type { GridTileData } from "./grid-types"
 import { QuickViewBody, type QuickViewCtx } from "./quick-view-body"
 
@@ -36,13 +37,14 @@ export function TileQuickView({
 
 /** Bouton info pour écrans tactiles (le survol n'existe pas, le long-press drague). */
 export function TileInfoButton({ tile, ctx }: { tile: GridTileData; ctx: QuickViewCtx }) {
+  const t = useT()
   return (
     <Popover>
       <PopoverTrigger
         render={
           <button
             type="button"
-            aria-label={`Détails de ${tile.title}`}
+            aria-label={t("grid.quickView.detailsOf", { title: tile.title })}
             className="absolute right-1.5 bottom-8 z-20 hidden size-6 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm pointer-coarse:flex"
           />
         }

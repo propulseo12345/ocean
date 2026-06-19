@@ -24,6 +24,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useT } from "@/lib/i18n"
 import type { QuotaUsage } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { GridRatio, PillarOption } from "./grid-types"
@@ -35,10 +36,11 @@ import type { GridViewState } from "./use-grid-view"
 const RATIOS: GridRatio[] = ["1:1", "3:4"]
 
 function RatioSwitch({ ratio, onRatio }: { ratio: GridRatio; onRatio: (r: GridRatio) => void }) {
+  const t = useT()
   return (
     <div
       role="group"
-      aria-label="Ratio des tuiles"
+      aria-label={t("grid.toolbar.ratioGroup")}
       className="inline-flex w-fit items-center gap-0.5 rounded-lg bg-muted p-0.5"
     >
       {RATIOS.map((r) => (
@@ -46,11 +48,7 @@ function RatioSwitch({ ratio, onRatio }: { ratio: GridRatio; onRatio: (r: GridRa
           key={r}
           type="button"
           aria-pressed={ratio === r}
-          title={
-            r === "3:4"
-              ? "Recadrage réel du profil Instagram (depuis 2025)"
-              : "Ancien affichage carré"
-          }
+          title={r === "3:4" ? t("grid.toolbar.ratioCrop34") : t("grid.toolbar.ratioSquare")}
           onClick={() => onRatio(r)}
           className={cn(
             "rounded-md px-2.5 py-1 text-xs font-medium tabular-nums transition-colors",
@@ -85,6 +83,7 @@ export function GridToolbar({
   onAddPlaceholder: (pillar: PillarOption) => void
   onResetAll: () => void
 }) {
+  const t = useT()
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5">
       <RatioSwitch ratio={view.ratio} onRatio={view.setRatio} />
@@ -93,29 +92,29 @@ export function GridToolbar({
         variant={view.finalRender ? "secondary" : "outline"}
         size="sm"
         aria-pressed={view.finalRender}
-        title="Masquer pastilles et dates pour voir le feed comme un visiteur"
+        title={t("grid.toolbar.finalRenderHint")}
         onClick={() => view.setFinalRender(!view.finalRender)}
       >
         <LayoutTemplate />
-        Rendu final
+        {t("grid.toolbar.finalRender")}
       </Button>
 
       <Button
         variant={view.selectionMode ? "secondary" : "outline"}
         size="sm"
         aria-pressed={view.selectionMode}
-        title="Cocher plusieurs tuiles planifiées pour agir en lot"
+        title={t("grid.toolbar.selectHint")}
         onClick={() => view.setSelectionMode(!view.selectionMode)}
         disabled={view.finalRender}
       >
         <SquareDashedMousePointer />
-        Sélectionner
+        {t("grid.toolbar.select")}
       </Button>
 
       <span className="flex-1" />
 
       {quota ? (
-        <div className="w-40" title="Quota API Instagram — l'enforcement réel sera côté worker">
+        <div className="w-40" title={t("grid.toolbar.quotaHint")}>
           <QuotaGauge usage={quota} />
         </div>
       ) : null}
@@ -128,28 +127,30 @@ export function GridToolbar({
           disabled={view.syncing}
         >
           <RefreshCw className={cn(view.syncing && "animate-spin")} />
-          Synchroniser le feed
+          {t("grid.toolbar.syncFeed")}
         </Button>
         <span className="pl-1 text-[10px] text-muted-foreground">
-          Dernière synchro {view.lastSync}
+          {t("grid.toolbar.lastSync", { when: view.lastSync })}
         </span>
       </div>
 
       {view.validationSent ? (
         <span className="inline-flex h-7 items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2 text-[0.8rem] font-medium text-success">
           <BadgeCheck className="size-3.5" />
-          Grille envoyée en validation (aperçu)
+          {t("grid.toolbar.validationSent")}
         </span>
       ) : (
         <Button size="sm" onClick={onOpenValidation} disabled={plannedCount === 0}>
           <Send />
-          Demander la validation
+          {t("grid.toolbar.requestValidation")}
         </Button>
       )}
 
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="outline" size="icon-sm" aria-label="Plus d'actions" />}
+          render={
+            <Button variant="outline" size="icon-sm" aria-label={t("grid.toolbar.moreActions")} />
+          }
         >
           <MoreHorizontal />
         </DropdownMenuTrigger>
@@ -157,11 +158,11 @@ export function GridToolbar({
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <LayoutTemplate className="size-4" />
-              Réserver une case par pilier
+              {t("grid.toolbar.reserveByPillar")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               {pillars.length === 0 ? (
-                <DropdownMenuItem disabled>Aucun pilier défini</DropdownMenuItem>
+                <DropdownMenuItem disabled>{t("grid.toolbar.noPillar")}</DropdownMenuItem>
               ) : (
                 pillars.map((p) => (
                   <DropdownMenuItem key={p.id} onClick={() => onAddPlaceholder(p)}>
@@ -177,19 +178,19 @@ export function GridToolbar({
           </DropdownMenuSub>
           <DropdownMenuItem onClick={() => view.setPresentationOpen(true)}>
             <Smartphone className="size-4" />
-            Mode présentation
+            {t("grid.toolbar.presentationMode")}
           </DropdownMenuItem>
           <DropdownMenuCheckboxItem
             checked={view.demoMode}
             onCheckedChange={(checked) => view.setDemoMode(checked === true)}
           >
             <UserRound className="size-4" />
-            Mode démo prospect
+            {t("grid.toolbar.demoMode")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onResetAll}>
             <RotateCcw className="size-4" />
-            Réinitialiser la grille
+            {t("grid.toolbar.resetGrid")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +16,7 @@ const SLOTS = Array.from({ length: CODE_LENGTH }, (_, i) => i)
 
 export function OtpForm() {
   const router = useRouter()
+  const t = useT()
   const [digits, setDigits] = useState<string[]>(() =>
     Array.from({ length: CODE_LENGTH }, () => "")
   )
@@ -64,20 +66,20 @@ export function OtpForm() {
 
   function verify() {
     if (!isComplete) {
-      toast.error("Code incomplet", {
-        description: "Saisis les 6 chiffres reçus par e-mail.",
+      toast.error(t("auth.otp.incompleteTitle"), {
+        description: t("auth.otp.incompleteDetail"),
       })
       return
     }
-    toast.success("Code vérifié (preview)", {
-      description: "Action simulée — redirection vers le tableau de bord.",
+    toast.success(t("auth.otp.verifiedTitle"), {
+      description: t("auth.otp.verifiedDetail"),
     })
     router.push(routes.dashboard)
   }
 
   function resend() {
-    toast.success("Nouveau code envoyé (preview)", {
-      description: "Action simulée — un code a été renvoyé.",
+    toast.success(t("auth.otp.resentTitle"), {
+      description: t("auth.otp.resentDetail"),
     })
     setDigits(Array.from({ length: CODE_LENGTH }, () => ""))
     focusSlot(0)
@@ -92,7 +94,7 @@ export function OtpForm() {
       className="space-y-4"
     >
       <div className="space-y-2">
-        <Label htmlFor="otp-0">Code à 6 chiffres</Label>
+        <Label htmlFor="otp-0">{t("auth.otp.codeLabel")}</Label>
         <div className="flex justify-between gap-1.5 sm:gap-2">
           {SLOTS.map((i) => (
             <Input
@@ -106,7 +108,7 @@ export function OtpForm() {
               autoComplete="one-time-code"
               maxLength={CODE_LENGTH}
               autoFocus={i === 0}
-              aria-label={`Chiffre ${i + 1} sur ${CODE_LENGTH}`}
+              aria-label={t("auth.otp.digitAriaLabel", { index: i + 1, total: CODE_LENGTH })}
               value={digits[i]}
               onChange={(e) => setDigit(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
@@ -121,17 +123,17 @@ export function OtpForm() {
 
       <Button type="submit" size="lg" className="h-10 w-full" disabled={!isComplete}>
         <ShieldCheck />
-        Vérifier
+        {t("auth.otp.verify")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Tu n'as rien reçu ?{" "}
+        {t("auth.otp.noCode")}{" "}
         <button
           type="button"
           onClick={resend}
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
-          Renvoyer le code
+          {t("auth.otp.resend")}
         </button>
       </p>
     </form>

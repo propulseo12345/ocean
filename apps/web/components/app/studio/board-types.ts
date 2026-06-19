@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentStatus,
@@ -29,11 +30,12 @@ export const EMPTY_FILTERS: BoardFilters = {
   labels: [],
 }
 
-export const SORT_LABELS: Record<SortKey, string> = {
-  priority: "À traiter d'abord",
-  scheduled: "Date planifiée",
-  created: "Date de création",
-  status: "Statut",
+/** Clé i18n du libellé de chaque tri (résolue côté composant via t()). */
+export const SORT_LABEL_KEYS: Record<SortKey, MessageKey> = {
+  priority: "studio.sort.priority",
+  scheduled: "studio.sort.scheduled",
+  created: "studio.sort.created",
+  status: "studio.sort.status",
 }
 
 /** Ordre du cycle de vie — utilisé par le tri « Statut ». */
@@ -51,8 +53,13 @@ export const STATUS_ORDER: ContentStatus[] = [
   "canceled",
 ]
 
-/** Étiquettes proposées par défaut dans l'éditeur d'étiquettes. */
-export const CANONICAL_LABELS = ["Lancement", "Promo", "Marronnier", "Evergreen"]
+/** Clés i18n des étiquettes proposées par défaut dans l'éditeur. */
+export const CANONICAL_LABEL_KEYS: MessageKey[] = [
+  "studio.canonical.launch",
+  "studio.canonical.promo",
+  "studio.canonical.marronnier",
+  "studio.canonical.evergreen",
+]
 
 const CHART_VARS = [
   "var(--chart-1)",
@@ -62,10 +69,14 @@ const CHART_VARS = [
   "var(--chart-5)",
 ]
 
+// Couleur fixe des étiquettes canoniques, indexée par leur valeur FR ET EN
+// (l'affichage utilise la valeur résolue dans la locale active).
 const CANONICAL_COLOR: Record<string, string> = {
   Lancement: CHART_VARS[0],
+  Launch: CHART_VARS[0],
   Promo: CHART_VARS[1],
   Marronnier: CHART_VARS[2],
+  Seasonal: CHART_VARS[2],
   Evergreen: CHART_VARS[3],
 }
 
@@ -89,13 +100,13 @@ export interface QuotaRow {
 
 export type KanbanColumnId = "idea" | "draft" | "in_review" | "approved" | "scheduled" | "published"
 
-export const KANBAN_COLUMNS: { id: KanbanColumnId; label: string }[] = [
-  { id: "idea", label: "Idée" },
-  { id: "draft", label: "Brouillon" },
-  { id: "in_review", label: "En validation" },
-  { id: "approved", label: "Validé" },
-  { id: "scheduled", label: "Programmé" },
-  { id: "published", label: "Publié" },
+export const KANBAN_COLUMNS: { id: KanbanColumnId; labelKey: MessageKey }[] = [
+  { id: "idea", labelKey: "studio.kanban.colIdea" },
+  { id: "draft", labelKey: "studio.kanban.colDraft" },
+  { id: "in_review", labelKey: "studio.kanban.colInReview" },
+  { id: "approved", labelKey: "studio.kanban.colApproved" },
+  { id: "scheduled", labelKey: "studio.kanban.colScheduled" },
+  { id: "published", labelKey: "studio.kanban.colPublished" },
 ]
 
 /** Colonne kanban d'un statut — null = hors kanban (annulé). */

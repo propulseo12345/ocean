@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
 
@@ -42,6 +43,8 @@ export function DuplicateDialog({
   onClose: () => void
   onConfirm: (item: ContentItem, dayKey: DayKey, targetClientId: string) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [dayKey, setDayKey] = useState<DayKey>(todayKey)
   const [clientId, setClientId] = useState(currentClientId)
 
@@ -60,12 +63,14 @@ export function DuplicateDialog({
     <Dialog open={item !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dupliquer le contenu</DialogTitle>
-          <DialogDescription className="truncate">{item?.title}</DialogDescription>
+          <DialogTitle>{t("calendar.duplicate.title")}</DialogTitle>
+          <DialogDescription className="truncate">
+            {item ? pick(item.title, locale) : null}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="duplicate-date">Date cible</Label>
+            <Label htmlFor="duplicate-date">{t("calendar.duplicate.targetDate")}</Label>
             <Input
               id="duplicate-date"
               type="date"
@@ -75,7 +80,7 @@ export function DuplicateDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="duplicate-client">Client de destination</Label>
+            <Label htmlFor="duplicate-client">{t("calendar.duplicate.targetClient")}</Label>
             <Select value={clientId} onValueChange={(value) => setClientId(String(value))}>
               <SelectTrigger id="duplicate-client" className="w-full">
                 <SelectValue />
@@ -84,29 +89,26 @@ export function DuplicateDialog({
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
-                    {c.id === currentClientId ? " (ce client)" : ""}
+                    {c.id === currentClientId ? t("calendar.duplicate.thisClient") : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="text-xs text-muted-foreground">
-            La copie repart en brouillon, médias et légende inclus, avec son propre circuit de
-            validation.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("calendar.duplicate.copyHint")}</p>
           {invalid ? (
-            <p className="text-xs text-destructive">La date cible ne peut pas être passée.</p>
+            <p className="text-xs text-destructive">{t("calendar.duplicate.pastDate")}</p>
           ) : null}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button
             disabled={invalid || !item}
             onClick={() => item && onConfirm(item, dayKey, clientId)}
           >
-            Dupliquer (aperçu)
+            {t("calendar.duplicate.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

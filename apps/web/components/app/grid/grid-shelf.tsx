@@ -7,11 +7,13 @@ import type { GridTileData } from "@/components/app/grid/grid-types"
 import { SHELF_PREFIX } from "@/components/app/grid/grid-types"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
-import { contentStatusMeta } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 /** Carte d'étagère (aussi rendue en fantôme dans le DragOverlay). */
 export function ShelfCard({ tile, dragging = false }: { tile: GridTileData; dragging?: boolean }) {
+  const t = useT()
+  const lbl = useLabels()
   return (
     <span
       className={cn(
@@ -42,7 +44,8 @@ export function ShelfCard({ tile, dragging = false }: { tile: GridTileData; drag
           <span className="truncate text-sm font-medium">{tile.title}</span>
         </span>
         <span className="block truncate text-xs text-muted-foreground">
-          {tile.status ? `${contentStatusMeta[tile.status].label} · ` : ""}Sans date
+          {tile.status ? `${lbl.contentStatus(tile.status)} · ` : ""}
+          {t("grid.shelf.noDate")}
         </span>
       </span>
     </span>
@@ -50,6 +53,7 @@ export function ShelfCard({ tile, dragging = false }: { tile: GridTileData; drag
 }
 
 function ShelfItem({ tile }: { tile: GridTileData }) {
+  const t = useT()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${SHELF_PREFIX}${tile.id}`,
   })
@@ -64,7 +68,7 @@ function ShelfItem({ tile }: { tile: GridTileData }) {
       {tile.href ? (
         <Link
           href={tile.href}
-          aria-label={`Ouvrir ${tile.title} dans le studio`}
+          aria-label={t("grid.shelf.openInStudio", { title: tile.title })}
           draggable={false}
           className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
@@ -80,17 +84,16 @@ function ShelfItem({ tile }: { tile: GridTileData }) {
 // Étagère latérale : idées / brouillons non datés, draggables vers la grille
 // (date mockée attribuée à l'insertion) et cliquables vers le studio.
 export function GridShelf({ tiles }: { tiles: GridTileData[] }) {
+  const t = useT()
   return (
     <div className="rounded-xl border bg-card/50 p-3">
       <div className="mb-2.5 flex items-center gap-2">
         <Lightbulb className="size-4 text-muted-foreground" />
-        <h2 className="font-heading text-sm font-semibold">Étagère · sans date</h2>
+        <h2 className="font-heading text-sm font-semibold">{t("grid.shelf.title")}</h2>
         <span className="ml-auto text-xs text-muted-foreground tabular-nums">{tiles.length}</span>
       </div>
       {tiles.length === 0 ? (
-        <p className="px-1 py-3 text-xs text-muted-foreground">
-          Idées et brouillons non datés apparaîtront ici.
-        </p>
+        <p className="px-1 py-3 text-xs text-muted-foreground">{t("grid.shelf.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {tiles.map((tile) => (
@@ -99,8 +102,7 @@ export function GridShelf({ tiles }: { tiles: GridTileData[] }) {
         </ul>
       )}
       <p className="mt-2.5 px-1 text-[11px] leading-snug text-muted-foreground">
-        Glisse une carte dans la grille pour lui attribuer une date (aperçu), ou clique pour
-        l'ouvrir dans le studio.
+        {t("grid.shelf.footnote")}
       </p>
     </div>
   )

@@ -1,16 +1,20 @@
 import Image from "next/image"
 import { FormatIcon } from "@/components/shared/format-icon"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { PillarSlice, PostRow } from "./perf-data"
 import { compactNumber, percent } from "./perf-utils"
 
 function TopCard({ post, rank }: { post: PostRow; rank: number }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const title = pick(post.title, locale)
   return (
     <figure className="overflow-hidden rounded-xl border bg-card">
       <div className="relative aspect-square bg-muted">
         {post.thumbUrl ? (
           <Image
             src={post.thumbUrl}
-            alt={post.title}
+            alt={title}
             fill
             sizes="(max-width: 640px) 50vw, 200px"
             className="object-cover"
@@ -24,12 +28,15 @@ function TopCard({ post, rank }: { post: PostRow; rank: number }) {
         </span>
       </div>
       <figcaption className="space-y-1 p-2.5">
-        <p className="truncate text-xs font-medium">{post.title}</p>
+        <p className="truncate text-xs font-medium">{title}</p>
         <p className="text-[11px] text-muted-foreground tabular-nums">
-          {compactNumber(post.stats.reach)} vues · {compactNumber(post.engagement)} interactions
+          {t("report.highlights.stats", {
+            reach: compactNumber(post.stats.reach, locale),
+            engagement: compactNumber(post.engagement, locale),
+          })}
         </p>
         <p className="text-[11px] text-muted-foreground tabular-nums">
-          {percent(post.engagementRate)}
+          {percent(post.engagementRate, locale)}
         </p>
       </figcaption>
     </figure>
@@ -37,10 +44,11 @@ function TopCard({ post, rank }: { post: PostRow; rank: number }) {
 }
 
 export function ReportHighlights({ posts }: { posts: PostRow[] }) {
+  const t = useT()
   const top3 = [...posts].sort((a, b) => b.engagement - a.engagement).slice(0, 3)
   return (
     <section className="space-y-3">
-      <h2 className="font-heading text-base font-semibold">Vos meilleures publications</h2>
+      <h2 className="font-heading text-base font-semibold">{t("report.highlights.title")}</h2>
       <div className="grid grid-cols-3 gap-3">
         {top3.map((p, i) => (
           <TopCard key={p.refId} post={p} rank={i + 1} />
@@ -51,16 +59,21 @@ export function ReportHighlights({ posts }: { posts: PostRow[] }) {
 }
 
 export function ReportContentMix({ pillars }: { pillars: PillarSlice[] }) {
+  const t = useT()
+  const { locale } = useLocale()
   const active = pillars.filter((p) => p.engagementShare > 0)
   return (
     <section className="space-y-3">
-      <h2 className="font-heading text-base font-semibold">Mix de contenu</h2>
+      <h2 className="font-heading text-base font-semibold">{t("report.mix.title")}</h2>
       <div className="flex h-3 w-full overflow-hidden rounded-full">
         {active.map((p) => (
           <span
             key={p.id}
             style={{ width: `${p.engagementShare}%`, backgroundColor: p.colorVar }}
-            title={`${p.name} · ${percent(p.engagementShare, 0)}`}
+            title={t("report.mix.pillarTitle", {
+              name: pick(p.name, locale),
+              share: percent(p.engagementShare, locale, 0),
+            })}
           />
         ))}
       </div>
@@ -72,9 +85,9 @@ export function ReportContentMix({ pillars }: { pillars: PillarSlice[] }) {
               style={{ backgroundColor: p.colorVar }}
               aria-hidden
             />
-            <span className="truncate">{p.name}</span>
+            <span className="truncate">{pick(p.name, locale)}</span>
             <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-              {percent(p.engagementShare, 0)}
+              {percent(p.engagementShare, locale, 0)}
             </span>
           </li>
         ))}

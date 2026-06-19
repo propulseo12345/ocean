@@ -1,6 +1,7 @@
 // Namespace i18n « dashboard » (FR).
 export const dashboardFr = {
   dashboard: {
+    metaTitle: "Tableau de bord",
     greeting: "Bonjour {name}",
     yourDay: "Voici ta journée — {date}.",
     seeClients: "Voir les clients",

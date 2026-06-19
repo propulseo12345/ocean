@@ -6,8 +6,8 @@ import { toast } from "sonner"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { isPast } from "@/lib/format"
+import { useLabels, useT } from "@/lib/i18n"
 import { getContentItems } from "@/lib/mocks"
-import { platformMeta } from "@/lib/mocks/labels"
 import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -30,21 +30,23 @@ function upcomingAtRisk(clientId: string, accountIds: Set<string>): number {
 }
 
 export function ClientHealthBanner({ clientId }: { clientId: string }) {
+  const t = useT()
+  const lbl = useLabels()
   const issues = clientAccountIssues(clientId)
   if (issues.length === 0) return null
 
   const danger = issues.some((a) => a.status === "expired")
-  const platforms = issues.map((a) => platformMeta[a.platform].label).join(", ")
+  const platforms = issues.map((a) => lbl.platform(a.platform)).join(", ")
   const atRisk = upcomingAtRisk(clientId, new Set(issues.map((a) => a.id)))
 
   const impact =
     atRisk > 0
-      ? `${atRisk} publication${atRisk > 1 ? "s" : ""} à venir échouer${atRisk > 1 ? "ont" : "a"} si le compte n'est pas reconnecté.`
-      : `Le compte @${issues[0].username} doit être reconnecté pour continuer à publier.`
+      ? t("nav.health.impactAtRisk", { count: atRisk })
+      : t("nav.health.impactReconnect", { username: issues[0].username })
 
   function handleReconnect() {
-    toast.info(`Reconnexion ${platforms} simulée (aperçu)`, {
-      description: "Aucun compte n'est réellement reconnecté pendant la preview.",
+    toast.info(t("nav.health.reconnectToast", { platforms }), {
+      description: t("nav.health.reconnectToastDesc"),
     })
   }
 
@@ -57,15 +59,17 @@ export function ClientHealthBanner({ clientId }: { clientId: string }) {
     >
       <TriangleAlert className={danger ? "text-destructive" : "text-warning"} />
       <AlertTitle>
-        {platforms} {(danger ? "expiré" : "déconnecté") + (issues.length > 1 ? "s" : "")}
+        {danger
+          ? t("nav.health.titleExpired", { platforms, count: issues.length })
+          : t("nav.health.titleDisconnected", { platforms, count: issues.length })}
       </AlertTitle>
       <AlertDescription>{impact}</AlertDescription>
       <AlertAction className="flex items-center gap-1.5">
         <Button size="sm" variant="outline" onClick={handleReconnect}>
-          Reconnecter (aperçu)
+          {t("nav.health.reconnect")}
         </Button>
         <Button size="sm" variant="ghost" render={<Link href={routes.settings} />}>
-          Réglages
+          {t("nav.health.settings")}
         </Button>
       </AlertAction>
     </Alert>

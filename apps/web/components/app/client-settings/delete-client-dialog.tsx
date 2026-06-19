@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 import { ConfirmDialog } from "./confirm-dialog"
 
@@ -19,6 +20,7 @@ export function DeleteClientDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
 }) {
+  const t = useT()
   const [typed, setTyped] = useState("")
   const matches = typed.trim() === client.name
 
@@ -31,14 +33,9 @@ export function DeleteClientDialog({
     <ConfirmDialog
       open={open}
       onOpenChange={handleOpenChange}
-      title="Supprimer définitivement le client ?"
-      description={
-        <>
-          Cette action est irréversible : le client, ses contenus, son historique et ses médias sont
-          supprimés. Préfère l'archivage si tu veux conserver les preuves.
-        </>
-      }
-      confirmLabel="Supprimer définitivement (aperçu)"
+      title={t("clientSettings.deleteDialog.title")}
+      description={t("clientSettings.deleteDialog.description")}
+      confirmLabel={t("clientSettings.deleteDialog.confirm")}
       disabled={!matches}
       onConfirm={() => {
         onConfirm()
@@ -46,7 +43,9 @@ export function DeleteClientDialog({
       }}
     >
       <div className="grid gap-1.5">
-        <Label htmlFor="confirm-name">Saisis « {client.name} » pour confirmer</Label>
+        <Label htmlFor="confirm-name">
+          {t("clientSettings.deleteDialog.confirmLabel", { name: client.name })}
+        </Label>
         <Input
           id="confirm-name"
           value={typed}

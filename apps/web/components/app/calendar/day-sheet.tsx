@@ -13,13 +13,22 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { getMarronniersOn, MARRONNIER_KIND_LABELS } from "@/lib/marronniers"
+import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
+import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
 import type { ClientEvent, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { createContentHref } from "./calendar-schedule"
 import type { DayContext } from "./calendar-types"
 import { type DayKey, weekdayDayMonth } from "./calendar-utils"
 import { DaySheetRow } from "./day-sheet-row"
+
+// Clé i18n du libellé d'un type de marronnier.
+const MARRONNIER_KIND_KEY: Record<MarronnierKind, MessageKey> = {
+  ferie: "marronnier.kind.ferie",
+  fete: "marronnier.kind.fete",
+  soldes: "marronnier.kind.soldes",
+  marketing: "marronnier.kind.marketing",
+}
 
 // Panneau Jour : TOUS les contenus d'une date + notes, événements et
 // marronniers, sans quitter le calendrier. Bottom sheet sur mobile.
@@ -37,6 +46,8 @@ export function DaySheet({
   onClose: () => void
   onAddNote: (dayKey: DayKey, title: string, kind: ClientEvent["kind"]) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const isMobile = useIsMobile()
   const [noteDraft, setNoteDraft] = useState("")
   const [noteKind, setNoteKind] = useState<ClientEvent["kind"]>("note")
@@ -62,41 +73,45 @@ export function DaySheet({
         <SheetHeader>
           <SheetTitle className="capitalize">{weekdayDayMonth(dayKey, ctx.tz)}</SheetTitle>
           <SheetDescription>
-            {items.length} contenu{items.length > 1 ? "s" : ""} · fuseau du client
+            {t("calendar.daySheet.itemsCount", { count: items.length })}
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4 px-4 pb-4">
           {marronniers.length > 0 ? (
             <ul className="space-y-1">
-              {marronniers.map((m) => (
-                <li
-                  key={`${m.date}_${m.label}`}
-                  className="flex items-center justify-between gap-2 rounded-md bg-secondary px-2 py-1.5 text-xs text-secondary-foreground"
-                >
-                  <span className="min-w-0 truncate">
-                    {m.label}
-                    <span className="text-secondary-foreground/70">
-                      {" "}
-                      · {MARRONNIER_KIND_LABELS[m.kind]}
+              {marronniers.map((m) => {
+                const label = pick(m.label, locale)
+                return (
+                  <li
+                    key={`${m.date}_${label}`}
+                    className="flex items-center justify-between gap-2 rounded-md bg-secondary px-2 py-1.5 text-xs text-secondary-foreground"
+                  >
+                    <span className="min-w-0 truncate">
+                      {label}
+                      <span className="text-secondary-foreground/70">
+                        {t("calendar.daySheet.marronnierKind", {
+                          kind: t(MARRONNIER_KIND_KEY[m.kind]),
+                        })}
+                      </span>
                     </span>
-                  </span>
-                  {!isPast ? (
-                    <Link
-                      href={createContentHref(ctx.clientId, dayKey, ctx.tz)}
-                      className="shrink-0 font-medium text-primary hover:underline"
-                    >
-                      Créer un contenu
-                    </Link>
-                  ) : null}
-                </li>
-              ))}
+                    {!isPast ? (
+                      <Link
+                        href={createContentHref(ctx.clientId, dayKey, ctx.tz)}
+                        className="shrink-0 font-medium text-primary hover:underline"
+                      >
+                        {t("calendar.daySheet.createContent")}
+                      </Link>
+                    ) : null}
+                  </li>
+                )
+              })}
             </ul>
           ) : null}
 
           {items.length === 0 ? (
             <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-              Aucun contenu ce jour.
+              {t("calendar.daySheet.noContent")}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -108,10 +123,10 @@ export function DaySheet({
 
           <section className="space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase">
-              Notes et événements
+              {t("calendar.daySheet.notesEvents")}
             </h3>
             {events.length === 0 ? (
-              <p className="text-xs text-muted-foreground/70">Aucune note pour ce jour.</p>
+              <p className="text-xs text-muted-foreground/70">{t("calendar.daySheet.noNote")}</p>
             ) : (
               <ul className="space-y-1">
                 {events.map((ev) => (
@@ -120,11 +135,17 @@ export function DaySheet({
                     className="flex items-center gap-2 rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground"
                   >
                     {ev.kind === "note" ? (
-                      <StickyNote className="size-3.5 shrink-0" aria-label="Note" />
+                      <StickyNote
+                        className="size-3.5 shrink-0"
+                        aria-label={t("calendar.daySheet.note")}
+                      />
                     ) : (
-                      <Flag className="size-3.5 shrink-0" aria-label="Événement" />
+                      <Flag
+                        className="size-3.5 shrink-0"
+                        aria-label={t("calendar.daySheet.event")}
+                      />
                     )}
-                    <span className="min-w-0 flex-1 truncate">{ev.title}</span>
+                    <span className="min-w-0 flex-1 truncate">{pick(ev.title, locale)}</span>
                   </li>
                 ))}
               </ul>
@@ -134,21 +155,21 @@ export function DaySheet({
                 value={noteDraft}
                 onChange={(e) => setNoteDraft(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitNote()}
-                placeholder="Ajouter une note (interne)…"
-                aria-label="Texte de la note"
+                placeholder={t("calendar.daySheet.addNotePlaceholder")}
+                aria-label={t("calendar.daySheet.noteTextLabel")}
                 className="h-8 text-xs"
               />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setNoteKind((k) => (k === "note" ? "event" : "note"))}
-                aria-label={`Type : ${noteKind === "note" ? "note" : "événement"} — changer`}
-                title="Basculer note / événement"
+                aria-label={t("calendar.daySheet.typeToggle", { kind: noteKind })}
+                title={t("calendar.daySheet.typeToggleTitle")}
               >
                 {noteKind === "note" ? <StickyNote /> : <Flag />}
               </Button>
               <Button size="sm" onClick={submitNote} disabled={noteDraft.trim().length === 0}>
-                Ajouter
+                {t("calendar.daySheet.add")}
               </Button>
             </div>
           </section>
@@ -160,7 +181,7 @@ export function DaySheet({
               render={<Link href={createContentHref(ctx.clientId, dayKey, ctx.tz)} />}
             >
               <Plus data-icon="inline-start" />
-              Créer un contenu — date préremplie
+              {t("calendar.daySheet.createPrefilled")}
             </Button>
           ) : null}
         </div>

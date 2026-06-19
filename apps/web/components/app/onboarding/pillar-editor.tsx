@@ -4,8 +4,10 @@ import { Plus, Sparkles, X } from "lucide-react"
 import { useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import {
+  CATEGORIES,
   type DraftPillar,
   PILLAR_COLOR_VARS,
   PILLAR_SUGGESTIONS,
@@ -33,12 +35,16 @@ export function PillarEditor({
   category: string
   onChange: (pillars: DraftPillar[]) => void
 }) {
+  const t = useT()
   const id = useId()
   const [name, setName] = useState("")
   const total = pillarShareTotal(pillars)
-  const suggestions = (PILLAR_SUGGESTIONS[category] ?? PILLAR_SUGGESTIONS.default).filter(
-    (s) => !pillars.some((p) => p.name.toLowerCase() === s.toLowerCase())
-  )
+  const categoryLabelKey = CATEGORIES.find((c) => c.value === category)?.labelKey
+  // Les suggestions sont des clés i18n : on les résout en libellés avant de
+  // dédoublonner contre les piliers déjà ajoutés (comparaison sur le texte affiché).
+  const suggestions = (PILLAR_SUGGESTIONS[category] ?? PILLAR_SUGGESTIONS.default)
+    .map((key) => t(key))
+    .filter((label) => !pillars.some((p) => p.name.toLowerCase() === label.toLowerCase()))
 
   function add(pillarName: string) {
     const cleaned = pillarName.trim()
@@ -71,7 +77,9 @@ export function PillarEditor({
         <div className="space-y-1.5">
           <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5" />
-            Suggestions {category ? `pour « ${category} »` : ""}
+            {categoryLabelKey
+              ? t("onboarding.pillar.suggestionsFor", { category: t(categoryLabelKey) })
+              : t("onboarding.pillar.suggestions")}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
@@ -109,14 +117,14 @@ export function PillarEditor({
                   value={p.targetShare}
                   onChange={(e) => update(p.id, Number(e.target.value))}
                   className="h-7 w-16 text-right tabular-nums"
-                  aria-label={`Part cible de ${p.name} en pourcentage`}
+                  aria-label={t("onboarding.pillar.sharePctAria", { name: p.name })}
                 />
                 <span className="text-xs text-muted-foreground">%</span>
               </div>
               <button
                 type="button"
                 onClick={() => onChange(pillars.filter((x) => x.id !== p.id))}
-                aria-label={`Retirer ${p.name}`}
+                aria-label={t("onboarding.pillar.removeAria", { name: p.name })}
                 className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
               >
                 <X className="size-3.5" />
@@ -137,7 +145,7 @@ export function PillarEditor({
               add(name)
             }
           }}
-          placeholder="Nom d'un pilier sur-mesure"
+          placeholder={t("onboarding.pillar.customPlaceholder")}
           disabled={pillars.length >= MAX_PILLARS}
         />
         <Button
@@ -147,7 +155,7 @@ export function PillarEditor({
           disabled={pillars.length >= MAX_PILLARS}
         >
           <Plus />
-          Ajouter
+          {t("onboarding.pillar.add")}
         </Button>
       </div>
 
@@ -157,6 +165,7 @@ export function PillarEditor({
 }
 
 function MixGauge({ pillars, total }: { pillars: DraftPillar[]; total: number }) {
+  const t = useT()
   return (
     <div className="space-y-1.5">
       <div className="flex h-2 overflow-hidden rounded-full bg-muted">
@@ -174,7 +183,9 @@ function MixGauge({ pillars, total }: { pillars: DraftPillar[]; total: number })
           total === 100 ? "text-success" : "text-muted-foreground"
         )}
       >
-        Total : {total} %{total === 100 ? " — parfaitement équilibré" : " (idéalement 100 %)"}
+        {total === 100
+          ? t("onboarding.pillar.totalBalanced", { total })
+          : t("onboarding.pillar.totalHint", { total })}
       </p>
     </div>
   )

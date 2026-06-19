@@ -5,6 +5,8 @@ import { notFound } from "next/navigation"
 import { type ComposerData, ComposerScreen } from "@/components/app/studio/composer/composer-screen"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { pick } from "@/lib/i18n"
+import { getLocale, getT } from "@/lib/i18n/server"
 import {
   getBrandKit,
   getClient,
@@ -19,7 +21,10 @@ import {
 import type { ContentStatus, QuotaUsage } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Modifier le contenu" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaContentEdit") }
+}
 
 // Lecture seule à partir de la publication (règle d'éditabilité PRD §5.B).
 const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
@@ -35,6 +40,8 @@ export default async function EditContentPage({
   if (!client || !content || content.clientId !== clientId) notFound()
 
   if (READ_ONLY.includes(content.status)) {
+    const t = await getT()
+    const locale = await getLocale()
     return (
       <div className="space-y-5">
         <Button
@@ -44,14 +51,13 @@ export default async function EditContentPage({
           render={<Link href={routes.content(clientId, contentId)} />}
         >
           <ArrowLeft />
-          Retour au contenu
+          {t("clients.backToContent")}
         </Button>
         <Alert>
           <Lock />
-          <AlertTitle>Contenu en lecture seule</AlertTitle>
+          <AlertTitle>{t("clients.readOnlyTitle")}</AlertTitle>
           <AlertDescription>
-            La publication a commencé : « {content.title} » n'est plus modifiable. Duplique le
-            contenu depuis sa fiche pour repartir d'une nouvelle version.
+            {t("clients.readOnlyDescription", { title: pick(content.title, locale) })}
           </AlertDescription>
         </Alert>
       </div>

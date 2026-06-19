@@ -2,7 +2,7 @@
 
 import { CalendarClock, CircleAlert, Zap } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { fr } from "react-day-picker/locale"
+import { enUS, fr } from "react-day-picker/locale"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { formatDateTime } from "@/lib/format"
+import { useFormat, useLocale, useT } from "@/lib/i18n"
 import { CURRENT_USER } from "@/lib/mocks/clients"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, RecurringSlot } from "@/lib/mocks/types"
@@ -56,6 +56,9 @@ export function ScheduleDialog({
   blockingCount: number
   onConfirm: (iso: string | null) => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const tz = client.timezone
   const shortcuts = useMemo(() => scheduleShortcuts(client, slots), [client, slots])
 
@@ -95,16 +98,21 @@ export function ScheduleDialog({
     onConfirm(finalIso)
     onOpenChange(false)
     toast.success(
-      isLate ? "Publication dès que possible (aperçu)" : "Programmation enregistrée (aperçu)",
-      { description: `${formatDateTime(finalIso, tz)} — fuseau du client (${tz}).` }
+      isLate ? t("composer.schedule.toastAsap") : t("composer.schedule.toastScheduled"),
+      {
+        description: t("composer.schedule.toastScheduledDesc", {
+          date: f.dateTime(finalIso, tz),
+          tz,
+        }),
+      }
     )
   }
 
   function removeDate() {
     onConfirm(null)
     onOpenChange(false)
-    toast.info("Date retirée (aperçu)", {
-      description: "Le contenu repart dans l'étagère « À planifier ».",
+    toast.info(t("composer.schedule.toastRemoved"), {
+      description: t("composer.schedule.toastRemovedDesc"),
     })
   }
 
@@ -114,10 +122,8 @@ export function ScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Programmer la publication</DialogTitle>
-          <DialogDescription>
-            Date et heure saisies dans le fuseau du client : <strong>{tz}</strong>.
-          </DialogDescription>
+          <DialogTitle>{t("composer.schedule.title")}</DialogTitle>
+          <DialogDescription>{t("composer.schedule.tzNote", { tz })}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -125,7 +131,7 @@ export function ScheduleDialog({
             {shortcuts.map((s) => (
               <Button key={s.id} variant="outline" size="xs" onClick={() => applyShortcut(s.iso)}>
                 <CalendarClock />
-                {s.label}
+                {t(s.labelKey, s.labelParams)}
               </Button>
             ))}
           </div>
@@ -136,11 +142,11 @@ export function ScheduleDialog({
               selected={day}
               onSelect={setDay}
               defaultMonth={day ?? new Date(nowWc.year, nowWc.month - 1, nowWc.day)}
-              locale={fr}
+              locale={locale === "fr" ? fr : enUS}
               className="rounded-lg border"
             />
             <div className="w-full space-y-1.5 sm:w-36">
-              <Label htmlFor="composer-time">Heure ({tz})</Label>
+              <Label htmlFor="composer-time">{t("composer.schedule.hour", { tz })}</Label>
               <Input
                 id="composer-time"
                 type="time"
@@ -154,13 +160,17 @@ export function ScheduleDialog({
           {iso !== null && !isLate ? (
             <div className="space-y-0.5 rounded-lg border bg-muted/40 p-2.5 text-sm">
               <p className="font-medium tabular-nums">
-                Publication : {formatDateTime(iso, tz)}{" "}
-                <span className="font-normal text-muted-foreground">(fuseau du client)</span>
+                {t("composer.schedule.publishAt", { date: f.dateTime(iso, tz) })}{" "}
+                <span className="font-normal text-muted-foreground">
+                  {t("composer.schedule.tzClient")}
+                </span>
               </p>
               {CURRENT_USER.timezone !== tz ? (
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  Soit {formatDateTime(iso, CURRENT_USER.timezone)} dans ton fuseau (
-                  {CURRENT_USER.timezone}).
+                  {t("composer.schedule.inYourTz", {
+                    date: f.dateTime(iso, CURRENT_USER.timezone),
+                    tz: CURRENT_USER.timezone,
+                  })}
                 </p>
               ) : null}
             </div>
@@ -168,9 +178,7 @@ export function ScheduleDialog({
 
           {isLate ? (
             <div className="space-y-2.5 rounded-lg border border-warning/30 bg-warning/5 p-3">
-              <p className="text-sm font-medium text-warning">
-                Ce créneau est déjà passé (ou à moins de 15 min).
-              </p>
+              <p className="text-sm font-medium text-warning">{t("composer.schedule.latePast")}</p>
               <RadioGroup
                 value={lateChoice}
                 onValueChange={(v) => setLateChoice(v as LateChoice)}
@@ -181,20 +189,19 @@ export function ScheduleDialog({
                   <span>
                     <span className="inline-flex items-center gap-1 font-medium">
                       <Zap className="size-3.5" />
-                      Publier dès que possible
+                      {t("composer.schedule.asap")}
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      Rattrapage immédiat — au-delà de {GRACE_WINDOW_HOURS} h de retard, un contenu
-                      passe en échec et doit être reprogrammé.
+                      {t("composer.schedule.asapDetail", { hours: GRACE_WINDOW_HOURS })}
                     </span>
                   </span>
                 </Label>
                 <Label className="flex items-start gap-2 font-normal">
                   <RadioGroupItem value="repick" className="mt-0.5" />
                   <span>
-                    <span className="font-medium">Choisir une autre date</span>
+                    <span className="font-medium">{t("composer.schedule.repick")}</span>
                     <span className="block text-xs text-muted-foreground">
-                      Sélectionne un créneau futur (≥ maintenant + 15 min).
+                      {t("composer.schedule.repickDetail")}
                     </span>
                   </span>
                 </Label>
@@ -205,8 +212,7 @@ export function ScheduleDialog({
           {blocked ? (
             <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-xs font-medium text-destructive">
               <CircleAlert className="mt-px size-3.5 shrink-0" />
-              Pré-flight bloquant : {blockingCount} point{blockingCount > 1 ? "s" : ""} à corriger
-              avant de programmer (voir le panneau Pré-flight).
+              {t("composer.schedule.blocked", { count: blockingCount })}
             </p>
           ) : null}
         </div>
@@ -214,15 +220,15 @@ export function ScheduleDialog({
         <DialogFooter>
           {scheduledAt ? (
             <Button variant="destructive" onClick={removeDate} className="sm:mr-auto">
-              Retirer la date
+              {t("composer.schedule.removeDate")}
             </Button>
           ) : null}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button onClick={confirm} disabled={confirmDisabled}>
             <CalendarClock />
-            Programmer
+            {t("composer.schedule.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

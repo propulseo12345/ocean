@@ -5,19 +5,27 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { formatRelative } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import { getNotifications, getUnreadCount } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 
 export function NotificationsButton() {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const items = getNotifications("owner").slice(0, 6)
   const unread = getUnreadCount("owner")
   return (
     <Popover>
       <PopoverTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("nav.item.notifications")}
+            className="relative"
+          >
             <Bell className="size-4" />
             {unread > 0 ? (
               <span className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
@@ -29,9 +37,11 @@ export function NotificationsButton() {
       />
       <PopoverContent align="end" className="w-80 gap-0 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2.5">
-          <span className="text-sm font-medium">Notifications</span>
+          <span className="text-sm font-medium">{t("nav.item.notifications")}</span>
           {unread > 0 ? (
-            <span className="text-xs text-muted-foreground">{unread} non lues</span>
+            <span className="text-xs text-muted-foreground">
+              {t("nav.notifications.unread", { count: unread })}
+            </span>
           ) : null}
         </div>
         <ScrollArea className="max-h-80">
@@ -52,10 +62,14 @@ export function NotificationsButton() {
                     )}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{n.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{n.body}</span>
+                    <span className="block truncate text-sm font-medium">
+                      {pick(n.title, locale)}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {pick(n.body, locale)}
+                    </span>
                     <span className="mt-0.5 block text-[11px] text-muted-foreground/80">
-                      {formatRelative(n.createdAt)}
+                      {f.relative(n.createdAt)}
                     </span>
                   </span>
                 </Link>
@@ -70,7 +84,7 @@ export function NotificationsButton() {
             className="w-full"
             render={<Link href={routes.notifications} />}
           >
-            Voir toutes les notifications
+            {t("nav.notifications.seeAll")}
           </Button>
         </div>
       </PopoverContent>

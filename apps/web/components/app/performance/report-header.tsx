@@ -1,4 +1,5 @@
 import { initials } from "@/lib/format"
+import { useLocale, useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 import { compactNumber } from "./perf-utils"
 
@@ -16,6 +17,8 @@ export function ReportHeader({
   accentColor: string
   igFollowers: number
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   return (
     <header
       className="flex items-center gap-4 rounded-xl border-l-4 bg-card p-5"
@@ -30,7 +33,7 @@ export function ReportHeader({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Bilan mensuel · {periodLabel}
+          {t("report.header.monthlyReview", { period: periodLabel })}
         </p>
         <h1 className="truncate font-heading text-2xl font-semibold leading-tight">
           {client.name}
@@ -39,9 +42,9 @@ export function ReportHeader({
       </div>
       <div className="hidden shrink-0 text-right sm:block">
         <p className="font-heading text-xl font-semibold tabular-nums">
-          {compactNumber(igFollowers)}
+          {compactNumber(igFollowers, locale)}
         </p>
-        <p className="text-xs text-muted-foreground">abonnés Instagram</p>
+        <p className="text-xs text-muted-foreground">{t("report.header.igFollowers")}</p>
       </div>
     </header>
   )

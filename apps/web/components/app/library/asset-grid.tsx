@@ -2,6 +2,7 @@
 
 import { FolderOpen, Inbox } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
+import { useT } from "@/lib/i18n"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import type { SpecIssue } from "@/lib/specs"
 import { AssetCard } from "./asset-card"
@@ -55,17 +56,16 @@ export function AssetGrid({
   filtered: boolean
   ctx: CardContext
 }) {
+  const t = useT()
   const total = deposit.length + others.length
 
   if (total === 0) {
     return (
       <EmptyState
         icon={filtered ? FolderOpen : Inbox}
-        title={filtered ? "Aucun média ne correspond" : "Médiathèque vide"}
+        title={filtered ? t("library.grid.emptyFilteredTitle") : t("library.grid.emptyTitle")}
         description={
-          filtered
-            ? "Modifie la recherche ou les filtres pour retrouver tes médias."
-            : "Ajoute des médias ou envoie un lien de dépôt à ton client pour démarrer."
+          filtered ? t("library.grid.emptyFilteredDesc") : t("library.grid.emptyDesc")
         }
       />
     )
@@ -80,10 +80,9 @@ export function AssetGrid({
       <section className="space-y-2 rounded-xl border border-info/30 bg-info/[0.04] p-3">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <Inbox className="size-4 text-info" aria-hidden />
-          <h3 className="text-sm font-medium">Reçus du client</h3>
+          <h3 className="text-sm font-medium">{t("library.grid.depositSection")}</h3>
           <span className="text-xs text-muted-foreground">
-            {deposit.length} média{deposit.length > 1 ? "s" : ""} déposé
-            {deposit.length > 1 ? "s" : ""} via le lien de dépôt
+            {t("library.grid.depositCount", { count: deposit.length })}
           </span>
         </div>
         <Cards assets={deposit} ctx={ctx} />
@@ -91,7 +90,7 @@ export function AssetGrid({
 
       {others.length > 0 ? (
         <section className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Tous les médias</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t("library.grid.allMedia")}</h3>
           <Cards assets={others} ctx={ctx} />
         </section>
       ) : null}

@@ -15,8 +15,7 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IG_TRUNCATE_AT } from "@/lib/caption"
-import { formatRelative } from "@/lib/format"
-import { platformMeta } from "@/lib/mocks/labels"
+import { pick, type Translator, useFormat, useLabels, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem, Platform, SocialAccount } from "@/lib/mocks/types"
 import { DetailPreviewMedia } from "./detail-preview-media"
 
@@ -36,6 +35,10 @@ export function DetailNativePreview({
   content: ContentItem
   accounts: SocialAccount[]
 }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl = useLabels()
+  const { locale } = useLocale()
   const platforms = previewPlatforms(content)
   const [tab, setTab] = useState<PreviewPlatform | null>(null)
   const [slide, setSlide] = useState(0)
@@ -43,19 +46,21 @@ export function DetailNativePreview({
   if (platforms.length === 0) {
     return (
       <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-        Aperçu natif disponible pour Instagram et Facebook — ce contenu ne cible aucune de ces
-        plateformes.
+        {t("studio.preview.unavailable")}
       </p>
     )
   }
 
   const platform: PreviewPlatform = tab && platforms.includes(tab) ? tab : platforms[0]
   const account = accounts.find((a) => a.platform === platform) ?? null
-  const caption =
-    content.targets.find((t) => t.platform === platform)?.captionOverride ?? content.caption
+  const captionSource =
+    content.targets.find((tg) => tg.platform === platform)?.captionOverride ?? content.caption
+  const caption = pick(captionSource, locale)
   const hashtags = content.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
   const vertical = content.format === "reel" || content.format === "story"
-  const dateLabel = content.scheduledAt ? formatRelative(content.scheduledAt) : "à programmer"
+  const dateLabel = content.scheduledAt
+    ? f.relative(content.scheduledAt)
+    : t("studio.preview.toSchedule")
 
   return (
     <div className="space-y-3">
@@ -65,7 +70,7 @@ export function DetailNativePreview({
             {platforms.map((p) => (
               <TabsTrigger key={p} value={p}>
                 <PlatformIcon platform={p} className="size-3.5" />
-                {platformMeta[p].label}
+                {lbl.platform(p)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -96,6 +101,7 @@ export function DetailNativePreview({
             hashtags={hashtags}
             platform={platform}
             className="px-3 pb-2"
+            t={t}
           />
         ) : null}
 
@@ -120,13 +126,14 @@ export function DetailNativePreview({
                 hashtags={hashtags}
                 platform={platform}
                 handle={account?.username ?? client.handle}
+                t={t}
               />
               {content.firstComment ? (
                 <p className="border-t pt-1.5 text-xs break-words text-muted-foreground">
                   <span className="font-semibold text-foreground/80">
                     {account?.username ?? client.handle}
                   </span>{" "}
-                  {content.firstComment}
+                  {pick(content.firstComment, locale)}
                 </p>
               ) : null}
               <p className="text-[10px] text-muted-foreground uppercase">{dateLabel}</p>
@@ -134,13 +141,13 @@ export function DetailNativePreview({
           ) : (
             <div className="flex items-center justify-around border-t pt-1.5 text-xs font-medium text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <ThumbsUp className="size-3.5" /> J'aime
+                <ThumbsUp className="size-3.5" /> {t("studio.preview.fbLike")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <MessageCircle className="size-3.5" /> Commenter
+                <MessageCircle className="size-3.5" /> {t("studio.preview.fbComment")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Share2 className="size-3.5" /> Partager
+                <Share2 className="size-3.5" /> {t("studio.preview.fbShare")}
               </span>
             </div>
           )}
@@ -148,7 +155,7 @@ export function DetailNativePreview({
       </div>
 
       <p className="text-center text-[11px] text-muted-foreground">
-        Rendu indicatif — la coupure « … plus » est une estimation (~{IG_TRUNCATE_AT} caractères).
+        {t("studio.preview.indicative", { count: IG_TRUNCATE_AT })}
       </p>
     </div>
   )
@@ -168,12 +175,14 @@ function CaptionBlock({
   platform,
   handle,
   className,
+  t,
 }: {
   caption: string
   hashtags: string
   platform: PreviewPlatform
   handle?: string
   className?: string
+  t: Translator
 }) {
   const chars = [...caption]
   const truncates = platform === "instagram" && chars.length > IG_TRUNCATE_AT
@@ -187,9 +196,9 @@ function CaptionBlock({
             {chars.slice(0, IG_TRUNCATE_AT).join("")}
             <span
               className="mx-0.5 rounded bg-warning/15 px-1 font-medium text-warning"
-              title={`Instagram coupe ici dans le feed (~${IG_TRUNCATE_AT} caractères)`}
+              title={t("studio.preview.cutTooltip", { count: IG_TRUNCATE_AT })}
             >
-              … plus
+              {t("studio.preview.morePlus")}
             </span>
             <span className="text-muted-foreground/50">{chars.slice(IG_TRUNCATE_AT).join("")}</span>
           </>

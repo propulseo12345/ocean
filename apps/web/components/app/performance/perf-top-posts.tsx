@@ -4,11 +4,15 @@ import Link from "next/link"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { PostRow } from "./perf-data"
 import { compactNumber, percent } from "./perf-utils"
 
 function PostLine({ post, rank }: { post: PostRow; rank: number }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const title = pick(post.title, locale)
   return (
     <li className="flex items-center gap-3 rounded-lg border bg-card p-2.5">
       <span className="w-4 shrink-0 text-center font-heading text-sm font-semibold text-muted-foreground tabular-nums">
@@ -16,18 +20,24 @@ function PostLine({ post, rank }: { post: PostRow; rank: number }) {
       </span>
       <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
         {post.thumbUrl ? (
-          <Image src={post.thumbUrl} alt={post.title} fill sizes="48px" className="object-cover" />
+          <Image src={post.thumbUrl} alt={title} fill sizes="48px" className="object-cover" />
         ) : null}
         <span className="absolute right-0.5 bottom-0.5 rounded bg-black/55 p-0.5 text-white backdrop-blur-sm">
           <FormatIcon format={post.format} className="size-2.5" />
         </span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{post.title}</p>
+        <p className="truncate text-sm font-medium">{title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
-          <span>{compactNumber(post.stats.reach)} portée</span>
-          <span>{compactNumber(post.engagement)} eng.</span>
-          <span>{percent(post.engagementRate)}</span>
+          <span>
+            {t("performance.posts.reachSuffix", { value: compactNumber(post.stats.reach, locale) })}
+          </span>
+          <span>
+            {t("performance.posts.engagementSuffix", {
+              value: compactNumber(post.engagement, locale),
+            })}
+          </span>
+          <span>{percent(post.engagementRate, locale)}</span>
           <span className="inline-flex items-center gap-1">
             {post.platforms.slice(0, 3).map((p) => (
               <PlatformIcon key={p} platform={p} className="size-3" />
@@ -39,7 +49,7 @@ function PostLine({ post, rank }: { post: PostRow; rank: number }) {
         {post.href ? (
           <Link
             href={post.href}
-            aria-label={`Ouvrir « ${post.title} » dans le studio`}
+            aria-label={t("performance.posts.openInStudio", { title })}
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Pencil className="size-3.5" />
@@ -50,7 +60,7 @@ function PostLine({ post, rank }: { post: PostRow; rank: number }) {
             href={post.permalink}
             target="_blank"
             rel="noreferrer"
-            aria-label={`Voir « ${post.title} » sur Instagram`}
+            aria-label={t("performance.posts.viewOnInstagram", { title })}
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ExternalLink className="size-3.5" />
@@ -99,6 +109,7 @@ const TOP_COUNT = 4
 const FLOP_COUNT = 3
 
 export function PerfTopPosts({ posts }: { posts: PostRow[] }) {
+  const t = useT()
   const byEngagement = [...posts].sort((a, b) => b.engagement - a.engagement)
   const tops = byEngagement.slice(0, TOP_COUNT)
   // Borne le flop pour exclure les tops : aucun post n'apparaît dans les deux
@@ -107,7 +118,7 @@ export function PerfTopPosts({ posts }: { posts: PostRow[] }) {
   return (
     <div className={cn("grid gap-4", flops.length > 0 && "lg:grid-cols-2")}>
       <PostBlock
-        title="Meilleures publications"
+        title={t("performance.posts.topTitle")}
         icon={ArrowUpRight}
         tone="success"
         posts={tops}
@@ -115,7 +126,7 @@ export function PerfTopPosts({ posts }: { posts: PostRow[] }) {
       />
       {flops.length > 0 ? (
         <PostBlock
-          title="À retravailler"
+          title={t("performance.posts.flopTitle")}
           icon={ArrowDownRight}
           tone="danger"
           posts={flops}

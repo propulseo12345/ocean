@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { defaultCreationTime, wallTimeOf } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
@@ -32,6 +33,8 @@ export function RescheduleDialog({
   onClose: () => void
   onConfirm: (item: ContentItem, dayKey: DayKey, time: string) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [dayKey, setDayKey] = useState<DayKey>(todayKey)
   const [time, setTime] = useState("11:00")
 
@@ -48,12 +51,14 @@ export function RescheduleDialog({
     <Dialog open={item !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Replanifier</DialogTitle>
-          <DialogDescription className="truncate">{item?.title}</DialogDescription>
+          <DialogTitle>{t("calendar.reschedule.title")}</DialogTitle>
+          <DialogDescription className="truncate">
+            {item ? pick(item.title, locale) : null}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="reschedule-date">Date (fuseau client)</Label>
+            <Label htmlFor="reschedule-date">{t("calendar.reschedule.date")}</Label>
             <Input
               id="reschedule-date"
               type="date"
@@ -63,7 +68,7 @@ export function RescheduleDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="reschedule-time">Heure</Label>
+            <Label htmlFor="reschedule-time">{t("calendar.reschedule.time")}</Label>
             <Input
               id="reschedule-time"
               type="time"
@@ -73,20 +78,19 @@ export function RescheduleDialog({
           </div>
         </div>
         {invalid ? (
-          <p className="text-xs text-destructive">Impossible de replanifier dans le passé.</p>
+          <p className="text-xs text-destructive">{t("calendar.reschedule.pastError")}</p>
         ) : null}
         {item?.status === "approved" ? (
           <p className="rounded-md border border-warning/40 bg-warning/5 px-2.5 py-2 text-xs text-warning">
-            La validation client reste valable après le changement de date — le client sera
-            simplement notifié.
+            {t("calendar.reschedule.approvedNote")}
           </p>
         ) : null}
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button disabled={invalid || !item} onClick={() => item && onConfirm(item, dayKey, time)}>
-            Replanifier (aperçu)
+            {t("calendar.reschedule.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -109,24 +113,20 @@ export function ShiftDialog({
   onClose: () => void
   onConfirm: (days: number) => void
 }) {
+  const t = useT()
   const [days, setDays] = useState(DEFAULT_SHIFT_DAYS)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Décaler la sélection</DialogTitle>
+          <DialogTitle>{t("calendar.shift.title")}</DialogTitle>
           <DialogDescription>
-            {movableCount} contenu{movableCount > 1 ? "s" : ""} sera
-            {movableCount > 1 ? "ont" : ""} décalé{movableCount > 1 ? "s" : ""}
-            {lockedCount > 0
-              ? ` · ${lockedCount} ignoré${lockedCount > 1 ? "s" : ""} (statut verrouillé)`
-              : ""}
-            .
+            {t("calendar.shift.description", { movable: movableCount, locked: lockedCount })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">
-          <Label htmlFor="shift-days">Nombre de jours (négatif = avancer)</Label>
+          <Label htmlFor="shift-days">{t("calendar.shift.daysLabel")}</Label>
           <Input
             id="shift-days"
             type="number"
@@ -138,10 +138,10 @@ export function ShiftDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button disabled={days === 0 || movableCount === 0} onClick={() => onConfirm(days)}>
-            Décaler de {days} jour{Math.abs(days) > 1 ? "s" : ""} (aperçu)
+            {t("calendar.shift.confirm", { days: Math.abs(days) })}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useT } from "@/lib/i18n"
 
 // Confirmation d'action destructive (pas d'alert-dialog dans le design system :
 // on s'appuie sur Dialog, role="alertdialog" pour l'accessibilité).
@@ -35,6 +36,7 @@ export function ConfirmDialog({
   onConfirm: () => void
   children?: ReactNode
 }) {
+  const t = useT()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent role="alertdialog" className="sm:max-w-md">
@@ -47,7 +49,7 @@ export function ConfirmDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("clientSettings.confirmDialog.cancel")}
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Film } from "lucide-react"
 import Image from "next/image"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { useT } from "@/lib/i18n"
 import type { MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +22,7 @@ export function MediaCarousel({
   /** Calque rendu par-dessus le média courant (ex. pins d'annotation). */
   overlay?: ReactNode
 }) {
+  const t = useT()
   const total = media.length
   const current = media[index]
   if (!current) return null
@@ -36,7 +38,7 @@ export function MediaCarousel({
         <Image
           key={current.id}
           src={current.fullUrl}
-          alt={total > 1 ? `${alt} — visuel ${index + 1}` : alt}
+          alt={total > 1 ? t("portal.carousel.altSlide", { alt, index: index + 1 }) : alt}
           fill
           sizes="(max-width: 768px) 100vw, 640px"
           priority={index === 0}
@@ -48,7 +50,7 @@ export function MediaCarousel({
         {current.type === "video" ? (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
             <Film className="size-3.5" />
-            Vidéo
+            {t("portal.carousel.video")}
           </span>
         ) : null}
 
@@ -69,7 +71,7 @@ export function MediaCarousel({
             <button
               key={m.id}
               type="button"
-              aria-label={`Voir le visuel ${i + 1}`}
+              aria-label={t("portal.carousel.viewSlide", { index: i + 1 })}
               aria-current={i === index}
               onClick={() => onIndexChange(i)}
               className={cn(
@@ -87,11 +89,12 @@ export function MediaCarousel({
 }
 
 function CarouselArrow({ side, onClick }: { side: "left" | "right"; onClick: () => void }) {
+  const t = useT()
   return (
     <Button
       variant="secondary"
       size="icon"
-      aria-label={side === "left" ? "Visuel précédent" : "Visuel suivant"}
+      aria-label={side === "left" ? t("portal.carousel.previous") : t("portal.carousel.next")}
       onClick={onClick}
       className={cn(
         "absolute top-1/2 -translate-y-1/2 rounded-full bg-background/80 shadow-sm backdrop-blur-sm hover:bg-background",

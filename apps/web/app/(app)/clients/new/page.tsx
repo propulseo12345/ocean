@@ -3,19 +3,24 @@ import Link from "next/link"
 import { WizardShell } from "@/components/app/onboarding/wizard-shell"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
+import { getT } from "@/lib/i18n/server"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Nouveau client" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.newClientTitle") }
+}
 
-export default function NewClientPage() {
+export default async function NewClientPage() {
+  const t = await getT()
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Nouveau client"
-        description="Créez un espace de travail isolé : identité, comptes, marque et stratégie en quelques étapes."
+        title={t("clients.newClientTitle")}
+        description={t("clients.newClientDescription")}
         actions={
           <Button variant="outline" render={<Link href={routes.clients} />}>
-            Annuler
+            {t("common.cancel")}
           </Button>
         }
       />

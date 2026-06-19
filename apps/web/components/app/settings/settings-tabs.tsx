@@ -2,6 +2,7 @@
 
 import { CalendarDays, Share2, UserRound } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useT } from "@/lib/i18n"
 import type { CalendarAccount, User } from "@/lib/mocks/types"
 import { AccountsTab, type ClientAccountsGroup } from "./accounts-tab"
 import { CalendarsTab } from "./calendars-tab"
@@ -18,20 +19,21 @@ export function SettingsTabs({
   calendars: CalendarAccount[]
   user: User
 }) {
+  const t = useT()
   return (
     <Tabs defaultValue="social" className="gap-4">
       <TabsList className="h-auto flex-wrap">
         <TabsTrigger value="social">
           <Share2 />
-          Comptes sociaux
+          {t("settings.tabs.social")}
         </TabsTrigger>
         <TabsTrigger value="calendars">
           <CalendarDays />
-          Agendas
+          {t("settings.tabs.calendars")}
         </TabsTrigger>
         <TabsTrigger value="profile">
           <UserRound />
-          Profil
+          {t("settings.tabs.profile")}
         </TabsTrigger>
       </TabsList>
 

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { formatTime } from "@/lib/format"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -24,7 +25,11 @@ import type { DayContext } from "./calendar-types"
 // statut, plateformes et menu d'actions rapides.
 
 export function DaySheetRow({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
+  const t = useT()
+  const { locale } = useLocale()
   const waiting = ctx.waitingDays.get(item.id)
+  const title = pick(item.title, locale)
+  const lastError = item.lastError ? pick(item.lastError, locale) : null
   return (
     <li
       className={cn(
@@ -45,46 +50,52 @@ export function DaySheetRow({ item, ctx }: { item: ContentItem; ctx: DayContext 
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{item.title}</p>
+        <p className="truncate text-sm font-medium">{title}</p>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground tabular-nums">
             {item.scheduledAt ? formatTime(item.scheduledAt, ctx.tz) : "—"}
           </span>
           <ContentStatusBadge status={item.status} className="text-[10px]" />
-          <PlatformIcons platforms={item.targets.map((t) => t.platform)} />
+          <PlatformIcons platforms={item.targets.map((tg) => tg.platform)} />
         </div>
-        {item.lastError ? (
-          <p className="mt-1 truncate text-xs text-destructive" title={item.lastError}>
-            {item.lastError}
+        {lastError ? (
+          <p className="mt-1 truncate text-xs text-destructive" title={lastError}>
+            {lastError}
           </p>
         ) : null}
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="ghost" size="icon-sm" aria-label={`Actions — ${item.title}`} />}
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("calendar.daySheetRow.actions", { title })}
+            />
+          }
         >
           <EllipsisVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem render={<Link href={routes.content(ctx.clientId, item.id)} />}>
-            Ouvrir le studio
+            {t("calendar.daySheetRow.openStudio")}
           </DropdownMenuItem>
           {isMovable(item) ? (
             <DropdownMenuItem onClick={() => ctx.callbacks.onReschedule(item)}>
-              Replanifier
+              {t("calendar.daySheetRow.reschedule")}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem onClick={() => ctx.callbacks.onDuplicate(item)}>
-            Dupliquer
+            {t("calendar.daySheetRow.duplicate")}
           </DropdownMenuItem>
           {item.status === "failed" || item.status === "partially_published" ? (
             <DropdownMenuItem onClick={() => ctx.callbacks.onRetry(item)}>
-              Réessayer
+              {t("calendar.daySheetRow.retry")}
             </DropdownMenuItem>
           ) : null}
           {waiting !== undefined ? (
             <DropdownMenuItem onClick={() => ctx.callbacks.onRemind(item)}>
-              Relancer le client
+              {t("calendar.daySheetRow.remindClient")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>

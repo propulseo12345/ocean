@@ -10,6 +10,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { HashtagGroup } from "@/lib/mocks/types"
 
 // Popover « Groupes de hashtags » du client : insertion d'un groupe en un clic
@@ -25,6 +26,8 @@ export function HashtagPopover({
   /** Ex. « la légende » / « le premier commentaire ». */
   destinationLabel: string
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [open, setOpen] = useState(false)
 
   if (groups.length === 0) return null
@@ -33,13 +36,13 @@ export function HashtagPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={<Button variant="outline" size="xs" />}>
         <Hash />
-        Groupes de hashtags
+        {t("composer.hashtags.groups")}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80">
         <PopoverHeader>
-          <PopoverTitle>Groupes du client</PopoverTitle>
+          <PopoverTitle>{t("composer.hashtags.groupsTitle")}</PopoverTitle>
           <p className="text-xs text-muted-foreground">
-            Un clic insère le groupe dans {destinationLabel}.
+            {t("composer.hashtags.insertHint", { destination: destinationLabel })}
           </p>
         </PopoverHeader>
         <ul className="space-y-1">
@@ -54,9 +57,9 @@ export function HashtagPopover({
                 className="w-full rounded-md border border-transparent p-2 text-left transition-colors hover:border-border hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex items-center justify-between gap-2 text-sm font-medium">
-                  {group.name}
+                  {pick(group.name, locale)}
                   <span className="text-xs font-normal text-muted-foreground tabular-nums">
-                    {group.tags.length} tag{group.tags.length > 1 ? "s" : ""}
+                    {t("composer.hashtags.tagCount", { count: group.tags.length })}
                   </span>
                 </span>
                 <span className="mt-0.5 line-clamp-1 block text-xs text-muted-foreground">

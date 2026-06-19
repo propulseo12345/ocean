@@ -1,6 +1,7 @@
 "use client"
 
 import { Info } from "lucide-react"
+import { useT } from "@/lib/i18n"
 import { AccountConnectCard } from "./account-connect-card"
 import type { ClientDraft, DraftSocialAccount } from "./wizard-types"
 
@@ -14,6 +15,7 @@ export function StepAccounts({
   draft: ClientDraft
   patch: (partial: Partial<ClientDraft>) => void
 }) {
+  const t = useT()
   function update(next: DraftSocialAccount) {
     patch({
       accounts: draft.accounts.map((a) => (a.platform === next.platform ? next : a)),
@@ -27,11 +29,7 @@ export function StepAccounts({
     <div className="space-y-4">
       <p className="flex items-start gap-2 rounded-lg border border-info/30 bg-info/5 p-3 text-xs text-info">
         <Info className="mt-0.5 size-4 shrink-0" />
-        <span>
-          La connexion réelle se fait via l'autorisation officielle de chaque plateforme. Ici, en
-          aperçu, on simule la liaison. Vous pourrez tout connecter (ou reconnecter) plus tard
-          depuis les réglages — aucun compte n'est obligatoire pour créer le client.
-        </span>
+        <span>{t("onboarding.accounts.notice")}</span>
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -42,11 +40,10 @@ export function StepAccounts({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="tabular-nums">
-          {connectedCount} compte{connectedCount > 1 ? "s" : ""} connecté
-          {connectedCount > 1 ? "s" : ""} (aperçu)
+          {t("onboarding.accounts.connectedCount", { count: connectedCount })}
         </span>
         {!igConnected ? (
-          <span className="text-warning">Instagram est recommandé pour la grille de feed.</span>
+          <span className="text-warning">{t("onboarding.accounts.igRecommended")}</span>
         ) : null}
       </div>
     </div>

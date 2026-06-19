@@ -5,15 +5,17 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 export function ReviewActions({ contentTitle }: { contentTitle: string }) {
+  const t = useT()
   const [mode, setMode] = useState<"idle" | "changes">("idle")
   const [message, setMessage] = useState("")
 
   const recorded = (label: string) => {
-    toast.success("Décision enregistrée", {
-      description: `${label} — « ${contentTitle} » (action simulée, preview).`,
+    toast.success(t("portal.review.decisionRecorded"), {
+      description: t("portal.review.decisionDetail", { label, title: contentTitle }),
     })
     setMode("idle")
     setMessage("")
@@ -25,10 +27,10 @@ export function ReviewActions({ contentTitle }: { contentTitle: string }) {
         <Button
           size="lg"
           className="bg-success text-white hover:bg-success/90"
-          onClick={() => recorded("Contenu approuvé")}
+          onClick={() => recorded(t("portal.review.approved"))}
         >
           <Check />
-          Approuver
+          {t("portal.review.approve")}
         </Button>
         <Button
           size="lg"
@@ -36,7 +38,7 @@ export function ReviewActions({ contentTitle }: { contentTitle: string }) {
           onClick={() => setMode(mode === "changes" ? "idle" : "changes")}
         >
           <MessageSquarePlus />
-          Demander des modifications
+          {t("portal.review.requestChanges")}
         </Button>
       </div>
 
@@ -51,29 +53,27 @@ export function ReviewActions({ contentTitle }: { contentTitle: string }) {
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Expliquez ce qui doit être ajusté (texte, visuel, date…)"
+              placeholder={t("portal.review.changesPlaceholder")}
               rows={3}
-              aria-label="Message de demande de modifications"
+              aria-label={t("portal.review.changesAriaLabel")}
             />
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setMode("idle")}>
-                Annuler
+                {t("common.cancel")}
               </Button>
               <Button
-                onClick={() => recorded("Modifications demandées")}
+                onClick={() => recorded(t("portal.review.changesRequested"))}
                 disabled={message.trim().length === 0}
               >
                 <Send />
-                Envoyer la demande
+                {t("portal.review.sendRequest")}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Votre décision est enregistrée et votre agence en est informée immédiatement.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("portal.review.footnote")}</p>
     </div>
   )
 }

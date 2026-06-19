@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 import { BrandColorPalette } from "./brand-color-palette"
 import { SaveBar, SectionCard } from "./section-card"
@@ -29,26 +30,32 @@ const TIMEZONES = [
 ]
 
 export function SectionProfile({ client }: { client: Client }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const initialCategory = pick(client.category, locale)
+  const initialBio = pick(client.bio, locale)
+  const initialNotes = client.notes ? pick(client.notes, locale) : ""
+
   const [name, setName] = useState(client.name)
   const [handle, setHandle] = useState(client.handle)
-  const [category, setCategory] = useState(client.category)
-  const [bio, setBio] = useState(client.bio)
+  const [category, setCategory] = useState(initialCategory)
+  const [bio, setBio] = useState(initialBio)
   const [timezone, setTimezone] = useState(client.timezone)
   const [brandColor, setBrandColor] = useState(client.brandColor)
-  const [notes, setNotes] = useState(client.notes ?? "")
+  const [notes, setNotes] = useState(initialNotes)
 
   const dirty =
     name !== client.name ||
     handle !== client.handle ||
-    category !== client.category ||
-    bio !== client.bio ||
+    category !== initialCategory ||
+    bio !== initialBio ||
     timezone !== client.timezone ||
     brandColor !== client.brandColor ||
-    notes !== (client.notes ?? "")
+    notes !== initialNotes
 
   function save() {
-    toast.success("Profil enregistré (aperçu)", {
-      description: "Aucune donnée n'est réellement modifiée pendant la preview.",
+    toast.success(t("clientSettings.profile.savedToast"), {
+      description: t("clientSettings.profile.savedToastDescription"),
     })
   }
 
@@ -57,36 +64,40 @@ export function SectionProfile({ client }: { client: Client }) {
   return (
     <SectionCard
       icon={UserRound}
-      title="Profil du client"
-      description="Identité affichée dans l'app, l'aperçu de profil et le portail de validation."
+      title={t("clientSettings.profile.title")}
+      description={t("clientSettings.profile.description")}
     >
       <div className="flex items-center gap-3">
         <ClientAvatar client={preview} size={48} className="rounded-xl" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{name || "Sans nom"}</p>
-          <p className="truncate text-xs text-muted-foreground">@{handle || "handle"}</p>
+          <p className="truncate text-sm font-medium">
+            {name || t("clientSettings.profile.noName")}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            @{handle || t("clientSettings.profile.handleFallback")}
+          </p>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="cl-name" label="Nom">
+        <Field id="cl-name" label={t("clientSettings.profile.nameLabel")}>
           <Input id="cl-name" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field id="cl-handle" label="Identifiant (@handle)">
+        <Field id="cl-handle" label={t("clientSettings.profile.handleLabel")}>
           <Input id="cl-handle" value={handle} onChange={(e) => setHandle(e.target.value)} />
         </Field>
-        <Field id="cl-category" label="Catégorie">
+        <Field id="cl-category" label={t("clientSettings.profile.categoryLabel")}>
           <Input
             id="cl-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="Ex. : Café · Torréfaction artisanale"
+            placeholder={t("clientSettings.profile.categoryPlaceholder")}
           />
         </Field>
         <Field
           id="cl-tz"
-          label="Fuseau horaire"
-          hint="Utilisé pour dater les publications du client."
+          label={t("clientSettings.profile.timezoneLabel")}
+          hint={t("clientSettings.profile.timezoneHint")}
         >
           <Select value={timezone} onValueChange={(v) => setTimezone(String(v))}>
             <SelectTrigger id="cl-tz" className="w-full">
@@ -103,26 +114,26 @@ export function SectionProfile({ client }: { client: Client }) {
         </Field>
       </div>
 
-      <Field id="cl-bio" label="Bio">
+      <Field id="cl-bio" label={t("clientSettings.profile.bioLabel")}>
         <Textarea id="cl-bio" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} />
       </Field>
 
       <div className="space-y-2">
-        <Label>Couleur de marque</Label>
+        <Label>{t("clientSettings.profile.brandColorLabel")}</Label>
         <BrandColorPalette value={brandColor} onChange={setBrandColor} />
       </div>
 
       <Field
         id="cl-notes"
-        label="Notes internes"
-        hint="Visible uniquement par toi (forfait, délais, préférences) — jamais partagé au client."
+        label={t("clientSettings.profile.notesLabel")}
+        hint={t("clientSettings.profile.notesHint")}
       >
         <Textarea
           id="cl-notes"
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Ex. : Forfait 12 posts/mois. Prévoir 48 h de validation."
+          placeholder={t("clientSettings.profile.notesPlaceholder")}
         />
       </Field>
 

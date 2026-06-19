@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { INTL_LOCALE, pick, useLocale, useT } from "@/lib/i18n"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel } from "@/lib/specs"
 import { cn } from "@/lib/utils"
@@ -36,6 +37,9 @@ export function MediaPickerDialog({
   remainingSlots: number
   onAdd: (selected: LibraryAsset[]) => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const nf = new Intl.NumberFormat(INTL_LOCALE[locale])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const max = multiple ? remainingSlots : 1
 
@@ -67,11 +71,11 @@ export function MediaPickerDialog({
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Médiathèque du client</DialogTitle>
+          <DialogTitle>{t("composer.picker.title")}</DialogTitle>
           <DialogDescription>
             {multiple
-              ? `Sélectionne jusqu'à ${max} visuel${max > 1 ? "s" : ""} — l'upload réel arrive au Lot 1.`
-              : "Sélectionne un visuel — l'upload réel arrive au Lot 1."}
+              ? t("composer.picker.descMultiple", { max })
+              : t("composer.picker.descSingle")}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,7 +100,9 @@ export function MediaPickerDialog({
                   <span className="relative block aspect-square bg-muted">
                     <Image
                       src={asset.thumbUrl}
-                      alt={asset.altText ?? "Média de la médiathèque"}
+                      alt={
+                        asset.altText ? pick(asset.altText, locale) : t("composer.picker.assetAlt")
+                      }
                       fill
                       sizes="(max-width: 640px) 33vw, 160px"
                       className="object-cover"
@@ -115,7 +121,7 @@ export function MediaPickerDialog({
                           : "bg-success/90 text-white"
                       )}
                     >
-                      {used ? "Utilisé" : "Inédit"}
+                      {used ? t("composer.picker.used") : t("composer.picker.unused")}
                     </Badge>
                     {selected ? (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/30">
@@ -128,7 +134,7 @@ export function MediaPickerDialog({
                   <span className="block truncate px-1 py-1 text-[11px] text-muted-foreground tabular-nums">
                     {ratioLabel(asset.width, asset.height)}
                     {asset.fileSizeMb !== undefined
-                      ? ` · ${asset.fileSizeMb.toLocaleString("fr-FR")} Mo`
+                      ? ` · ${t("composer.media.sizeMb", { size: nf.format(asset.fileSizeMb) })}`
                       : ""}
                   </span>
                 </button>
@@ -139,10 +145,12 @@ export function MediaPickerDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button onClick={confirm} disabled={selectedIds.length === 0}>
-            Ajouter{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+            {selectedIds.length > 0
+              ? t("composer.picker.addCount", { count: selectedIds.length })
+              : t("composer.picker.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

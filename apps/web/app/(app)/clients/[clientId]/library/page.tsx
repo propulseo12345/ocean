@@ -2,10 +2,14 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import type { ContentRefMap } from "@/components/app/library/library-types"
 import { LibraryWorkspace } from "@/components/app/library/library-workspace"
+import { getT } from "@/lib/i18n/server"
 import { getClient, getContentItems, getLibraryAssets } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Médiathèque" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaLibrary") }
+}
 
 // Médiathèque par client (audit §4, P0) : la banque de médias dans laquelle
 // le composer pioche déjà — usages réels calculés depuis les mocks.
@@ -22,6 +26,7 @@ export default async function ClientLibraryPage({
   const assets = getLibraryAssets(clientId)
 
   // Références des contenus utilisant au moins un asset → liens vers le studio.
+  // title reste L<string> : la médiathèque le résout à l'affichage via pick().
   const referenced = new Set(assets.flatMap((a) => a.usedInContentIds))
   const contentRefs: ContentRefMap = Object.fromEntries(
     getContentItems(clientId)

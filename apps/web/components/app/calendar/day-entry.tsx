@@ -4,6 +4,7 @@ import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { StatusDot } from "@/components/shared/status-dot"
 import { formatTime } from "@/lib/format"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { manualKindOf } from "./calendar-insights"
@@ -15,8 +16,13 @@ import { EntryShell } from "./entry-shell"
 // vignette, titre, marqueurs et plateformes. Drag + aperçu rapide via le shell.
 
 export function DayEntry({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
+  const t = useT()
+  const { locale } = useLocale()
   const time = item.scheduledAt ? formatTime(item.scheduledAt, ctx.tz) : ""
-  const tooltip = item.lastError ?? `${time} · ${item.title}`
+  const title = pick(item.title, locale)
+  const tooltip = item.lastError
+    ? pick(item.lastError, locale)
+    : t("calendar.dayEntry.tooltip", { time, title })
   const hasPillar = Boolean(item.pillarId && ctx.pillarById.get(item.pillarId))
 
   return (
@@ -52,7 +58,7 @@ export function DayEntry({ item, ctx }: { item: ContentItem; ctx: DayContext }) 
             item.status === "canceled" && "line-through"
           )}
         >
-          {item.title}
+          {title}
         </span>
         <EntryMarkers item={item} ctx={ctx} />
         <PlatformDots platforms={item.targets.map((t) => t.platform)} />

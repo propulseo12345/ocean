@@ -1,6 +1,7 @@
 "use client"
 
 import { Check } from "lucide-react"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { WizardStepId } from "./wizard-types"
 
@@ -26,12 +27,13 @@ export function WizardStepper({
   forwardLocked?: boolean
   onJump: (index: number) => void
 }) {
+  const t = useT()
   // High-water mark, mais plafonné à l'étape courante quand l'avancée est
   // verrouillée — la portée se recalcule alors depuis la validité, sans rester
   // figée sur un maximum jamais redescendu.
   const reachableMax = forwardLocked ? currentIndex : maxReachedIndex
   return (
-    <nav aria-label="Étapes de création" className="w-full">
+    <nav aria-label={t("onboarding.stepper.navLabel")} className="w-full">
       <ol className="flex items-center">
         {steps.map((step, i) => {
           const done = i < currentIndex

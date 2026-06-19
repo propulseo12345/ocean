@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import { loc } from "@/lib/i18n"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type { ClientEvent } from "@/lib/mocks/types"
 import {
@@ -87,7 +88,8 @@ export function useCalendarState(data: CalendarData) {
           id: `local_${prev.length}_${dayKey}`,
           clientId: data.client.id,
           date: `${dayKey}T12:00:00.000Z`,
-          title,
+          // Note saisie par l'utilisateur : un seul texte, stocké pour les 2 locales.
+          title: loc(title, title),
           kind,
         },
       ])

@@ -22,8 +22,15 @@ import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { formatDateTime } from "@/lib/format"
-import { platformMeta, targetStatusMeta } from "@/lib/mocks/labels"
+import {
+  INTL_LOCALE,
+  type Labels,
+  type Translator,
+  useFormat,
+  useLabels,
+  useLocale,
+  useT,
+} from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { GridTileData } from "./grid-types"
 import { isSortableTile } from "./grid-types"
@@ -41,23 +48,24 @@ export interface QuickViewCtx {
   onRecycle: (tile: GridTileData) => void
 }
 
-function copyCaption(caption: string) {
+function copyCaption(caption: string, t: Translator) {
   navigator.clipboard
     .writeText(caption)
-    .then(() => toast.success("Légende copiée dans le presse-papiers"))
-    .catch(() => toast.error("Impossible de copier la légende"))
+    .then(() => toast.success(t("grid.quickView.captionCopied")))
+    .catch(() => toast.error(t("grid.quickView.captionCopyError")))
 }
 
-const nf = new Intl.NumberFormat("fr-FR")
-
 function MetricsRow({ tile }: { tile: GridTileData }) {
+  const t = useT()
+  const { locale } = useLocale()
   if (!tile.metrics) return null
   const m = tile.metrics
+  const nf = new Intl.NumberFormat(INTL_LOCALE[locale])
   const items: { icon: typeof Heart; label: string; value: number }[] = [
-    { icon: Heart, label: "J'aime", value: m.likes },
-    { icon: MessageCircle, label: "Commentaires", value: m.comments },
-    { icon: Eye, label: "Portée", value: m.reach },
-    { icon: Bookmark, label: "Enregistrements", value: m.saves },
+    { icon: Heart, label: t("grid.quickView.likes"), value: m.likes },
+    { icon: MessageCircle, label: t("grid.quickView.comments"), value: m.comments },
+    { icon: Eye, label: t("grid.quickView.reach"), value: m.reach },
+    { icon: Bookmark, label: t("grid.quickView.saves"), value: m.saves },
   ]
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -67,12 +75,15 @@ function MetricsRow({ tile }: { tile: GridTileData }) {
           {nf.format(value)}
         </span>
       ))}
-      {tile.isTopPost ? <Badge className="text-[10px]">Top du mois</Badge> : null}
+      {tile.isTopPost ? <Badge className="text-[10px]">{t("grid.quickView.topPost")}</Badge> : null}
     </div>
   )
 }
 
 export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickViewCtx }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl: Labels = useLabels()
   const pillar = tile.pillarId ? ctx.pillars[tile.pillarId] : undefined
   const isReel = tile.format === "reel" && !tile.ghost
   const locked = tile.group !== "scheduled"
@@ -88,7 +99,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
       {tile.dateIso ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarClock className="size-3.5 shrink-0" />
-          {formatDateTime(tile.dateIso, tile.tz)} · fuseau client
+          {f.dateTime(tile.dateIso, tile.tz)} · {t("grid.quickView.timezoneClient")}
         </p>
       ) : null}
 
@@ -97,14 +108,14 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
           {tile.platforms.map((p) => (
             <li key={p.platform} className="flex items-center gap-1.5 text-xs">
               <PlatformIcon platform={p.platform} className="size-3.5" />
-              <span>{platformMeta[p.platform].label}</span>
+              <span>{lbl.platform(p.platform)}</span>
               <span
                 className={cn(
                   "ml-auto text-muted-foreground",
                   p.status === "failed" && "font-medium text-destructive"
                 )}
               >
-                {targetStatusMeta[p.status].label}
+                {lbl.targetStatus(p.status)}
               </span>
             </li>
           ))}
@@ -123,7 +134,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
 
       {tile.lastError ? <p className="text-xs text-destructive">{tile.lastError}</p> : null}
       {tile.approvalStale ? (
-        <p className="text-xs text-warning">Validation périmée — à refaire valider.</p>
+        <p className="text-xs text-warning">{t("grid.quickView.approvalStale")}</p>
       ) : null}
 
       <MetricsRow tile={tile} />
@@ -131,7 +142,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
       <div className="space-y-1 border-t pt-2">
         {tile.href ? (
           <Button variant="ghost" size="sm" className={action} render={<Link href={tile.href} />}>
-            <PenSquare /> Ouvrir dans le studio
+            <PenSquare /> {t("grid.quickView.openInStudio")}
           </Button>
         ) : null}
         {tile.permalink ? (
@@ -141,7 +152,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
             className={action}
             render={<a href={tile.permalink} target="_blank" rel="noopener noreferrer" />}
           >
-            <SquareArrowOutUpRight /> Voir sur Instagram
+            <SquareArrowOutUpRight /> {t("grid.quickView.viewOnInstagram")}
           </Button>
         ) : null}
         {tile.caption ? (
@@ -149,9 +160,9 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
             variant="ghost"
             size="sm"
             className={action}
-            onClick={() => copyCaption(tile.caption ?? "")}
+            onClick={() => copyCaption(tile.caption ?? "", t)}
           >
-            <Copy /> Copier la légende
+            <Copy /> {t("grid.quickView.copyCaption")}
           </Button>
         ) : null}
         {tile.status === "failed" ? (
@@ -161,7 +172,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
             className={cn(action, "text-destructive")}
             onClick={() => ctx.onRetry(tile)}
           >
-            <RotateCcw /> Reprogrammer
+            <RotateCcw /> {t("grid.quickView.reschedule")}
           </Button>
         ) : null}
         {isSortableTile(tile) && tile.dateIso && !tile.ghost ? (
@@ -171,7 +182,7 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
             className={action}
             onClick={() => ctx.onInsertSlot(tile)}
           >
-            <CalendarPlus /> Insérer un créneau avant
+            <CalendarPlus /> {t("grid.quickView.insertSlot")}
           </Button>
         ) : null}
         {isReel && tile.media ? (
@@ -181,25 +192,25 @@ export function QuickViewBody({ tile, ctx }: { tile: GridTileData; ctx: QuickVie
             className={action}
             onClick={() => ctx.onCompareCover(tile)}
           >
-            <ImageIcon /> Tester la cover
+            <ImageIcon /> {t("grid.quickView.testCover")}
           </Button>
         ) : null}
         {locked && tile.metrics ? (
           <Button variant="ghost" size="sm" className={action} onClick={() => ctx.onRecycle(tile)}>
-            <Recycle /> Recycler ce contenu
+            <Recycle /> {t("grid.quickView.recycle")}
           </Button>
         ) : null}
         {locked && !tile.ghost ? (
           <Button variant="ghost" size="sm" className={action} onClick={() => ctx.onHide(tile)}>
-            <EyeOff /> Masquer de l'aperçu
+            <EyeOff /> {t("grid.quickView.hide")}
           </Button>
         ) : null}
         {isReel && tile.group !== "imported" ? (
           <div className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm">
-            <span>Afficher dans la grille</span>
+            <span>{t("grid.quickView.showInGrid")}</span>
             <Switch
               size="sm"
-              aria-label="Afficher dans la grille"
+              aria-label={t("grid.quickView.showInGrid")}
               checked={!ctx.isExcluded(tile)}
               onCheckedChange={() => ctx.onToggleExcluded(tile)}
             />

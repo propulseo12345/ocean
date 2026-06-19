@@ -14,6 +14,8 @@ import { DetailVersions } from "@/components/app/studio/detail-versions"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { pick } from "@/lib/i18n"
+import { getLocale, getT } from "@/lib/i18n/server"
 import {
   getActivityEntries,
   getApprovals,
@@ -30,7 +32,10 @@ import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
 import type { ContentItem, ContentStatus, ContentTarget } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
-export const metadata: Metadata = { title: "Contenu" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaContentDetail") }
+}
 
 const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
 
@@ -52,6 +57,11 @@ export default async function ContentDetailPage({
   const client = getClient(clientId)
   const content = getContentItem(contentId)
   if (!client || !content || content.clientId !== clientId) notFound()
+
+  const t = await getT()
+  const locale = await getLocale()
+  const title = pick(content.title, locale)
+  const caption = pick(content.caption, locale)
 
   const comments = getComments(contentId)
   const approvals = getApprovals(contentId)
@@ -78,13 +88,13 @@ export default async function ContentDetailPage({
         <div className="space-y-5">
           <Tabs defaultValue="media">
             <TabsList>
-              <TabsTrigger value="media">Média</TabsTrigger>
-              <TabsTrigger value="preview">Aperçu natif</TabsTrigger>
+              <TabsTrigger value="media">{t("clients.tabMedia")}</TabsTrigger>
+              <TabsTrigger value="preview">{t("clients.tabNativePreview")}</TabsTrigger>
             </TabsList>
             <TabsContent value="media">
               <ContentDetailMedia
                 media={content.media}
-                title={content.title}
+                title={title}
                 comments={comments}
                 format={content.format}
                 coverUrl={content.coverUrl}
@@ -97,13 +107,13 @@ export default async function ContentDetailPage({
 
           <div className="space-y-4">
             {content.newsletterSubject ? (
-              <Field icon={Mail} label="Objet de la newsletter">
-                <p className="text-sm font-medium">{content.newsletterSubject}</p>
+              <Field icon={Mail} label={t("clients.fieldNewsletterSubject")}>
+                <p className="text-sm font-medium">{pick(content.newsletterSubject, locale)}</p>
               </Field>
             ) : null}
 
-            <Field icon={FileText} label="Légende">
-              <p className="text-sm whitespace-pre-line text-foreground/90">{content.caption}</p>
+            <Field icon={FileText} label={t("clients.fieldCaption")}>
+              <p className="text-sm whitespace-pre-line text-foreground/90">{caption}</p>
             </Field>
 
             {content.hashtags.length > 0 ? (
@@ -117,8 +127,10 @@ export default async function ContentDetailPage({
             ) : null}
 
             {content.firstComment ? (
-              <Field icon={MessageSquareText} label="Premier commentaire Instagram">
-                <p className="text-sm text-muted-foreground">{content.firstComment}</p>
+              <Field icon={MessageSquareText} label={t("clients.fieldFirstComment")}>
+                <p className="text-sm text-muted-foreground">
+                  {pick(content.firstComment, locale)}
+                </p>
               </Field>
             ) : null}
           </div>
@@ -127,14 +139,14 @@ export default async function ContentDetailPage({
         <aside className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Actions</CardTitle>
+              <CardTitle>{t("clients.cardActions")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ContentActions
                 status={content.status}
                 clientId={clientId}
                 contentId={contentId}
-                contentTitle={content.title}
+                contentTitle={title}
                 clients={clients}
               />
             </CardContent>
@@ -142,7 +154,7 @@ export default async function ContentDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Validation client</CardTitle>
+              <CardTitle>{t("clients.cardClientReview")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ContentReviewPanel
@@ -158,7 +170,7 @@ export default async function ContentDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Cibles ({content.targets.length})</CardTitle>
+              <CardTitle>{t("clients.cardTargets", { count: content.targets.length })}</CardTitle>
             </CardHeader>
             <CardContent>
               <ContentTargets
@@ -166,7 +178,7 @@ export default async function ContentDetailPage({
                 client={client}
                 accounts={accounts}
                 quotas={quotas}
-                contentError={content.lastError}
+                contentError={content.lastError ? pick(content.lastError, locale) : undefined}
                 editHref={routes.contentEdit(clientId, contentId)}
               />
             </CardContent>
@@ -175,7 +187,7 @@ export default async function ContentDetailPage({
           {manualItems.length > 0 ? (
             <DetailManualCenter
               items={manualItems}
-              caption={content.caption}
+              caption={caption}
               hashtags={content.hashtags}
               scheduledAt={content.scheduledAt}
               timezone={client.timezone}
@@ -184,7 +196,7 @@ export default async function ContentDetailPage({
 
           <DetailThread
             comments={comments}
-            internalNotes={content.internalNotes}
+            internalNotes={content.internalNotes ? pick(content.internalNotes, locale) : undefined}
             reviewerName={reviewer?.name}
           />
 

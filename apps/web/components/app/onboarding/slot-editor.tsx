@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
 import type { Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { CONNECTABLE_PLATFORMS, type DraftSlot, WEEKDAYS } from "./wizard-types"
@@ -29,8 +29,6 @@ function nextId() {
   return `dslot_${counter}`
 }
 
-const weekdayLabel = (weekday: number) => WEEKDAYS.find((d) => d.value === weekday)?.label ?? "Jour"
-
 export function SlotEditor({
   slots,
   onChange,
@@ -38,6 +36,12 @@ export function SlotEditor({
   slots: DraftSlot[]
   onChange: (slots: DraftSlot[]) => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
+  const weekdayLabel = (weekday: number) => {
+    const key = WEEKDAYS.find((d) => d.value === weekday)?.labelKey
+    return key ? t(key) : t("onboarding.slot.dayFallback")
+  }
   const [weekday, setWeekday] = useState("2")
   const [time, setTime] = useState("11:30")
   const [platforms, setPlatforms] = useState<Platform[]>(["instagram"])
@@ -73,7 +77,7 @@ export function SlotEditor({
                 <button
                   type="button"
                   onClick={() => onChange(slots.filter((x) => x.id !== slot.id))}
-                  aria-label="Retirer ce créneau"
+                  aria-label={t("onboarding.slot.removeAria")}
                   className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                 >
                   <X className="size-3.5" />
@@ -86,7 +90,7 @@ export function SlotEditor({
       <div className="space-y-2.5 rounded-lg border border-dashed p-3">
         <div className="grid gap-2.5 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="slot-weekday">Jour</Label>
+            <Label htmlFor="slot-weekday">{t("onboarding.slot.dayLabel")}</Label>
             <Select value={weekday} onValueChange={(v) => setWeekday(String(v))}>
               <SelectTrigger id="slot-weekday" className="w-full">
                 <SelectValue />
@@ -94,14 +98,14 @@ export function SlotEditor({
               <SelectContent>
                 {WEEKDAYS.map((d) => (
                   <SelectItem key={d.value} value={String(d.value)}>
-                    {d.label}
+                    {t(d.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="slot-time">Heure (locale client)</Label>
+            <Label htmlFor="slot-time">{t("onboarding.slot.timeLabel")}</Label>
             <Input
               id="slot-time"
               type="time"
@@ -113,7 +117,7 @@ export function SlotEditor({
         </div>
 
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium">Plateformes</legend>
+          <legend className="text-sm font-medium">{t("onboarding.slot.platformsLegend")}</legend>
           <div className="flex flex-wrap gap-1.5">
             {CONNECTABLE_PLATFORMS.map((p) => {
               const active = platforms.includes(p)
@@ -131,7 +135,7 @@ export function SlotEditor({
                   )}
                 >
                   <PlatformIcon platform={p} className="size-3.5" />
-                  {platformMeta[p].label}
+                  {lbl.platform(p)}
                 </button>
               )
             })}
@@ -146,7 +150,7 @@ export function SlotEditor({
           disabled={platforms.length === 0}
         >
           <CalendarPlus />
-          Ajouter le créneau
+          {t("onboarding.slot.addSlot")}
         </Button>
       </div>
     </div>

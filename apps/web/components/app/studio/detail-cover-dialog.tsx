@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { type Translator, useT } from "@/lib/i18n"
 import type { MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -29,13 +30,13 @@ interface CoverOption {
 
 const FRAME_POSITIONS = ["object-top", "object-center", "object-bottom", "object-left"]
 
-function buildOptions(video: MediaAsset, coverUrl?: string): CoverOption[] {
+function buildOptions(t: Translator, video: MediaAsset, coverUrl?: string): CoverOption[] {
   const duration = video.durationSec ?? 15
   const options: CoverOption[] = []
   if (coverUrl) {
     options.push({
       id: "dedicated",
-      label: "Image dédiée actuelle",
+      label: t("studio.cover.dedicatedCurrent"),
       url: coverUrl,
       objectClass: "object-cover",
     })
@@ -44,7 +45,7 @@ function buildOptions(video: MediaAsset, coverUrl?: string): CoverOption[] {
     const second = Math.round((duration * position) / FRAME_POSITIONS.length)
     options.push({
       id: `frame-${objectClass}`,
-      label: `Frame à ${second} s`,
+      label: t("studio.cover.frameAt", { sec: second }),
       url: video.thumbUrl,
       objectClass,
     })
@@ -65,15 +66,16 @@ export function DetailCoverDialog({
   coverUrl?: string
   onSelect: (label: string) => void
 }) {
-  const options = buildOptions(video, coverUrl)
+  const t = useT()
+  const options = buildOptions(t, video, coverUrl)
   const [selectedId, setSelectedId] = useState(options[0]?.id ?? "")
   const selected = options.find((o) => o.id === selectedId) ?? options[0]
 
   function confirm() {
     if (!selected) return
     onSelect(selected.label)
-    toast.success("Couverture du Reel mise à jour", {
-      description: "Sélection simulée (aperçu) — la vignette alimentera la carte et la grille.",
+    toast.success(t("studio.cover.updated"), {
+      description: t("studio.cover.updatedDesc"),
     })
     onOpenChange(false)
   }
@@ -82,10 +84,8 @@ export function DetailCoverDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Couverture du Reel</DialogTitle>
-          <DialogDescription>
-            Choisis la frame affichée dans le feed — c'est elle qui compose la grille du profil.
-          </DialogDescription>
+          <DialogTitle>{t("studio.cover.title")}</DialogTitle>
+          <DialogDescription>{t("studio.cover.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -121,10 +121,7 @@ export function DetailCoverDialog({
 
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-          <p>
-            Pour TikTok, la couverture doit être extraite de la vidéo : une image importée ne
-            s'appliquera qu'à Instagram.
-          </p>
+          <p>{t("studio.cover.tiktokWarning")}</p>
         </div>
 
         <Button
@@ -132,20 +129,20 @@ export function DetailCoverDialog({
           size="sm"
           className="w-fit"
           onClick={() =>
-            toast.info("Import d'image simulé (aperçu)", {
-              description: "Aucun fichier n'est envoyé pendant la preview.",
+            toast.info(t("studio.cover.importSimulated"), {
+              description: t("studio.cover.importSimulatedDesc"),
             })
           }
         >
           <Upload />
-          Importer une image dédiée…
+          {t("studio.cover.importDedicated")}
         </Button>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
-          <Button onClick={confirm}>Choisir cette couverture</Button>
+          <Button onClick={confirm}>{t("studio.cover.confirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

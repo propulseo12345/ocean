@@ -3,7 +3,7 @@
 import { ArrowLeft, CalendarClock, CalendarOff, Check, TriangleAlert } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { formatDateTime } from "@/lib/format"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -26,6 +26,8 @@ export function ComposerHeader({
   onSave: () => void
   onOpenSchedule: () => void
 }) {
+  const t = useT()
+  const f = useFormat()
   return (
     <div className="space-y-3">
       <Button
@@ -35,13 +37,13 @@ export function ComposerHeader({
         render={<Link href={routes.clientContent(client.id)} />}
       >
         <ArrowLeft />
-        Retour au studio
+        {t("composer.header.back")}
       </Button>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 space-y-1">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            {mode === "create" ? "Nouveau contenu" : "Modifier le contenu"}
+            {mode === "create" ? t("composer.header.titleCreate") : t("composer.header.titleEdit")}
           </h1>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <span>{client.name}</span>
@@ -49,13 +51,15 @@ export function ComposerHeader({
             {scheduledAt ? (
               <span className="inline-flex items-center gap-1 tabular-nums">
                 <CalendarClock className="size-3.5" />
-                {formatDateTime(scheduledAt, client.timezone)}
-                <span className="text-muted-foreground/70">(fuseau {client.timezone})</span>
+                {f.dateTime(scheduledAt, client.timezone)}
+                <span className="text-muted-foreground/70">
+                  {t("composer.header.tzHint", { tz: client.timezone })}
+                </span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 italic">
                 <CalendarOff className="size-3.5" />
-                Sans date
+                {t("composer.header.noDate")}
               </span>
             )}
           </p>
@@ -64,11 +68,11 @@ export function ComposerHeader({
         <div className="flex shrink-0 items-center gap-2">
           <Button variant="outline" onClick={onOpenSchedule}>
             {blocked ? <TriangleAlert className="text-warning" /> : <CalendarClock />}
-            {scheduledAt ? "Reprogrammer…" : "Programmer…"}
+            {scheduledAt ? t("composer.header.reschedule") : t("composer.header.schedule")}
           </Button>
           <Button onClick={onSave}>
             <Check />
-            Enregistrer
+            {t("composer.header.save")}
           </Button>
         </div>
       </div>

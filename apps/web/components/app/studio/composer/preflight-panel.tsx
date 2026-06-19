@@ -1,5 +1,8 @@
+"use client"
+
 import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { PreflightItem, PreflightSeverity } from "./preflight"
 
@@ -19,13 +22,14 @@ const ICON_CLASS: Record<PreflightSeverity, string> = {
 }
 
 export function PreflightPanel({ items }: { items: PreflightItem[] }) {
+  const t = useT()
   const errors = items.filter((i) => i.severity === "error").length
   const warnings = items.filter((i) => i.severity === "warning").length
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pré-flight de programmation</CardTitle>
+        <CardTitle>{t("composer.preflight.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <ul className="space-y-2.5">
@@ -43,10 +47,10 @@ export function PreflightPanel({ items }: { items: PreflightItem[] }) {
                   >
                     <span className="sr-only">
                       {item.severity === "error"
-                        ? "Bloquant : "
+                        ? t("composer.preflight.srBlocking")
                         : item.severity === "warning"
-                          ? "Avertissement : "
-                          : "OK : "}
+                          ? t("composer.preflight.srWarning")
+                          : t("composer.preflight.srOk")}
                     </span>
                     {item.label}
                   </p>
@@ -70,10 +74,10 @@ export function PreflightPanel({ items }: { items: PreflightItem[] }) {
           )}
         >
           {errors > 0
-            ? `${errors} point${errors > 1 ? "s" : ""} bloquant${errors > 1 ? "s" : ""} — corrige avant de programmer.`
+            ? t("composer.preflight.summaryBlocking", { count: errors })
             : warnings > 0
-              ? `Prêt à programmer, avec ${warnings} avertissement${warnings > 1 ? "s" : ""}.`
-              : "Prêt à programmer."}
+              ? t("composer.preflight.summaryWarnings", { count: warnings })
+              : t("composer.preflight.summaryReady")}
         </p>
       </CardContent>
     </Card>

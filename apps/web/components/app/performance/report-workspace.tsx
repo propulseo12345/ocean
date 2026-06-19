@@ -3,6 +3,8 @@
 import { Quote } from "lucide-react"
 import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
+import { useLocale, useT } from "@/lib/i18n"
+import { compactNumber, signedPercent } from "./perf-utils"
 import { ReportActions } from "./report-actions"
 import type { ReportData } from "./report-data"
 import { ReportHeader } from "./report-header"
@@ -11,17 +13,32 @@ import { ReportKpis } from "./report-kpis"
 import "./report-print.css"
 import { DEFAULT_SECTIONS, type ReportSectionKey } from "./report-sections"
 
-const DEFAULT_NOTE =
-  "Un mois régulier et fidèle à votre ligne éditoriale. On capitalise le mois prochain sur les " +
-  "formats qui ont le mieux résonné auprès de votre communauté, et on garde ce rythme de publication."
-
 export function ReportWorkspace({ data }: { data: ReportData }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [sections, setSections] = useState(DEFAULT_SECTIONS)
-  const [note, setNote] = useState(DEFAULT_NOTE)
+  const [note, setNote] = useState(() => t("report.note.default"))
+  const periodLabel = t("report.periodLabel")
 
   function toggle(key: ReportSectionKey, value: boolean) {
     setSections((s) => ({ ...s, [key]: value }))
   }
+
+  // Synthèse en langage clair, dérivée des valeurs mockées et localisée.
+  const { reach, engagement, count } = data.perf.kpis.current
+  const delta = data.perf.kpis.delta
+  const summaryLines = [
+    t("report.summary.line1", {
+      count,
+      reach: compactNumber(reach, locale),
+      delta: signedPercent(delta.reach, locale),
+    }),
+    t("report.summary.line2", {
+      engagement: compactNumber(engagement, locale),
+      delta: signedPercent(delta.engagement, locale),
+    }),
+    t("report.summary.line3"),
+  ]
 
   return (
     <div className="space-y-4">
@@ -39,16 +56,16 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
         <div data-report-section>
           <ReportHeader
             client={data.client}
-            periodLabel={data.periodLabel}
+            periodLabel={periodLabel}
             accentColor={data.accentColor}
             igFollowers={data.igFollowers}
           />
         </div>
 
         <section data-report-section className="space-y-2">
-          <h2 className="font-heading text-base font-semibold">En un coup d'œil</h2>
+          <h2 className="font-heading text-base font-semibold">{t("report.summary.title")}</h2>
           <div className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
-            {data.summaryLines.map((line) => (
+            {summaryLines.map((line) => (
               <p key={line}>{line}</p>
             ))}
           </div>
@@ -76,14 +93,14 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
           <section data-report-section className="space-y-2">
             <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
               <Quote className="size-4 text-muted-foreground" />
-              Le mot du mois
+              {t("report.note.title")}
             </h2>
             <Textarea
               data-no-print
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              aria-label="Mot de synthèse du community manager"
+              aria-label={t("report.note.ariaLabel")}
               className="resize-none text-sm"
             />
             <blockquote
@@ -100,14 +117,14 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
           className="flex items-center justify-between border-t pt-4 text-xs text-muted-foreground"
         >
           <span>
-            {data.client.name} · {data.periodLabel}
+            {t("report.footer.separator", { name: data.client.name, period: periodLabel })}
           </span>
-          <span>Généré par Ocean</span>
+          <span>{t("report.footer.generatedBy")}</span>
         </footer>
       </article>
 
       <p data-no-print className="text-center text-xs text-muted-foreground">
-        Aperçu fidèle à l'impression — utilisez « Exporter en PDF » pour le livrable client.
+        {t("report.printHint")}
       </p>
     </div>
   )

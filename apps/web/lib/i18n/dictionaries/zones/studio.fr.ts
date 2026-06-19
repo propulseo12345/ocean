@@ -1,4 +1,464 @@
-// Namespace i18n « studio » (FR). Rempli par le lot UI correspondant.
+// Namespace i18n « studio » (FR) — détail contenu, cartes, actions, fil,
+// versions, cibles, aperçu natif, centre de publication manuelle.
 export const studioFr = {
-  studio: {},
+  studio: {
+    // board (poste de pilotage du studio)
+    board: {
+      heading: "Studio de contenu",
+      subtitle: "Pipeline de production · fuseau {tz}",
+      ideaBank: "Banque d'idées",
+      requestReview: "Demander une validation",
+      newContent: "Nouveau contenu",
+      emptyTitle: "Aucun contenu pour ce client",
+      emptyDescription:
+        "Crée un premier contenu : médias, légende, ciblage des plateformes — tout part d'ici.",
+      emptyAction: "Créer un contenu",
+      noMatchTitle: "Aucun contenu ne correspond",
+      noMatchDescription: "Ajuste la recherche ou les filtres pour voir d'autres contenus.",
+      resetFilters: "Réinitialiser les filtres",
+      remindSent: "Relance envoyée pour « {title} » (aperçu)",
+      remindDescReviewer: "{name} recevrait un email Brevo avec le lien direct du portail.",
+      remindDescNoReviewer: "Le reviewer recevrait un email Brevo avec le lien direct du portail.",
+      reviewSent: "Demande de validation envoyée (aperçu)",
+      reviewSentTo: "Demande de validation envoyée à {name} (aperçu)",
+      reviewSentDesc:
+        "{count, plural, one {# contenu en revue} other {# contenus en revue}} · email récapitulatif mocké (Brevo).",
+    },
+    // toolbar (recherche, tri, mode)
+    toolbar: {
+      searchPlaceholder: "Rechercher titre, légende, étiquette…",
+      searchAria: "Rechercher dans les contenus",
+      clearSearch: "Effacer la recherche",
+      modeGroup: "Mode d'affichage",
+      modeList: "Liste",
+      modeKanban: "Kanban",
+      sortAria: "Trier les contenus",
+      resultCount: "{count, plural, one {# contenu} other {# contenus}}",
+      resultCountOf: "{count, plural, one {# contenu} other {# contenus}} sur {total}",
+    },
+    sort: {
+      priority: "À traiter d'abord",
+      scheduled: "Date planifiée",
+      created: "Date de création",
+      status: "Statut",
+    },
+    // filtres
+    filters: {
+      button: "Filtres",
+      title: "Filtrer les contenus",
+      reset: "Réinitialiser",
+      status: "Statut",
+      platform: "Plateforme",
+      format: "Format",
+      pillar: "Pilier éditorial",
+      label: "Étiquette",
+    },
+    // vues enregistrées
+    views: {
+      all: "Tous les contenus",
+      saveCurrent: "Enregistrer la vue actuelle",
+      saveDisabledHint: "Applique d'abord des filtres ou une recherche",
+      nameLabel: "Nom de la vue",
+      namePlaceholder: "Ex. Reels en attente",
+      save: "Enregistrer (aperçu)",
+      saved: "Vue « {name} » enregistrée (aperçu)",
+      savedDesc: "Disponible dans les chips de vues — état local de la preview.",
+    },
+    // kanban
+    kanban: {
+      colIdea: "Idée",
+      colDraft: "Brouillon",
+      colInReview: "En validation",
+      colApproved: "Validé",
+      colScheduled: "Programmé",
+      colPublished: "Publié",
+      columnAria: "Colonne {label}",
+      dropHere: "Déposer ici",
+      noDate: "Sans date",
+      changes: "Retours",
+      failed: "Échec",
+      cannotDropPublished: "Impossible de déposer en « Publié »",
+      cannotDropPublishedDesc:
+        "La publication passe par le moteur Ocean ou le centre de publication manuelle.",
+      markedApproved: "Marqué validé (aperçu)",
+      markedApprovedDesc: "{name} est en publication directe — pas de validation client requise.",
+      reviewRequired: "Validation client requise",
+      reviewRequiredDesc: "{name} est en « {mode} » — passe par « Demander une validation ».",
+      sentToReview: "Envoyé en validation (aperçu)",
+      cannotReview: "Ce contenu ne peut pas partir en revue",
+      cannotReviewDesc: "Seuls les idées, brouillons et contenus validés sont éligibles.",
+      backToDraft: "Repassé en brouillon (aperçu)",
+      backToDraftDesc: "L'approbation client est invalidée.",
+      backToIdea: "Reversé à la banque d'idées (aperçu)",
+      onlyDraftToIdea: "Seul un brouillon peut repartir en idée",
+      cannotSchedule: "Programmation impossible",
+      cannotScheduleDesc: "Corrige d'abord les retours ou repasse le contenu en brouillon.",
+      scheduled: "Programmé (aperçu)",
+      scheduledTomorrow: "Programmé demain 9 h (aperçu)",
+      scheduledTomorrowDesc: "Ajuste le créneau depuis le détail ou le calendrier.",
+    },
+    // étiquettes canoniques proposées par défaut
+    canonical: {
+      launch: "Lancement",
+      promo: "Promo",
+      marronnier: "Marronnier",
+      evergreen: "Evergreen",
+    },
+    // étiquettes
+    labels: {
+      newPlaceholder: "Nouvelle étiquette…",
+      newAria: "Nouvelle étiquette",
+      add: "Ajouter l'étiquette",
+      heading: "Étiquettes",
+      forTitle: "Étiquettes de « {title} »",
+      apply: "Appliquer (aperçu)",
+      updated: "Étiquettes mises à jour (aperçu)",
+      none: "Aucune étiquette.",
+    },
+    // actions de lot
+    batch: {
+      sendReview: "Envoyer en validation",
+      schedule: "Programmer",
+      tag: "Étiqueter",
+      archive: "Archiver",
+      cancel: "Annuler",
+      ignoredSuffix: " · {count, plural, one {# ignoré} other {# ignorés}} (statut incompatible)",
+      noReviewEligible: "Aucun contenu éligible à la validation",
+      noReviewEligibleDesc: "Seuls les brouillons et retours corrigés peuvent partir en revue.",
+      noSchedulable: "Aucun contenu programmable",
+      noSchedulableDesc: "Seuls les idées, brouillons et contenus validés peuvent être programmés.",
+      archived: "{count, plural, one {# contenu archivé} other {# contenus archivés}} (aperçu)",
+      archivedDesc: "Retirés du studio — restaurables depuis la corbeille du client.",
+      nothingToCancel: "Rien à annuler",
+      nothingToCancelDesc: "Les contenus déjà publiés ou en cours de publication sont verrouillés.",
+      canceled:
+        "{count, plural, one {# contenu annulé} other {# contenus annulés}} (aperçu){ignored}",
+      scheduled:
+        "{count, plural, one {# contenu programmé} other {# contenus programmés}} (aperçu){ignored}",
+      tagDialogTitle: "Étiqueter la sélection",
+      tagDialogDesc:
+        "Les étiquettes cochées s'ajoutent aux {count, plural, one {# contenu sélectionné} other {# contenus sélectionnés}}.",
+      tagApply: "Ajouter aux contenus (aperçu)",
+      tagsAdded: "Étiquettes ajoutées (aperçu)",
+    },
+    // demande de validation (dialog)
+    reviewDialog: {
+      title: "Demander une validation",
+      description:
+        "Le lot apparaît dans le portail client ; chaque contenu est approuvé ou commenté individuellement.",
+      neverConnected: "Jamais connecté",
+      seenAt: "Vu {ago}",
+      noReviewer: "Aucun reviewer invité pour ce client — invite un contact depuis les réglages.",
+      readyCount: "Contenus prêts à envoyer ({count}/{total})",
+      noReady: "Aucun brouillon prêt — corrige d'abord les retours ou crée un contenu.",
+      messageLabel: "Message au reviewer (optionnel)",
+      messagePlaceholder:
+        "Ex. Voici les publications de juillet, merci de valider avant vendredi !",
+      brevoNote:
+        "Un email récapitulatif ({count, plural, one {# contenu} other {# contenus}} + lien direct du portail) partirait via Brevo — aucun envoi pendant la preview.",
+      send: "Envoyer la demande ({count})",
+    },
+    // bandeau de suivi
+    reviewBanner: {
+      title: "Demande de validation",
+      counts:
+        "{sent, plural, one {# envoyé} other {# envoyés}} {ago} · {approved, plural, one {# approuvé} other {# approuvés}} · {changes, plural, one {# retour} other {# retours}} · {pending} en attente",
+      neverOpened: "{name} n'a jamais ouvert le portail",
+      opened: "{name} a ouvert le portail {ago}",
+      remindersSent:
+        "{count, plural, one {# relance envoyée} other {# relances envoyées}} (aperçu)",
+      remind: "Relancer (aperçu)",
+      remindSent: "Relance envoyée (aperçu)",
+    },
+    // programmation en série
+    scheduleDialog: {
+      title: "Programmer en série",
+      description:
+        "{count, plural, one {# contenu échelonné} other {# contenus échelonnés}} dans le fuseau du client ({tz}).",
+      gapHourly: "Toutes les heures (même journée)",
+      gapDaily: "Un par jour",
+      gap2Days: "Tous les 2 jours",
+      gapWeekly: "Un par semaine",
+      firstSlot: "Premier créneau",
+      timeLabel: "Heure ({tz})",
+      spacing: "Espacement",
+      rangeFrom: "Du {start}",
+      rangeTo: " au {end}",
+      rangeSuffix: " — les statuts passent en « Programmé » (aperçu).",
+      confirm: "Programmer (aperçu)",
+    },
+    // quotas
+    quotas: {
+      title: "Quotas API · 24 h",
+      tooltip: "Quota plateforme — l'enforcement réel sera côté worker",
+    },
+    // banque d'idées
+    ideaBank: {
+      title: "Banque d'idées",
+      subtitle:
+        "{count, plural, one {# idée en réserve} other {# idées en réserve}} · capture au fil de l'eau, production en batch",
+      back: "Retour au studio",
+      capturePlaceholder: "Noter une idée — ex. Interview du torréfacteur en Reel…",
+      captureAria: "Noter une idée",
+      pillarAria: "Pilier éditorial",
+      noPillar: "Sans pilier",
+      capture: "Capturer",
+      captured: "Idée notée (aperçu)",
+      capturedDesc: "Elle attend le prochain batch — transforme-la en brouillon quand tu veux.",
+      noted: "Notée {ago}",
+      transform: "Transformer en brouillon",
+      emptyTitle: "Aucune idée en réserve",
+      emptyDescription:
+        "Note ici tout ce qui te passe par la tête entre deux rendez-vous : le jour du batch, chaque idée devient un brouillon en un clic — fini le Notion parallèle.",
+    },
+    // carte de contenu (grille)
+    card: {
+      selectAria: "Sélectionner « {title} »",
+      changesToHandle: "Retours à traiter",
+      approvalStale: "Approbation périmée",
+      late: "En retard",
+      remindClient: "Relancer le client",
+      noDate: "Sans date",
+      waitSince: "En attente depuis {days, plural, one {# j} other {# j}}",
+      sentToday: "Envoyé aujourd'hui",
+    },
+    // détail — en-tête
+    detail: {
+      back: "Retour au studio",
+      edit: "Modifier",
+      approvalStale: "Approbation périmée",
+      noDate: "Sans date",
+      timezone: "Fuseau {tz}",
+      approvalStaleBanner:
+        "Le contenu a changé depuis l'approbation du client — la validation porte sur une version antérieure. Renvoie-le en revue avant publication.",
+    },
+    // détail — actions
+    actions: {
+      simulated: "Action simulée (preview)",
+      readOnlyTitle: "Contenu en lecture seule",
+      readOnlyDesc:
+        "La publication a commencé. Duplique le contenu pour repartir d'une nouvelle version.",
+      duplicateContent: "Dupliquer le contenu",
+      editContent: "Modifier le contenu",
+      duplicate: "Dupliquer",
+      cancelSchedule: "Annuler la programmation",
+      abandon: "Abandonner",
+      schedule: "Programmer",
+      sendReview: "Envoyer en revue",
+      resendReview: "Renvoyer en revue",
+      removeFromReview: "Retirer de la revue",
+      editDate: "Modifier la date",
+      rescheduleFailed: "Reprogrammer les échecs",
+      toastScheduled: "Contenu programmé",
+      toastSentReview: "Envoyé en revue",
+      toastNewVersion: "Nouvelle version envoyée en revue",
+      toastReviewRemoved: "Revue retirée",
+      toastDateChanged: "Date modifiée",
+      toastFailedRescheduled: "Cibles en échec reprogrammées",
+      toastScheduleCanceled: "Programmation annulée",
+    },
+    // détail — duplication
+    duplicate: {
+      title: "Dupliquer le contenu",
+      destinationAria: "Client de destination",
+      thisClient: " (ce client)",
+      adaptHashtags: "Adapter les hashtags au client cible",
+      adaptHashtagsDesc: "Remplace les hashtags par les groupes du client de destination (aperçu).",
+      crossClientWarning:
+        "Les médias ne traversent jamais d'un client à l'autre : re-sélectionne les visuels dans la médiathèque de {name}.",
+      confirm: "Dupliquer (aperçu)",
+      done: "Contenu dupliqué vers {name}",
+      doneCross:
+        "Copie en brouillon{adapted} — médias à re-sélectionner dans sa médiathèque (aperçu).",
+      doneCrossAdapted: ", hashtags adaptés au client cible",
+      doneSame: "Copie en brouillon, médias et légende inclus (aperçu).",
+    },
+    // détail — médias / annotations
+    media: {
+      none: "Aucun média",
+      coverDedicated: "Image dédiée",
+      coverFirstFrame: "Première image de la vidéo",
+      reelCover: "Couverture du Reel",
+      choose: "Choisir",
+      prevVisual: "Visuel précédent",
+      nextVisual: "Visuel suivant",
+      pinAria: "Repère {label}",
+      pinnedNote:
+        "{count, plural, one {# remarque épinglée} other {# remarques épinglées}} par le client — clique un repère pour la lire.",
+    },
+    // détail — choix de couverture
+    cover: {
+      title: "Couverture du Reel",
+      description:
+        "Choisis la frame affichée dans le feed — c'est elle qui compose la grille du profil.",
+      dedicatedCurrent: "Image dédiée actuelle",
+      frameAt: "Frame à {sec} s",
+      tiktokWarning:
+        "Pour TikTok, la couverture doit être extraite de la vidéo : une image importée ne s'appliquera qu'à Instagram.",
+      importDedicated: "Importer une image dédiée…",
+      importSimulated: "Import d'image simulé (aperçu)",
+      importSimulatedDesc: "Aucun fichier n'est envoyé pendant la preview.",
+      confirm: "Choisir cette couverture",
+      updated: "Couverture du Reel mise à jour",
+      updatedDesc: "Sélection simulée (aperçu) — la vignette alimentera la carte et la grille.",
+    },
+    // détail — champs (page)
+    fields: {
+      newsletterSubject: "Objet de la newsletter",
+      caption: "Légende",
+      firstComment: "Premier commentaire Instagram",
+    },
+    // détail — validation client (panneau)
+    review: {
+      noReviewer: "Aucun reviewer invité pour ce client.",
+      neverOpened: "{name} n'a jamais ouvert le portail — pense à relancer par email.",
+      opened: "{name} a ouvert le portail {ago}.",
+      staleTitle: "Approbation périmée",
+      staleDetail:
+        "Le contenu a changé depuis l'approbation — l'accord de {name} porte sur une version antérieure. Renvoie-le en revue.",
+      pendingTitle: "En attente de validation",
+      changesTitle: "Modifications demandées",
+      changesDetail: "Corrige le contenu puis renvoie une nouvelle version en revue.",
+      approvedTitle: "Approuvé ({version})",
+      approvedDetail: "Validé par {name} {ago}.",
+      autoTitle: "Publication directe",
+      autoDetail: "Ce client n'exige pas de validation — le contenu part dès programmation.",
+      notSentTitle: "Pas encore envoyé en validation",
+      notSentDetail:
+        "Envoie le contenu en revue pour obtenir l'accord du client avant publication.",
+      fallbackClient: "ton client",
+      fallbackClientShort: "le client",
+      history: "Historique des décisions",
+      decisionApproved: "Approuvé",
+      decisionChanges: "Modifications demandées",
+      versionTitle: "Voir cette version dans l'historique",
+      mode: "Mode de validation du client : {mode}.",
+    },
+    // détail — cibles
+    targets: {
+      captionOverride: "Légende déclinée",
+      manualChannel: "Canal manuel — publication assistée",
+      followers: "@{username} · {count} abonnés",
+      publishedOn: "Publié le {date}",
+      view: "Voir",
+      unhealthyWarning: "La publication échouera tant que le compte n'est pas reconnecté.",
+      retried: "Cible relancée",
+      retriedDesc:
+        "Replacée en file (aperçu) — seule cette cible sera republiée, jamais celles déjà publiées.",
+      skipped: "Cible ignorée",
+      skippedDesc: "Marquée « Ignoré » (aperçu) — le contenu reste publié sur les autres cibles.",
+      idempotence:
+        "Règle d'idempotence : une cible déjà publiée n'est jamais republiée — la relance ne concerne que les cibles en échec.",
+    },
+    // détail — erreur de cible
+    targetError: {
+      reauthCause: "Jeton d'accès expiré — erreur permanente, pas de relance automatique",
+      reauthAction: "reconnecter le compte",
+      mediaCause: "Média refusé par la plateforme — erreur permanente, pas de relance automatique",
+      mediaAction: "corriger le média",
+      genericCause: "Erreur de publication",
+      genericAction: "relancer la cible",
+      fallbackMessage: "Échec de publication sur cette cible.",
+      causeLine: "{cause}. Action recommandée : {action}.",
+      retry: "Relancer cette cible (aperçu)",
+      reconnect: "Reconnecter le compte",
+      fixMedia: "Corriger le média",
+      skip: "Ignorer",
+    },
+    // détail — centre de publication manuelle
+    manual: {
+      appTiktok: "l'app TikTok",
+      appNewsletter: "l'outil d'envoi",
+      appCustom: "le canal concerné",
+      appInstagram: "l'app Instagram",
+      appFacebook: "l'app Facebook",
+      appFallback: "l'app",
+      titleTiktok: "Brouillon TikTok à finaliser",
+      titleNewsletter: "Newsletter à envoyer",
+      titleCustom: "Publication sur mesure",
+      titleAwaiting: "À publier manuellement",
+      titleGeneric: "Publication manuelle",
+      heading: "Publication manuelle ({count})",
+      publishedManually: "Publié manuellement",
+      markedPublished: "Marquée publiée{withLink} (aperçu).",
+      markedPublishedLink: " — lien enregistré",
+      stepCopy: "Copier la légende",
+      copied: "Copiée",
+      copy: "Copier",
+      stepOpen: "Ouvrir {app}",
+      open: "Ouvrir",
+      openHint: "Ouvre {app} pour finaliser",
+      openHintDesc: "Étape simulée (aperçu).",
+      stepMark: "Marquer comme publié",
+      linkPlaceholder: "Lien de la publication (optionnel)",
+      linkAria: "Lien de la publication",
+      markDone: "Publié",
+      markedDone: "Cible marquée publiée manuellement",
+      markedDoneDesc: "État local simulé (aperçu).",
+      captionCopied: "Légende copiée dans le presse-papier",
+      copyFailed: "Copie impossible dans ce navigateur",
+      reminderPushed: "Relance le {date} si le brouillon n'est pas publié.",
+      reminderScheduled: "Rappel prévu le {date} (heure du client).",
+      reminderNoDate: "Sans date — programme le contenu pour planifier un rappel.",
+    },
+    // détail — aperçu natif
+    preview: {
+      unavailable:
+        "Aperçu natif disponible pour Instagram et Facebook — ce contenu ne cible aucune de ces plateformes.",
+      toSchedule: "à programmer",
+      fbLike: "J'aime",
+      fbComment: "Commenter",
+      fbShare: "Partager",
+      morePlus: "… plus",
+      cutTooltip: "Instagram coupe ici dans le feed (~{count} caractères)",
+      indicative:
+        "Rendu indicatif — la coupure « … plus » est une estimation (~{count} caractères).",
+    },
+    // détail — fil de discussion
+    thread: {
+      title: "Discussion",
+      tabClient: "Client ({count})",
+      tabInternal: "Interne ({count})",
+      reviewsHandled:
+        "{resolved}/{total} {total, plural, one {retour traité} other {retours traités}}",
+      noClientThread: "Pas encore d'échange avec le client sur ce contenu.",
+      replyPlaceholder: "Répondre à {name}…",
+      replyHint: "Visible par {name} sur le portail de validation.",
+      reply: "Répondre",
+      replySent: "Réponse envoyée au client",
+      replySentDesc: "Visible sur le portail — interaction simulée (aperçu).",
+      fallbackName: "ton client",
+      fallbackNameShort: "le client",
+      internalBanner: "Notes internes — jamais visibles par le client.",
+      noInternal: "Aucune note interne pour l'instant.",
+      notePlaceholder: "Ajouter une note interne…",
+      noteHint: "Réservé à l'équipe — n'apparaît jamais sur le portail.",
+      noteAdd: "Ajouter",
+      noteAdded: "Note interne ajoutée",
+      noteAddedDesc: "Jamais visible par le client — interaction simulée (aperçu).",
+      contentNote: "Note du contenu",
+    },
+    // détail — fil (sous-composants)
+    threadItems: {
+      me: "Moi",
+      client: "Client",
+      slide: "slide {n}",
+      resolved: "Résolu",
+      reopen: "Rouvrir",
+      markResolved: "Marquer résolu",
+    },
+    // détail — versions
+    versions: {
+      heading: "Versions ({count})",
+      added: "Ajouté",
+      removed: "Supprimé",
+      approvedByClient: "Approuvée par le client",
+      changesRequested: "Corrections demandées",
+    },
+    // détail — journal d'activité
+    activity: {
+      heading: "Journal d'activité ({count})",
+      actorAction: "— {action}",
+    },
+  },
 } as const

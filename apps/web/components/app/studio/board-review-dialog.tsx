@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { formatRelative } from "@/lib/format"
+import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
 import type { ContentItem, Reviewer } from "@/lib/mocks/types"
 
 // Dialog « Demander une validation » : lot de contenus prêts (brouillons et
@@ -38,6 +38,9 @@ export function BoardReviewDialog({
   preselectedIds: string[]
   onConfirm: (ids: string[], message: string) => void
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   const [checkedIds, setCheckedIds] = useState<string[]>([])
   const [message, setMessage] = useState("")
 
@@ -60,11 +63,8 @@ export function BoardReviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Demander une validation</DialogTitle>
-          <DialogDescription>
-            Le lot apparaît dans le portail client ; chaque contenu est approuvé ou commenté
-            individuellement.
-          </DialogDescription>
+          <DialogTitle>{t("studio.reviewDialog.title")}</DialogTitle>
+          <DialogDescription>{t("studio.reviewDialog.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -80,28 +80,28 @@ export function BoardReviewDialog({
               {reviewer.lastActiveAt === null ? (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-warning">
                   <TriangleAlert className="size-3.5" />
-                  Jamais connecté
+                  {t("studio.reviewDialog.neverConnected")}
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground">
-                  Vu {formatRelative(reviewer.lastActiveAt)}
+                  {t("studio.reviewDialog.seenAt", { ago: f.relative(reviewer.lastActiveAt) })}
                 </span>
               )}
             </div>
           ) : (
             <p className="rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs text-warning">
-              Aucun reviewer invité pour ce client — invite un contact depuis les réglages.
+              {t("studio.reviewDialog.noReviewer")}
             </p>
           )}
 
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">
-              Contenus prêts à envoyer ({count}/{candidates.length})
+              {t("studio.reviewDialog.readyCount", { count, total: candidates.length })}
             </p>
             <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border p-1.5">
               {candidates.length === 0 ? (
                 <p className="p-2 text-sm text-muted-foreground">
-                  Aucun brouillon prêt — corrige d'abord les retours ou crée un contenu.
+                  {t("studio.reviewDialog.noReady")}
                 </p>
               ) : (
                 candidates.map((item) => (
@@ -123,7 +123,9 @@ export function BoardReviewDialog({
                     ) : (
                       <span className="size-9 shrink-0 rounded-md bg-muted" />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-sm">{item.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {pick(item.title, locale)}
+                    </span>
                     <ContentStatusBadge status={item.status} />
                   </Label>
                 ))
@@ -132,29 +134,28 @@ export function BoardReviewDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="board-review-message">Message au reviewer (optionnel)</Label>
+            <Label htmlFor="board-review-message">{t("studio.reviewDialog.messageLabel")}</Label>
             <Textarea
               id="board-review-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ex. Voici les publications de juillet, merci de valider avant vendredi !"
+              placeholder={t("studio.reviewDialog.messagePlaceholder")}
               rows={3}
             />
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Un email récapitulatif ({count} contenu{count > 1 ? "s" : ""} + lien direct du portail)
-            partirait via Brevo — aucun envoi pendant la preview.
+            {t("studio.reviewDialog.brevoNote", { count })}
           </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button disabled={count === 0} onClick={() => onConfirm(checkedIds, message)}>
             <Send />
-            Envoyer la demande ({count})
+            {t("studio.reviewDialog.send", { count })}
           </Button>
         </DialogFooter>
       </DialogContent>

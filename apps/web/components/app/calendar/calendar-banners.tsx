@@ -3,7 +3,7 @@
 import { CalendarOff, ClockAlert } from "lucide-react"
 import { AccountAlert } from "@/components/shared/account-alert"
 import { Button } from "@/components/ui/button"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
 import type { SocialAccount } from "@/lib/mocks/types"
 
 // Bandeaux d'alerte du calendrier : comptes à reconnecter (avec impact),
@@ -23,6 +23,8 @@ export function CalendarBanners({
   nextWeekEmpty: boolean
   onFilterPendingReview: () => void
 }) {
+  const t = useT()
+  const lbl = useLabels()
   const broken = accounts.filter((a) => a.status !== "connected")
 
   return (
@@ -35,7 +37,11 @@ export function CalendarBanners({
             account={account}
             impact={
               upcoming > 0
-                ? `${upcoming} publication${upcoming > 1 ? "s" : ""} ${platformMeta[account.platform].label} risque${upcoming > 1 ? "nt" : ""} d'échouer — reconnecte le compte @${account.username}.`
+                ? t("calendar.banners.reconnectImpact", {
+                    count: upcoming,
+                    platform: lbl.platform(account.platform),
+                    username: account.username,
+                  })
                 : undefined
             }
           />
@@ -46,11 +52,10 @@ export function CalendarBanners({
         <div className="flex items-center gap-2.5 rounded-xl border border-warning/40 bg-warning/5 px-3 py-2">
           <ClockAlert className="size-4 shrink-0 text-warning" aria-hidden />
           <p className="min-w-0 flex-1 text-sm">
-            {pendingReviewCount} contenu{pendingReviewCount > 1 ? "s" : ""} en attente de validation
-            client.
+            {t("calendar.banners.pendingReview", { count: pendingReviewCount })}
           </p>
           <Button size="sm" variant="outline" onClick={onFilterPendingReview}>
-            Voir
+            {t("calendar.banners.pendingReviewAction")}
           </Button>
         </div>
       ) : null}
@@ -59,7 +64,7 @@ export function CalendarBanners({
         <div className="flex items-center gap-2.5 rounded-xl border px-3 py-2">
           <CalendarOff className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            Rien n'est programmé sur les 7 prochains jours pour ce client.
+            {t("calendar.banners.nextWeekEmpty")}
           </p>
         </div>
       ) : null}

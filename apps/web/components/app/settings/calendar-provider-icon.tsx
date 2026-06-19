@@ -1,4 +1,7 @@
+"use client"
+
 import type { SVGProps } from "react"
+import { useT } from "@/lib/i18n"
 import type { CalendarProvider } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -24,9 +27,18 @@ function CalendarGlyph(props: SVGProps<SVGSVGElement>) {
   )
 }
 
-const LABEL: Record<CalendarProvider, string> = {
-  google: "Google Agenda",
-  microsoft: "Microsoft Outlook",
+const LABEL_KEY: Record<
+  CalendarProvider,
+  "settings.calendars.providerGoogle" | "settings.calendars.providerMicrosoft"
+> = {
+  google: "settings.calendars.providerGoogle",
+  microsoft: "settings.calendars.providerMicrosoft",
+}
+
+// Hook résolvant le libellé localisé d'un fournisseur de calendrier.
+export function useCalendarProviderLabel() {
+  const t = useT()
+  return (provider: CalendarProvider) => t(LABEL_KEY[provider])
 }
 
 export function CalendarProviderIcon({
@@ -36,7 +48,6 @@ export function CalendarProviderIcon({
   provider: CalendarProvider
   className?: string
 }) {
-  return <CalendarGlyph className={cn("size-4", className)} aria-label={LABEL[provider]} />
+  const providerLabel = useCalendarProviderLabel()
+  return <CalendarGlyph className={cn("size-4", className)} aria-label={providerLabel(provider)} />
 }
-
-export const calendarProviderLabel = LABEL

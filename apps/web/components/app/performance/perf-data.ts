@@ -1,4 +1,5 @@
 import { formatDayMonth } from "@/lib/format"
+import { createTranslator, type L } from "@/lib/i18n"
 import { getContentItems, getImportedPosts, getPostMetrics } from "@/lib/mocks"
 import { MOCK_NOW } from "@/lib/mocks/time"
 import type {
@@ -35,7 +36,7 @@ export { PERIOD_META } from "./perf-core"
 
 export interface PostRow {
   refId: string
-  title: string
+  title: L<string>
   thumbUrl: string
   format: ContentFormat
   platforms: Platform[]
@@ -64,10 +65,18 @@ function contentRow(c: ContentItem, m: EngagementStats): PostRow {
   }
 }
 
+// Traducteurs locale-figés : un post importé n'a pas de titre éditorial, on le
+// dérive de sa date dans les deux langues (pré-rendu côté serveur, puis pick()).
+const tFr = createTranslator("fr")
+const tEn = createTranslator("en")
+
 function importedRow(p: ImportedPost, m: EngagementStats, tz: string): PostRow {
   return {
     refId: p.id,
-    title: `Publication du ${formatDayMonth(p.publishedAt, tz)}`,
+    title: {
+      fr: tFr("performance.posts.importedTitle", { date: formatDayMonth(p.publishedAt, tz, "fr") }),
+      en: tEn("performance.posts.importedTitle", { date: formatDayMonth(p.publishedAt, tz, "en") }),
+    },
     thumbUrl: p.thumbUrl,
     format: p.mediaType === "video" ? "reel" : "post",
     platforms: ["instagram"],
@@ -131,7 +140,8 @@ export function getKpis(posts: PostRow[], period: PerfPeriod): KpiWithDelta {
 }
 
 export interface TrendBucket {
-  label: string
+  /** Rang 1-based de la tranche ; libellé « P{index} » assemblé à l'affichage. */
+  index: number
   reach: number
   engagement: number
 }
@@ -145,7 +155,7 @@ export function getTrend(posts: PostRow[], period: PerfPeriod): TrendBucket[] {
   const span = PERIOD_META[period].days * dayMs
   const start = MOCK_NOW.getTime() - span
   const buckets: TrendBucket[] = Array.from({ length: bucketCount }, (_, i) => ({
-    label: `P${i + 1}`,
+    index: i + 1,
     reach: 0,
     engagement: 0,
   }))

@@ -4,7 +4,7 @@ import { BellRing, Send } from "lucide-react"
 import { toast } from "sonner"
 import { ReviewStateBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
-import { formatRelative } from "@/lib/format"
+import { useFormat, useT } from "@/lib/i18n"
 import type { ContentItem, ReviewRequestState } from "@/lib/mocks/types"
 import type { BoardState } from "./board-state"
 
@@ -20,6 +20,8 @@ const APPROVED_LIKE: ContentItem["status"][] = [
 ]
 
 export function BoardReviewBanner({ board }: { board: BoardState }) {
+  const t = useT()
+  const f = useFormat()
   const { request, reviewer } = board
   if (!request) return null
 
@@ -39,15 +41,18 @@ export function BoardReviewBanner({ board }: { board: BoardState }) {
     reviewer === null
       ? null
       : reviewer.lastActiveAt === null
-        ? `${reviewer.name} n'a jamais ouvert le portail`
-        : `${reviewer.name} a ouvert le portail ${formatRelative(reviewer.lastActiveAt)}`
+        ? t("studio.reviewBanner.neverOpened", { name: reviewer.name })
+        : t("studio.reviewBanner.opened", {
+            name: reviewer.name,
+            ago: f.relative(reviewer.lastActiveAt),
+          })
 
   function remind() {
     board.remind()
-    toast.success("Relance envoyée (aperçu)", {
+    toast.success(t("studio.reviewBanner.remindSent"), {
       description: reviewer
-        ? `${reviewer.name} recevrait un email Brevo avec le lien direct du portail.`
-        : "Le reviewer recevrait un email Brevo avec le lien direct du portail.",
+        ? t("studio.board.remindDescReviewer", { name: reviewer.name })
+        : t("studio.board.remindDescNoReviewer"),
     })
   }
 
@@ -55,14 +60,18 @@ export function BoardReviewBanner({ board }: { board: BoardState }) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-info/30 bg-info/5 px-3 py-2.5">
       <span className="flex items-center gap-2 text-sm font-medium">
         <Send className="size-4 text-info" />
-        Demande de validation
+        {t("studio.reviewBanner.title")}
         <ReviewStateBadge state={state} />
       </span>
 
       <span className="text-xs text-muted-foreground tabular-nums">
-        {request.contentIds.length} envoyé{request.contentIds.length > 1 ? "s" : ""}{" "}
-        {formatRelative(request.sentAt)} · {approved} approuvé{approved > 1 ? "s" : ""} · {changes}{" "}
-        retour{changes > 1 ? "s" : ""} · {pending} en attente
+        {t("studio.reviewBanner.counts", {
+          sent: request.contentIds.length,
+          ago: f.relative(request.sentAt),
+          approved,
+          changes,
+          pending,
+        })}
       </span>
 
       {seenLabel ? <span className="text-xs text-muted-foreground">{seenLabel}</span> : null}
@@ -70,14 +79,13 @@ export function BoardReviewBanner({ board }: { board: BoardState }) {
       <span className="ml-auto flex items-center gap-2">
         {board.reminders > 0 ? (
           <span className="text-xs text-muted-foreground tabular-nums">
-            {board.reminders} relance{board.reminders > 1 ? "s" : ""} envoyée
-            {board.reminders > 1 ? "s" : ""} (aperçu)
+            {t("studio.reviewBanner.remindersSent", { count: board.reminders })}
           </span>
         ) : null}
         {pending > 0 ? (
           <Button variant="outline" size="sm" onClick={remind}>
             <BellRing />
-            Relancer (aperçu)
+            {t("studio.reviewBanner.remind")}
           </Button>
         ) : null}
       </span>

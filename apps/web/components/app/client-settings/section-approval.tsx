@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { formatRelative } from "@/lib/format"
+import { type MessageKey, useFormat, useLabels, useT } from "@/lib/i18n"
 import type { ApprovalMode, Client, Reviewer } from "@/lib/mocks/types"
 import { REMINDER_DELAY_BOUNDS, REMINDER_DELAY_DEFAULT } from "./constants"
 import { SaveBar, SectionCard } from "./section-card"
 
 interface ModeOption {
   value: ApprovalMode
-  label: string
-  impact: string
+  labelKey: MessageKey
+  impactKey: MessageKey
 }
 
 // Clampe la saisie du délai de relance entre les bornes ; champ vidé (NaN) →
@@ -29,21 +29,18 @@ function clampReminder(raw: string): number {
 const MODES: ModeOption[] = [
   {
     value: "required",
-    label: "Validation obligatoire",
-    impact:
-      "Aucune publication sans l'accord du relecteur. Chaque contenu passe par le portail avant d'être programmé.",
+    labelKey: "clientSettings.approval.requiredLabel",
+    impactKey: "clientSettings.approval.requiredImpact",
   },
   {
     value: "optional",
-    label: "Validation optionnelle",
-    impact:
-      "L'envoi en revue est proposé par défaut mais tu peux programmer directement, contenu par contenu.",
+    labelKey: "clientSettings.approval.optionalLabel",
+    impactKey: "clientSettings.approval.optionalImpact",
   },
   {
     value: "auto",
-    label: "Publication directe",
-    impact:
-      "Aucun passage par le portail : les contenus programmés partent à l'heure prévue, sous ta seule responsabilité.",
+    labelKey: "clientSettings.approval.autoLabel",
+    impactKey: "clientSettings.approval.autoImpact",
   },
 ]
 
@@ -54,6 +51,9 @@ export function SectionApproval({
   client: Client
   reviewer: Reviewer | undefined
 }) {
+  const t = useT()
+  const f = useFormat()
+  const lbl = useLabels()
   const [mode, setMode] = useState<ApprovalMode>(client.approvalMode)
   const [reminderDays, setReminderDays] = useState(REMINDER_DELAY_DEFAULT)
   const reminderDisabled = mode === "auto"
@@ -61,22 +61,22 @@ export function SectionApproval({
   const dirty = mode !== client.approvalMode
 
   function save() {
-    toast.success("Niveau de validation enregistré (aperçu)", {
-      description: MODES.find((m) => m.value === mode)?.label,
+    toast.success(t("clientSettings.approval.savedToast"), {
+      description: lbl.approvalMode(mode),
     })
   }
 
   function invite() {
-    toast.info("Invitation relecteur simulée (aperçu)", {
-      description: "Un email d'invitation au portail partira via Brevo une fois le backend câblé.",
+    toast.info(t("clientSettings.approval.inviteToast"), {
+      description: t("clientSettings.approval.inviteToastDescription"),
     })
   }
 
   return (
     <SectionCard
       icon={ShieldCheck}
-      title="Niveau de validation"
-      description="Définit qui doit approuver un contenu avant publication pour ce client."
+      title={t("clientSettings.approval.title")}
+      description={t("clientSettings.approval.description")}
     >
       <RadioGroup
         value={mode}
@@ -90,9 +90,9 @@ export function SectionApproval({
           >
             <RadioGroupItem value={option.value} className="mt-0.5" />
             <span className="min-w-0">
-              <span className="font-medium">{option.label}</span>
+              <span className="font-medium">{t(option.labelKey)}</span>
               <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                {option.impact}
+                {t(option.impactKey)}
               </span>
             </span>
           </Label>
@@ -115,18 +115,18 @@ export function SectionApproval({
               </div>
               <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
                 {reviewer.lastActiveAt
-                  ? `Vu ${formatRelative(reviewer.lastActiveAt)}`
-                  : "Jamais venu sur le portail"}
+                  ? t("clientSettings.approval.seenAt", { when: f.relative(reviewer.lastActiveAt) })
+                  : t("clientSettings.approval.neverVisited")}
               </span>
             </>
           ) : (
             <p className="flex-1 text-sm text-muted-foreground">
-              Aucun relecteur rattaché à ce client.
+              {t("clientSettings.approval.noReviewer")}
             </p>
           )}
           <Button size="sm" variant="outline" onClick={invite}>
             <UserPlus />
-            <span className="hidden sm:inline">Inviter</span>
+            <span className="hidden sm:inline">{t("clientSettings.approval.invite")}</span>
           </Button>
         </div>
 
@@ -137,7 +137,7 @@ export function SectionApproval({
             data-disabled={reminderDisabled}
           >
             <Bell className="size-4" />
-            Relancer le relecteur sans réponse après
+            {t("clientSettings.approval.reminderLabel")}
           </Label>
           <div className="flex items-center gap-2">
             <Input
@@ -150,15 +150,16 @@ export function SectionApproval({
               onChange={(e) => setReminderDays(clampReminder(e.target.value))}
               className="w-16 tabular-nums"
             />
-            <span className="text-sm text-muted-foreground">jour(s)</span>
+            <span className="text-sm text-muted-foreground">
+              {t("clientSettings.approval.reminderUnit")}
+            </span>
           </div>
         </div>
       </div>
 
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Clock className="mt-px size-3.5 shrink-0" aria-hidden />
-        Une approbation tardive ne déclenche jamais de publication automatique : passé l'heure, le
-        contenu te revient pour reprogrammation.
+        {t("clientSettings.approval.lateNote")}
       </p>
 
       <SaveBar dirty={dirty} onSave={save} />

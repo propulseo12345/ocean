@@ -1,3 +1,5 @@
+"use client"
+
 import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 // En-tête de section uniforme pour les réglages client (titre + icône + aide).
@@ -53,6 +56,7 @@ export function SaveBar({
   onSave: () => void
   className?: string
 }) {
+  const t = useT()
   return (
     <div
       className={cn(
@@ -60,9 +64,9 @@ export function SaveBar({
         className
       )}
     >
-      <span>{dirty ? "Modifications non enregistrées." : "Tout est à jour."}</span>
+      <span>{dirty ? t("clientSettings.saveBar.dirty") : t("clientSettings.saveBar.clean")}</span>
       <Button size="sm" disabled={!dirty} onClick={onSave}>
-        Enregistrer (aperçu)
+        {t("clientSettings.saveBar.save")}
       </Button>
     </div>
   )

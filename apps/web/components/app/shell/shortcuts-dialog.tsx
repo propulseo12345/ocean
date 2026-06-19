@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { type MessageKey, useT } from "@/lib/i18n"
 import { useShell } from "./shell-provider"
 
 // Aide « Raccourcis clavier » (touche ?) : référence des raccourcis de l'app.
@@ -20,66 +21,73 @@ function Kbd({ children }: { children: ReactNode }) {
   )
 }
 
+// Une « touche » est soit un symbole littéral (⌘, ←, T…), soit une clé i18n
+// pour les libellés textuels (Échap, Sélectionner…), résolue à l'affichage.
 interface ShortcutRow {
-  keys: string[]
-  label: string
+  keys: (string | { key: MessageKey })[]
+  labelKey: MessageKey
 }
 
-const SECTIONS: { title: string; rows: ShortcutRow[] }[] = [
+const SECTIONS: { titleKey: MessageKey; rows: ShortcutRow[] }[] = [
   {
-    title: "Général",
+    titleKey: "nav.shortcuts.sectionGeneral",
     rows: [
-      { keys: ["⌘", "K"], label: "Recherche globale et palette de commandes" },
-      { keys: ["?"], label: "Afficher cette aide" },
-      { keys: ["Échap"], label: "Fermer le panneau ou la fenêtre en cours" },
+      { keys: ["⌘", "K"], labelKey: "nav.shortcuts.globalSearch" },
+      { keys: ["?"], labelKey: "nav.shortcuts.showHelp" },
+      { keys: [{ key: "nav.shortcuts.keyEsc" }], labelKey: "nav.shortcuts.closePanel" },
     ],
   },
   {
-    title: "Calendrier éditorial",
+    titleKey: "nav.shortcuts.sectionCalendar",
     rows: [
-      { keys: ["←", "→"], label: "Période précédente / suivante" },
-      { keys: ["T"], label: "Revenir à aujourd'hui" },
-      { keys: ["M"], label: "Vue mois" },
-      { keys: ["S"], label: "Vue semaine" },
+      { keys: ["←", "→"], labelKey: "nav.shortcuts.prevNextPeriod" },
+      { keys: ["T"], labelKey: "nav.shortcuts.backToToday" },
+      { keys: ["M"], labelKey: "nav.shortcuts.monthView" },
+      { keys: ["S"], labelKey: "nav.shortcuts.weekView" },
     ],
   },
   {
-    title: "Grille et listes",
+    titleKey: "nav.shortcuts.sectionGrid",
     rows: [
-      { keys: ["Sélectionner"], label: "Mode sélection pour les actions par lot" },
-      { keys: ["Glisser"], label: "Réordonner la grille ou replanifier une date" },
-      { keys: ["Appui long"], label: "Déplacer une tuile sur mobile" },
+      { keys: [{ key: "nav.shortcuts.keySelect" }], labelKey: "nav.shortcuts.selectMode" },
+      { keys: [{ key: "nav.shortcuts.keyDrag" }], labelKey: "nav.shortcuts.reorderGrid" },
+      { keys: [{ key: "nav.shortcuts.keyLongPress" }], labelKey: "nav.shortcuts.moveTile" },
     ],
   },
 ]
 
 export function ShortcutsDialog() {
+  const t = useT()
   const { shortcutsOpen, setShortcutsOpen } = useShell()
 
   return (
     <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Raccourcis clavier</DialogTitle>
+          <DialogTitle>{t("nav.shortcuts.title")}</DialogTitle>
           <DialogDescription>
-            Sur Windows et Linux, remplace <Kbd>⌘</Kbd> par <Kbd>Ctrl</Kbd>.
+            {t("nav.shortcuts.replaceCmd")} <Kbd>⌘</Kbd> {t("nav.shortcuts.replaceCmdBy")}{" "}
+            <Kbd>Ctrl</Kbd>.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {SECTIONS.map((section) => (
-            <section key={section.title} aria-label={section.title}>
-              <h3 className="mb-1.5 text-xs font-medium text-muted-foreground">{section.title}</h3>
+            <section key={section.titleKey} aria-label={t(section.titleKey)}>
+              <h3 className="mb-1.5 text-xs font-medium text-muted-foreground">
+                {t(section.titleKey)}
+              </h3>
               <ul className="divide-y rounded-lg border">
                 {section.rows.map((row) => (
                   <li
-                    key={row.label}
+                    key={row.labelKey}
                     className="flex items-center justify-between gap-3 px-3 py-1.5"
                   >
-                    <span className="text-sm">{row.label}</span>
+                    <span className="text-sm">{t(row.labelKey)}</span>
                     <span className="flex shrink-0 items-center gap-1">
-                      {row.keys.map((key) => (
-                        <Kbd key={key}>{key}</Kbd>
-                      ))}
+                      {row.keys.map((key) => {
+                        const text = typeof key === "string" ? key : t(key.key)
+                        return <Kbd key={text}>{text}</Kbd>
+                      })}
                     </span>
                   </li>
                 ))}

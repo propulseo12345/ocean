@@ -1,6 +1,8 @@
+"use client"
+
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { SpecIssues } from "@/components/shared/spec-issues"
-import { platformMeta } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
 import type { Platform } from "@/lib/mocks/types"
 import { type SpecIssue, validateMedia } from "@/lib/specs"
 import type { ComposerDraft, ComposerMedia } from "./composer-types"
@@ -19,6 +21,8 @@ export function MediaSpecSummary({
   draft: ComposerDraft
   carouselIssues: SpecIssue[]
 }) {
+  const t = useT()
+  const lbl = useLabels()
   if (media.length === 0 && carouselIssues.length === 0) return null
 
   const groups = platforms
@@ -32,13 +36,13 @@ export function MediaSpecSummary({
 
   return (
     <div className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
-      <p className="text-xs font-medium">Validation des specs plateformes</p>
+      <p className="text-xs font-medium">{t("composer.media.specsTitle")}</p>
       {carouselIssues.length > 0 ? <SpecIssues issues={carouselIssues} /> : null}
       {groups.map((g) => (
         <div key={g.platform} className="space-y-1">
           <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <PlatformIcon platform={g.platform} className="size-3.5" />
-            {platformMeta[g.platform].label}
+            {lbl.platform(g.platform)}
           </p>
           <SpecIssues issues={g.issues} />
         </div>

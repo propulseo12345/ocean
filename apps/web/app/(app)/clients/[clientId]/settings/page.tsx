@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { SettingsShell } from "@/components/app/client-settings/settings-shell"
+import { getT } from "@/lib/i18n/server"
 import {
   getBrandKit,
   getClient,
@@ -11,7 +12,10 @@ import {
   getTrashedContent,
 } from "@/lib/mocks"
 
-export const metadata: Metadata = { title: "Réglages" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaSettings") }
+}
 
 // Réglages du client (audit §4/§5, P1) : profil, comptes, brand kit, niveau de
 // validation, créneaux récurrents, cadence et archivage. Preview UI-only :

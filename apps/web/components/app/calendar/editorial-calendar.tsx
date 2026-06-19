@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import { useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { AutomationDialog } from "./automation-dialog"
 import {
@@ -33,6 +34,8 @@ import { useSwipe } from "./use-swipe"
 import { WeekView } from "./week-view"
 
 export function EditorialCalendar(props: CalendarData) {
+  const t = useT()
+  const { locale } = useLocale()
   const s = useCalendarState(props)
   const d = useCalendarDerived(s, props)
   const selection = useMultiSelect()
@@ -64,8 +67,8 @@ export function EditorialCalendar(props: CalendarData) {
       callbacks: {
         onReschedule: setRescheduleItem,
         onDuplicate: setDuplicateItem,
-        onRetry: performRetry,
-        onRemind: () => performRemind(props.reviewerName),
+        onRetry: (item) => performRetry(item, t, locale),
+        onRemind: () => performRemind(props.reviewerName, t),
       },
     }),
     [
@@ -83,6 +86,8 @@ export function EditorialCalendar(props: CalendarData) {
       d.pillarById,
       selection.isSelected,
       selection.toggle,
+      t,
+      locale,
     ]
   )
 
@@ -94,7 +99,7 @@ export function EditorialCalendar(props: CalendarData) {
   const periodLabel =
     s.view === "month"
       ? monthYearLabel(s.cursor)
-      : `Semaine du ${weekdayDayMonth(s.weekDays[0], s.tz)}`
+      : t("calendar.toolbar.weekOf", { date: weekdayDayMonth(s.weekDays[0], s.tz) })
 
   return (
     <div className="space-y-3">
@@ -151,7 +156,7 @@ export function EditorialCalendar(props: CalendarData) {
       <CalendarDnd
         items={s.effectiveItems}
         tz={s.tz}
-        onDrop={(item, dayKey) => performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride)}
+        onDrop={(item, dayKey) => performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride, t)}
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0" {...swipe}>
@@ -177,7 +182,7 @@ export function EditorialCalendar(props: CalendarData) {
         onClose={() => setSheetDay(null)}
         onAddNote={(dayKey, title, kind) => {
           s.addNote(dayKey, title, kind)
-          toast.success(`${kind === "note" ? "Note ajoutée" : "Événement ajouté"} (aperçu)`)
+          toast.success(t("calendar.daySheet.noteAdded", { kind }))
         }}
       />
 
@@ -196,7 +201,7 @@ export function EditorialCalendar(props: CalendarData) {
         todayKey={s.todayKey}
         onClose={() => setRescheduleItem(null)}
         onConfirm={(item, dayKey, time) => {
-          performReschedule(item, dayKey, time, s.tz, s.setOverride)
+          performReschedule(item, dayKey, time, s.tz, s.setOverride, t)
           setRescheduleItem(null)
         }}
       />
@@ -213,7 +218,9 @@ export function EditorialCalendar(props: CalendarData) {
             item,
             dayKey,
             s.tz,
-            targetClientId === props.client.id ? null : (target?.name ?? null)
+            targetClientId === props.client.id ? null : (target?.name ?? null),
+            t,
+            locale
           )
           setDuplicateItem(null)
         }}

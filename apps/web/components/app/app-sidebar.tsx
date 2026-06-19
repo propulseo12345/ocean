@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { useT } from "@/lib/i18n"
 import { getClients } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { ClientSwitcher } from "./client-switcher"
@@ -25,13 +26,14 @@ import { clientAccountIssues, clientSwitchHref } from "./shell/client-nav"
 import { useShell } from "./shell/shell-provider"
 
 const NAV = [
-  { title: "Tableau de bord", href: routes.dashboard, icon: LayoutDashboard },
-  { title: "Agenda unifié", href: routes.agenda, icon: CalendarDays },
-  { title: "Notifications", href: routes.notifications, icon: Bell },
-  { title: "Clients", href: routes.clients, icon: Users },
-]
+  { titleKey: "nav.item.dashboard", href: routes.dashboard, icon: LayoutDashboard },
+  { titleKey: "nav.item.agenda", href: routes.agenda, icon: CalendarDays },
+  { titleKey: "nav.item.notifications", href: routes.notifications, icon: Bell },
+  { titleKey: "nav.item.clients", href: routes.clients, icon: Users },
+] as const
 
 export function AppSidebar() {
+  const t = useT()
   const pathname = usePathname()
   const { setPaletteOpen } = useShell()
   const clients = getClients()
@@ -52,9 +54,9 @@ export function AppSidebar() {
         <ClientSwitcher />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Rechercher (⌘K)" onClick={() => setPaletteOpen(true)}>
+            <SidebarMenuButton tooltip={t("nav.searchAria")} onClick={() => setPaletteOpen(true)}>
               <Search />
-              <span className="text-sidebar-foreground/70">Rechercher…</span>
+              <span className="text-sidebar-foreground/70">{t("nav.searchPlaceholder")}</span>
               <kbd className="ml-auto inline-flex h-5 items-center rounded border bg-sidebar px-1.5 font-sans text-[10px] font-medium text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                 ⌘K
               </kbd>
@@ -65,14 +67,14 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Pilotage</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.groupPilotage")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     isActive={isActive(item.href)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                     render={
                       <Link
                         href={item.href}
@@ -81,7 +83,7 @@ export function AppSidebar() {
                     }
                   >
                     <item.icon />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -90,7 +92,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Espaces clients</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.groupClientSpaces")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {clients.map((c) => {
@@ -112,14 +114,14 @@ export function AppSidebar() {
                         <ClientAvatar client={c} size={20} />
                         {hasIssue ? (
                           <span
-                            title="Un compte est à reconnecter"
+                            title={t("nav.accountReconnect")}
                             className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive ring-2 ring-sidebar"
                           />
                         ) : null}
                       </span>
                       <span className="truncate">{c.name}</span>
                       {hasIssue ? (
-                        <span className="sr-only">— un compte est à reconnecter</span>
+                        <span className="sr-only">{t("nav.accountReconnectDash")}</span>
                       ) : null}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -135,7 +137,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               isActive={isActive(routes.settings)}
-              tooltip="Réglages"
+              tooltip={t("nav.item.settings")}
               render={
                 <Link
                   href={routes.settings}
@@ -144,7 +146,7 @@ export function AppSidebar() {
               }
             >
               <Settings />
-              <span>Réglages</span>
+              <span>{t("nav.item.settings")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

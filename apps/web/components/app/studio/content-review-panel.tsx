@@ -1,7 +1,7 @@
 import { Check, CircleHelp, Clock, type LucideIcon, TriangleAlert, X, Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { formatRelative } from "@/lib/format"
-import { approvalModeMeta } from "@/lib/mocks/labels"
+import { type Format, type Locale, pick, type Translator } from "@/lib/i18n"
+import { getFormat, getLabels, getLocale, getT } from "@/lib/i18n/server"
 import type { Approval, ApprovalMode, ContentStatus, Reviewer } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -31,15 +31,17 @@ const TONE_TEXT: Record<BannerTone, string> = {
   neutral: "text-foreground",
 }
 
-function reviewerActivity(reviewer?: Reviewer): string {
-  if (!reviewer) return "Aucun reviewer invité pour ce client."
+function reviewerActivity(t: Translator, f: Format, reviewer?: Reviewer): string {
+  if (!reviewer) return t("studio.review.noReviewer")
   if (!reviewer.lastActiveAt) {
-    return `${reviewer.name} n'a jamais ouvert le portail — pense à relancer par email.`
+    return t("studio.review.neverOpened", { name: reviewer.name })
   }
-  return `${reviewer.name} a ouvert le portail ${formatRelative(reviewer.lastActiveAt)}.`
+  return t("studio.review.opened", { name: reviewer.name, ago: f.relative(reviewer.lastActiveAt) })
 }
 
 function deriveBanner(
+  t: Translator,
+  f: Format,
   status: ContentStatus,
   approvalStale: boolean,
   approvals: Approval[],
@@ -51,51 +53,56 @@ function deriveBanner(
     return {
       tone: "warning",
       icon: TriangleAlert,
-      title: "Approbation périmée",
-      detail: `Le contenu a changé depuis l'approbation — l'accord de ${reviewer?.name ?? "ton client"} porte sur une version antérieure. Renvoie-le en revue.`,
+      title: t("studio.review.staleTitle"),
+      detail: t("studio.review.staleDetail", {
+        name: reviewer?.name ?? t("studio.review.fallbackClient"),
+      }),
     }
   }
   if (status === "in_review") {
     return {
       tone: "info",
       icon: Clock,
-      title: "En attente de validation",
-      detail: reviewerActivity(reviewer),
+      title: t("studio.review.pendingTitle"),
+      detail: reviewerActivity(t, f, reviewer),
     }
   }
   if (status === "changes_requested") {
     return {
       tone: "warning",
       icon: X,
-      title: "Modifications demandées",
-      detail: "Corrige le contenu puis renvoie une nouvelle version en revue.",
+      title: t("studio.review.changesTitle"),
+      detail: t("studio.review.changesDetail"),
     }
   }
   if (latest?.decision === "approved") {
     return {
       tone: "success",
       icon: Check,
-      title: `Approuvé (${latest.versionLabel})`,
-      detail: `Validé par ${reviewer?.name ?? "le client"} ${formatRelative(latest.createdAt)}.`,
+      title: t("studio.review.approvedTitle", { version: latest.versionLabel }),
+      detail: t("studio.review.approvedDetail", {
+        name: reviewer?.name ?? t("studio.review.fallbackClientShort"),
+        ago: f.relative(latest.createdAt),
+      }),
     }
   }
   if (approvalMode === "auto") {
     return {
       tone: "neutral",
       icon: Zap,
-      title: "Publication directe",
-      detail: "Ce client n'exige pas de validation — le contenu part dès programmation.",
+      title: t("studio.review.autoTitle"),
+      detail: t("studio.review.autoDetail"),
     }
   }
   return {
     tone: "neutral",
     icon: CircleHelp,
-    title: "Pas encore envoyé en validation",
-    detail: "Envoie le contenu en revue pour obtenir l'accord du client avant publication.",
+    title: t("studio.review.notSentTitle"),
+    detail: t("studio.review.notSentDetail"),
   }
 }
 
-export function ContentReviewPanel({
+export async function ContentReviewPanel({
   status,
   approvalStale,
   approvals,
@@ -110,7 +117,11 @@ export function ContentReviewPanel({
   reviewer?: Reviewer
   hasVersions: boolean
 }) {
-  const banner = deriveBanner(status, approvalStale, approvals, approvalMode, reviewer)
+  const t = await getT()
+  const f = await getFormat()
+  const lbl = await getLabels()
+  const locale = await getLocale()
+  const banner = deriveBanner(t, f, status, approvalStale, approvals, approvalMode, reviewer)
   const Icon = banner.icon
 
   return (
@@ -127,21 +138,40 @@ export function ContentReviewPanel({
 
       {approvals.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Historique des décisions</p>
+          <p className="text-xs font-medium text-muted-foreground">{t("studio.review.history")}</p>
           {approvals.map((approval) => (
-            <ApprovalRow key={approval.id} approval={approval} hasVersions={hasVersions} />
+            <ApprovalRow
+              key={approval.id}
+              approval={approval}
+              hasVersions={hasVersions}
+              t={t}
+              f={f}
+              locale={locale}
+            />
           ))}
         </div>
       ) : null}
 
       <p className="text-[11px] text-muted-foreground">
-        Mode de validation du client : {approvalModeMeta[approvalMode].label.toLowerCase()}.
+        {t("studio.review.mode", { mode: lbl.approvalMode(approvalMode).toLowerCase() })}
       </p>
     </div>
   )
 }
 
-function ApprovalRow({ approval, hasVersions }: { approval: Approval; hasVersions: boolean }) {
+function ApprovalRow({
+  approval,
+  hasVersions,
+  t,
+  f,
+  locale,
+}: {
+  approval: Approval
+  hasVersions: boolean
+  t: Translator
+  f: Format
+  locale: Locale
+}) {
   const approved = approval.decision === "approved"
   const versionBadge = (
     <Badge variant="outline" className="h-4 px-1.5 font-mono text-[10px]">
@@ -166,9 +196,11 @@ function ApprovalRow({ approval, hasVersions }: { approval: Approval; hasVersion
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">{approved ? "Approuvé" : "Modifications demandées"}</p>
+          <p className="text-sm font-medium">
+            {approved ? t("studio.review.decisionApproved") : t("studio.review.decisionChanges")}
+          </p>
           {hasVersions ? (
-            <a href="#versions" title="Voir cette version dans l'historique">
+            <a href="#versions" title={t("studio.review.versionTitle")}>
               {versionBadge}
             </a>
           ) : (
@@ -176,10 +208,10 @@ function ApprovalRow({ approval, hasVersions }: { approval: Approval; hasVersion
           )}
         </div>
         {approval.message ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{approval.message}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{pick(approval.message, locale)}</p>
         ) : null}
         <p className="mt-0.5 text-[11px] text-muted-foreground/70">
-          {formatRelative(approval.createdAt)}
+          {f.relative(approval.createdAt)}
         </p>
       </div>
     </div>

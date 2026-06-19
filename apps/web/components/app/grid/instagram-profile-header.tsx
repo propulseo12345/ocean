@@ -1,7 +1,7 @@
 import { Clapperboard, Grid3x3, UserSquare } from "lucide-react"
 import Image from "next/image"
 import type { ReactNode } from "react"
-import { formatFollowers } from "@/lib/format"
+import { INTL_LOCALE, useFormat, useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 // Anneau « story » Instagram — chrome de marque (dégradé officiel).
@@ -32,11 +32,19 @@ function Stat({ value, label }: { value: ReactNode; label: string }) {
 
 // Boutons Suivre / Message : chrome décoratif de la simulation de profil
 // (signalé comme tel — audit §1.2), volontairement non interactif.
-function ChromeButton({ children, primary = false }: { children: ReactNode; primary?: boolean }) {
+function ChromeButton({
+  children,
+  title,
+  primary = false,
+}: {
+  children: ReactNode
+  title: string
+  primary?: boolean
+}) {
   return (
     <span
       aria-hidden
-      title="Aperçu du profil — élément décoratif"
+      title={title}
       className={cn(
         "inline-flex h-8 flex-1 cursor-default items-center justify-center rounded-lg text-sm font-medium select-none",
         primary ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
@@ -58,6 +66,9 @@ export function InstagramProfileHeader({
   onTabChange?: (tab: ProfileTab) => void
   reelsCount?: number
 }) {
+  const t = useT()
+  const f = useFormat()
+  const { locale } = useLocale()
   return (
     <header className="overflow-hidden rounded-xl border bg-card">
       <div className="p-4 sm:p-5">
@@ -78,9 +89,12 @@ export function InstagramProfileHeader({
             </div>
           </div>
           <div className="flex flex-1 items-center justify-around sm:justify-start sm:gap-9">
-            <Stat value={profile.postCount} label="publications" />
-            <Stat value={formatFollowers(profile.followers)} label="abonnés" />
-            <Stat value={profile.following.toLocaleString("fr-FR")} label="abonnements" />
+            <Stat value={profile.postCount} label={t("grid.profile.posts")} />
+            <Stat value={f.followers(profile.followers)} label={t("grid.profile.followers")} />
+            <Stat
+              value={profile.following.toLocaleString(INTL_LOCALE[locale])}
+              label={t("grid.profile.following")}
+            />
           </div>
         </div>
 
@@ -92,8 +106,12 @@ export function InstagramProfileHeader({
         </div>
 
         <div className="mt-3 flex gap-1.5">
-          <ChromeButton primary>Suivre</ChromeButton>
-          <ChromeButton>Message</ChromeButton>
+          <ChromeButton primary title={t("grid.profile.chromeDecorative")}>
+            {t("grid.profile.follow")}
+          </ChromeButton>
+          <ChromeButton title={t("grid.profile.chromeDecorative")}>
+            {t("grid.profile.message")}
+          </ChromeButton>
         </div>
 
         {profile.highlights.length > 0 ? (
@@ -124,7 +142,7 @@ export function InstagramProfileHeader({
           )}
         >
           <Grid3x3 className="size-4" />
-          PUBLICATIONS
+          {t("grid.profile.tabPosts")}
         </button>
         <button
           type="button"
@@ -139,12 +157,12 @@ export function InstagramProfileHeader({
           )}
         >
           <Clapperboard className="size-4" />
-          REELS
+          {t("grid.profile.tabReels")}
           {reelsCount > 0 ? <span className="tabular-nums">({reelsCount})</span> : null}
         </button>
         <span
           aria-hidden
-          title="Aperçu du profil — onglet décoratif"
+          title={t("grid.profile.tabDecorative")}
           className="flex items-center justify-center py-2.5"
         >
           <UserSquare className="size-4" />

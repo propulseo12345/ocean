@@ -4,6 +4,7 @@ import { Plus, X } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useT } from "@/lib/i18n"
 
 // Éditeur de lignes de texte (listes « À faire » / « À éviter » du brand kit).
 
@@ -20,6 +21,7 @@ export function StringListEditor({
   addLabel: string
   emptyLabel: string
 }) {
+  const t = useT()
   const [draft, setDraft] = useState("")
 
   function add() {
@@ -49,7 +51,7 @@ export function StringListEditor({
                 size="icon-xs"
                 variant="ghost"
                 onClick={() => remove(index)}
-                aria-label={`Retirer « ${item} »`}
+                aria-label={t("clientSettings.stringList.removeAria", { value: item })}
               >
                 <X />
               </Button>

@@ -12,7 +12,7 @@ import {
 } from "@dnd-kit/core"
 import { useState } from "react"
 import { toast } from "sonner"
-import { approvalModeMeta } from "@/lib/mocks/labels"
+import { useLabels, useT } from "@/lib/i18n"
 import { days, fromNow } from "@/lib/mocks/time"
 import type { Client, ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { KanbanCard, KanbanColumn } from "./board-kanban-card"
@@ -49,6 +49,8 @@ export function BoardKanban({
   client: Client
   board: BoardState
 }) {
+  const t = useT()
+  const lbl = useLabels()
   const [activeId, setActiveId] = useState<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_DISTANCE_PX } }),
@@ -60,55 +62,56 @@ export function BoardKanban({
   function move(item: ContentItem, target: KanbanColumnId) {
     if (kanbanColumnOf(item.status) === target) return
     if (target === "published") {
-      toast.info("Impossible de déposer en « Publié »", {
-        description:
-          "La publication passe par le moteur Ocean ou le centre de publication manuelle.",
+      toast.info(t("studio.kanban.cannotDropPublished"), {
+        description: t("studio.kanban.cannotDropPublishedDesc"),
       })
     } else if (target === "approved") {
       if (client.approvalMode === "auto") {
         board.setStatusBatch([item.id], "approved")
-        toast.success("Marqué validé (aperçu)", {
-          description: `${client.name} est en publication directe — pas de validation client requise.`,
+        toast.success(t("studio.kanban.markedApproved"), {
+          description: t("studio.kanban.markedApprovedDesc", { name: client.name }),
         })
       } else {
-        toast.info("Validation client requise", {
-          description: `${client.name} est en « ${approvalModeMeta[client.approvalMode].label.toLowerCase()} » — passe par « Demander une validation ».`,
+        toast.info(t("studio.kanban.reviewRequired"), {
+          description: t("studio.kanban.reviewRequiredDesc", {
+            name: client.name,
+            mode: lbl.approvalMode(client.approvalMode).toLowerCase(),
+          }),
         })
       }
     } else if (target === "in_review") {
       if (TO_REVIEW_FROM.includes(item.status)) {
         board.setStatusBatch([item.id], "in_review")
-        toast.success("Envoyé en validation (aperçu)")
+        toast.success(t("studio.kanban.sentToReview"))
       } else {
-        toast.info("Ce contenu ne peut pas partir en revue", {
-          description: "Seuls les idées, brouillons et contenus validés sont éligibles.",
+        toast.info(t("studio.kanban.cannotReview"), {
+          description: t("studio.kanban.cannotReviewDesc"),
         })
       }
     } else if (target === "draft") {
       if (TO_DRAFT_FROM.includes(item.status)) {
         board.setStatusBatch([item.id], "draft")
-        toast.success("Repassé en brouillon (aperçu)", {
-          description:
-            item.status === "approved" ? "L'approbation client est invalidée." : undefined,
+        toast.success(t("studio.kanban.backToDraft"), {
+          description: item.status === "approved" ? t("studio.kanban.backToDraftDesc") : undefined,
         })
       }
     } else if (target === "idea") {
       if (item.status === "draft") {
         board.setStatusBatch([item.id], "idea")
-        toast.success("Reversé à la banque d'idées (aperçu)")
+        toast.success(t("studio.kanban.backToIdea"))
       } else {
-        toast.info("Seul un brouillon peut repartir en idée")
+        toast.info(t("studio.kanban.onlyDraftToIdea"))
       }
     } else if (target === "scheduled") {
       if (!TO_SCHEDULED_FROM.includes(item.status)) {
-        toast.info("Programmation impossible", {
-          description: "Corrige d'abord les retours ou repasse le contenu en brouillon.",
+        toast.info(t("studio.kanban.cannotSchedule"), {
+          description: t("studio.kanban.cannotScheduleDesc"),
         })
         return
       }
       if (item.scheduledAt && item.scheduledAt > fromNow(0)) {
         board.setStatusBatch([item.id], "scheduled")
-        toast.success("Programmé (aperçu)")
+        toast.success(t("studio.kanban.scheduled"))
       } else {
         const wc = wallClockIn(fromNow(days(1)), client.timezone)
         board.scheduleBatch(
@@ -116,8 +119,8 @@ export function BoardKanban({
           zonedToUtcIso(wc.year, wc.month, wc.day, 9, 0, client.timezone),
           0
         )
-        toast.success("Programmé demain 9 h (aperçu)", {
-          description: "Ajuste le créneau depuis le détail ou le calendrier.",
+        toast.success(t("studio.kanban.scheduledTomorrow"), {
+          description: t("studio.kanban.scheduledTomorrowDesc"),
         })
       }
     }
@@ -146,7 +149,7 @@ export function BoardKanban({
           <KanbanColumn
             key={col.id}
             id={col.id}
-            label={col.label}
+            label={t(col.labelKey)}
             items={items.filter((it) => kanbanColumnOf(it.status) === col.id)}
             client={client}
           />

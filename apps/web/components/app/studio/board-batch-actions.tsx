@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { UseMultiSelectResult } from "@/hooks/use-multi-select"
+import { pick, type Translator, useLocale, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { LabelEditor } from "./board-label-popover"
 import { BoardScheduleDialog } from "./board-schedule-dialog"
@@ -22,8 +23,8 @@ import { canCancel, canSchedule, canSendReview } from "./board-utils"
 // Actions en lot du studio : envoyer en validation, programmer en série,
 // étiqueter, archiver, annuler — mutations locales + toasts (aperçu).
 
-function ignoredSuffix(ignored: number): string {
-  return ignored > 0 ? ` · ${ignored} ignoré${ignored > 1 ? "s" : ""} (statut incompatible)` : ""
+function ignoredSuffix(t: Translator, ignored: number): string {
+  return ignored > 0 ? t("studio.batch.ignoredSuffix", { count: ignored }) : ""
 }
 
 export function BoardBatchActions({
@@ -39,6 +40,8 @@ export function BoardBatchActions({
   allLabels: string[]
   onOpenReview: () => void
 }) {
+  const t = useT()
+  const { locale } = useLocale()
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [labelOpen, setLabelOpen] = useState(false)
 
@@ -52,8 +55,8 @@ export function BoardBatchActions({
     if (selected.some(canSendReview)) {
       onOpenReview()
     } else {
-      toast.info("Aucun contenu éligible à la validation", {
-        description: "Seuls les brouillons et retours corrigés peuvent partir en revue.",
+      toast.info(t("studio.batch.noReviewEligible"), {
+        description: t("studio.batch.noReviewEligibleDesc"),
       })
     }
   }
@@ -62,34 +65,34 @@ export function BoardBatchActions({
     if (schedulable.length > 0) {
       setScheduleOpen(true)
     } else {
-      toast.info("Aucun contenu programmable", {
-        description: "Seuls les idées, brouillons et contenus validés peuvent être programmés.",
+      toast.info(t("studio.batch.noSchedulable"), {
+        description: t("studio.batch.noSchedulableDesc"),
       })
     }
   }
 
   function archive() {
     board.archiveBatch(selection.selectedIds)
-    toast.success(
-      `${selected.length} contenu${selected.length > 1 ? "s" : ""} archivé${selected.length > 1 ? "s" : ""} (aperçu)`,
-      {
-        description: "Retirés du studio — restaurables depuis la corbeille du client.",
-      }
-    )
+    toast.success(t("studio.batch.archived", { count: selected.length }), {
+      description: t("studio.batch.archivedDesc"),
+    })
     selection.clear()
   }
 
   function cancel() {
     const ids = cancelable.map((it) => it.id)
     if (ids.length === 0) {
-      toast.info("Rien à annuler", {
-        description: "Les contenus déjà publiés ou en cours de publication sont verrouillés.",
+      toast.info(t("studio.batch.nothingToCancel"), {
+        description: t("studio.batch.nothingToCancelDesc"),
       })
       return
     }
     board.setStatusBatch(ids, "canceled")
     toast.success(
-      `${ids.length} contenu${ids.length > 1 ? "s" : ""} annulé${ids.length > 1 ? "s" : ""} (aperçu)${ignoredSuffix(selected.length - ids.length)}`
+      t("studio.batch.canceled", {
+        count: ids.length,
+        ignored: ignoredSuffix(t, selected.length - ids.length),
+      })
     )
     selection.clear()
   }
@@ -99,11 +102,11 @@ export function BoardBatchActions({
       <SelectionBar count={selection.count} onClear={selection.clear}>
         <Button variant="ghost" size="sm" className="rounded-full" onClick={openReview}>
           <Send />
-          Envoyer en validation
+          {t("studio.batch.sendReview")}
         </Button>
         <Button variant="ghost" size="sm" className="rounded-full" onClick={openSchedule}>
           <CalendarClock />
-          Programmer
+          {t("studio.batch.schedule")}
         </Button>
         <Button
           variant="ghost"
@@ -112,11 +115,11 @@ export function BoardBatchActions({
           onClick={() => setLabelOpen(true)}
         >
           <Tag />
-          Étiqueter
+          {t("studio.batch.tag")}
         </Button>
         <Button variant="ghost" size="sm" className="rounded-full" onClick={archive}>
           <Archive />
-          Archiver
+          {t("studio.batch.archive")}
         </Button>
         <Button
           variant="ghost"
@@ -125,7 +128,7 @@ export function BoardBatchActions({
           onClick={cancel}
         >
           <Ban />
-          Annuler
+          {t("studio.batch.cancel")}
         </Button>
       </SelectionBar>
 
@@ -142,7 +145,10 @@ export function BoardBatchActions({
           )
           setScheduleOpen(false)
           toast.success(
-            `${schedulable.length} contenu${schedulable.length > 1 ? "s" : ""} programmé${schedulable.length > 1 ? "s" : ""} (aperçu)${ignoredSuffix(selected.length - schedulable.length)}`
+            t("studio.batch.scheduled", {
+              count: schedulable.length,
+              ignored: ignoredSuffix(t, selected.length - schedulable.length),
+            })
           )
           selection.clear()
         }}
@@ -151,25 +157,26 @@ export function BoardBatchActions({
       <Dialog open={labelOpen} onOpenChange={setLabelOpen}>
         <DialogContent className="sm:max-w-xs">
           <DialogHeader>
-            <DialogTitle>Étiqueter la sélection</DialogTitle>
+            <DialogTitle>{t("studio.batch.tagDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Les étiquettes cochées s'ajoutent aux {selected.length} contenu
-              {selected.length > 1 ? "s" : ""} sélectionné{selected.length > 1 ? "s" : ""}.
+              {t("studio.batch.tagDialogDesc", { count: selected.length })}
             </DialogDescription>
           </DialogHeader>
           <LabelEditor
             key={labelOpen ? "open" : "closed"}
             allLabels={allLabels}
             initial={[]}
-            applyLabel="Ajouter aux contenus (aperçu)"
+            applyLabel={t("studio.batch.tagApply")}
             onApply={(labels) => {
               if (labels.length > 0) {
                 board.addLabelsBatch(
                   selection.selectedIds,
                   labels,
-                  new Map(selected.map((it) => [it.id, it.labels ?? []]))
+                  new Map(
+                    selected.map((it) => [it.id, (it.labels ?? []).map((l) => pick(l, locale))])
+                  )
                 )
-                toast.success("Étiquettes ajoutées (aperçu)", {
+                toast.success(t("studio.batch.tagsAdded"), {
                   description: labels.join(" · "),
                 })
               }

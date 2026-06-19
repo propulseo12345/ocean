@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { EditorialCalendar } from "@/components/app/calendar/editorial-calendar"
+import { getT } from "@/lib/i18n/server"
 import {
   getClient,
   getClientEvents,
@@ -13,7 +14,10 @@ import {
   getSocialAccounts,
 } from "@/lib/mocks"
 
-export const metadata: Metadata = { title: "Calendrier éditorial" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT()
+  return { title: t("clients.metaCalendar") }
+}
 
 export default async function ClientCalendarPage({
   params,

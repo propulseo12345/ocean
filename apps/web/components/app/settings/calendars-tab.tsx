@@ -6,19 +6,26 @@ import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { pick, useLocale, useT } from "@/lib/i18n"
 import type { CalendarAccount } from "@/lib/mocks/types"
-import { CalendarProviderIcon, calendarProviderLabel } from "./calendar-provider-icon"
+import { CalendarProviderIcon, useCalendarProviderLabel } from "./calendar-provider-icon"
 
 export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {
+  const t = useT()
+
+  function handleConnect() {
+    toast.info(
+      t("settings.calendars.connectToast", { provider: t("settings.calendars.providerGoogle") }),
+      { description: t("settings.calendars.connectToastDescription") }
+    )
+  }
+
   return (
     <div className="space-y-4">
       <Alert>
         <Eye />
-        <AlertTitle>Connexion en lecture seule</AlertTitle>
-        <AlertDescription>
-          Ocean lit tes événements pour composer l'agenda unifié (Google + Outlook) dans ton fuseau.
-          Aucun rendez-vous n'est créé ni modifié sur tes calendriers.
-        </AlertDescription>
+        <AlertTitle>{t("settings.calendars.readOnlyTitle")}</AlertTitle>
+        <AlertDescription>{t("settings.calendars.readOnlyDescription")}</AlertDescription>
       </Alert>
 
       <Card>
@@ -31,28 +38,25 @@ export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {
         </CardContent>
       </Card>
 
-      <Button variant="outline" onClick={() => connectToast("Google")}>
+      <Button variant="outline" onClick={handleConnect}>
         <Plus />
-        Connecter un calendrier
+        {t("settings.calendars.connect")}
       </Button>
     </div>
   )
 }
 
-function connectToast(provider: string) {
-  toast.info(`Connexion ${provider}`, {
-    description: "Action simulée (preview) — l'autorisation s'ouvrira ici.",
-  })
-}
-
 function CalendarRow({ account }: { account: CalendarAccount }) {
+  const t = useT()
+  const { locale } = useLocale()
+  const providerLabel = useCalendarProviderLabel()
   const needsAttention = account.status !== "connected"
-  const providerLabel = calendarProviderLabel[account.provider]
 
   function handleReconnect() {
-    toast.warning(`Reconnexion ${providerLabel}`, {
-      description: "Action simulée (preview) — l'autorisation s'ouvrira ici.",
-    })
+    toast.warning(
+      t("settings.calendars.reconnectToast", { provider: providerLabel(account.provider) }),
+      { description: t("settings.calendars.reconnectToastDescription") }
+    )
   }
 
   return (
@@ -62,7 +66,7 @@ function CalendarRow({ account }: { account: CalendarAccount }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{account.label}</p>
+        <p className="truncate text-sm font-medium">{pick(account.label, locale)}</p>
         <p className="truncate text-xs text-muted-foreground">{account.email}</p>
       </div>
 
@@ -71,7 +75,7 @@ function CalendarRow({ account }: { account: CalendarAccount }) {
         {needsAttention ? (
           <Button size="sm" variant="outline" onClick={handleReconnect}>
             <RefreshCw />
-            Reconnecter
+            {t("settings.calendars.reconnect")}
           </Button>
         ) : null}
       </div>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { initials } from "@/lib/format"
+import { useT } from "@/lib/i18n"
 import { BrandColorPalette } from "./brand-color-palette"
 import { CATEGORIES, type ClientDraft, normalizeHandle, TIMEZONES } from "./wizard-types"
 
@@ -27,7 +28,9 @@ export function StepIdentity({
   patch: (partial: Partial<ClientDraft>) => void
   firstFieldRef: React.RefObject<HTMLInputElement | null>
 }) {
-  const previewInitials = initials(draft.name || "Nouveau client")
+  const t = useT()
+  const previewInitials = initials(draft.name || t("onboarding.identity.newClient"))
+  const categoryLabel = CATEGORIES.find((c) => c.value === draft.category)?.labelKey
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
@@ -35,20 +38,20 @@ export function StepIdentity({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="cl-name">
-              Nom du client <span className="text-destructive">*</span>
+              {t("onboarding.identity.nameLabel")} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="cl-name"
               ref={firstFieldRef}
               value={draft.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder="Ex. Brûlerie Lacaze"
+              placeholder={t("onboarding.identity.namePlaceholder")}
               autoComplete="off"
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cl-handle">
-              Identifiant <span className="text-destructive">*</span>
+              {t("onboarding.identity.handleLabel")} <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
               <AtSign className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -56,33 +59,33 @@ export function StepIdentity({
                 id="cl-handle"
                 value={draft.handle}
                 onChange={(e) => patch({ handle: normalizeHandle(e.target.value) })}
-                placeholder="brulerielacaze"
+                placeholder={t("onboarding.identity.handlePlaceholder")}
                 className="pl-7"
                 autoComplete="off"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Le @ du compte principal, sans espace.</p>
+            <p className="text-xs text-muted-foreground">{t("onboarding.identity.handleHint")}</p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="cl-category">Catégorie</Label>
+            <Label htmlFor="cl-category">{t("onboarding.identity.categoryLabel")}</Label>
             <Select value={draft.category} onValueChange={(v) => patch({ category: String(v) })}>
               <SelectTrigger id="cl-category" className="w-full">
-                <SelectValue placeholder="Choisir une activité" />
+                <SelectValue placeholder={t("onboarding.identity.categoryPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                  <SelectItem key={c.value} value={c.value}>
+                    {t(c.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cl-tz">Fuseau horaire du client</Label>
+            <Label htmlFor="cl-tz">{t("onboarding.identity.timezoneLabel")}</Label>
             <Select value={draft.timezone} onValueChange={(v) => patch({ timezone: String(v) })}>
               <SelectTrigger id="cl-tz" className="w-full">
                 <SelectValue />
@@ -90,24 +93,24 @@ export function StepIdentity({
               <SelectContent>
                 {TIMEZONES.map((tz) => (
                   <SelectItem key={tz.value} value={tz.value}>
-                    {tz.label}
+                    {t(tz.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Les publications seront planifiées à l'heure locale du client.
+              {t("onboarding.identity.timezoneHint")}
             </p>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="cl-bio">Bio</Label>
+          <Label htmlFor="cl-bio">{t("onboarding.identity.bioLabel")}</Label>
           <Textarea
             id="cl-bio"
             value={draft.bio}
             onChange={(e) => patch({ bio: e.target.value })}
-            placeholder="La présentation affichée sur le profil — quelques lignes suffisent."
+            placeholder={t("onboarding.identity.bioPlaceholder")}
             rows={3}
           />
         </div>
@@ -118,8 +121,10 @@ export function StepIdentity({
         />
       </div>
 
-      <aside className="space-y-2" aria-label="Aperçu de la fiche client">
-        <p className="text-xs font-medium text-muted-foreground">Aperçu</p>
+      <aside className="space-y-2" aria-label={t("onboarding.identity.previewLabel")}>
+        <p className="text-xs font-medium text-muted-foreground">
+          {t("onboarding.identity.previewHeading")}
+        </p>
         <div className="rounded-xl border bg-card p-5 shadow-sm">
           <div className="flex items-start gap-3">
             <span
@@ -131,15 +136,15 @@ export function StepIdentity({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-heading font-semibold">
-                {draft.name || "Nouveau client"}
+                {draft.name || t("onboarding.identity.newClient")}
               </p>
               <p className="truncate text-sm text-muted-foreground">
-                @{draft.handle || "identifiant"}
+                @{draft.handle || t("onboarding.identity.handleFallback")}
               </p>
             </div>
           </div>
-          {draft.category ? (
-            <p className="mt-3 text-xs text-muted-foreground">{draft.category}</p>
+          {categoryLabel ? (
+            <p className="mt-3 text-xs text-muted-foreground">{t(categoryLabel)}</p>
           ) : null}
           {draft.bio ? (
             <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{draft.bio}</p>
