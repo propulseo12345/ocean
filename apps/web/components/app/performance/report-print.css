@@ -1,0 +1,45 @@
+/* Mise en page d'impression du rapport client (window.print → PDF).
+   Masque le chrome de l'app, force un fond blanc et soigne la pagination.
+   Sélecteurs dédoublés ([attr][attr]) pour gagner en spécificité sur les
+   classes utilitaires sans recourir à !important. */
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  /* Masque tout sauf le document du rapport. */
+  body * {
+    visibility: hidden;
+  }
+  [data-report-document],
+  [data-report-document] * {
+    visibility: visible;
+  }
+
+  /* Pas de position: absolute → le rapport reste dans le flux normal et peut
+     paginer sur plusieurs feuilles sans être tronqué à la première page.
+     Le chrome est déjà masqué via visibility:hidden + [data-no-print]. */
+  [data-report-document][data-report-document] {
+    margin: 0;
+    width: 100%;
+    background: #ffffff;
+    color: #111111;
+  }
+
+  /* Éléments d'interface non imprimables (barre d'actions, bandeaux). */
+  [data-no-print][data-no-print] {
+    display: none;
+  }
+
+  /* Évite les coupures disgracieuses au milieu d'un bloc. */
+  [data-report-section] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Neutralise les ombres pour un rendu papier net. */
+  [data-report-document] [data-report-document] {
+    box-shadow: none;
+  }
+}

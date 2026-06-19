@@ -45,3 +45,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Backups locaux de session (filets de sécurité, hors repo)
+.planning/audit-impl/backups/
