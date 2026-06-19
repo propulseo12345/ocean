@@ -1,7 +1,7 @@
 # Ocean — image de production (Next.js 16, monorepo pnpm, sortie standalone).
 # Build multi-stage : deps → build → runner minimal non-root.
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 WORKDIR /app
 
