@@ -8,9 +8,10 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Connexion</CardTitle>
+        <CardTitle className="text-xl">Accéder à la démo</CardTitle>
         <CardDescription>
-          Pas de mot de passe. Saisis ton e-mail pour recevoir un accès sécurisé.
+          Aperçu produit à données fictives. Entre en un clic, ou simule une connexion sans mot de
+          passe.
         </CardDescription>
       </CardHeader>
       <CardContent>

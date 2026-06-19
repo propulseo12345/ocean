@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { AppSidebar } from "@/components/app/app-sidebar"
 import { NotificationsButton } from "@/components/app/notifications-button"
 import { CommandPalette } from "@/components/app/shell/command-palette"
+import { DemoBanner } from "@/components/app/shell/demo-banner"
 import { HeaderSearchButton } from "@/components/app/shell/header-search-button"
 import { PwaInstallAssistant } from "@/components/app/shell/pwa-install-assistant"
 import { QuickCapture } from "@/components/app/shell/quick-capture"
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
+          <DemoBanner />
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md sm:px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />

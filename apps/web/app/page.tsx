@@ -59,7 +59,7 @@ export default function LandingPage() {
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button size="lg" render={<Link href={routes.dashboard} />}>
-            Ouvrir l'application
+            Entrer dans la démo
             <ArrowRight />
           </Button>
           <Button

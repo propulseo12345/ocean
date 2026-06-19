@@ -1,6 +1,6 @@
 "use client"
 
-import { KeyRound, Mail, Monitor, Smartphone } from "lucide-react"
+import { KeyRound, Mail, Monitor, Smartphone, Waves } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -10,11 +10,20 @@ import { Label } from "@/components/ui/label"
 import { routes } from "@/lib/routes"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Compte de démonstration pré-rempli : tout est fictif, aucun envoi réel.
+const DEMO_EMAIL = "demo@studio.fr"
 
 export function LoginForm() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(DEMO_EMAIL)
   const isValid = EMAIL_RE.test(email)
+
+  function enterDemo() {
+    toast.success("Bienvenue dans la démo Ocean", {
+      description: "Compte de démonstration — données fictives.",
+    })
+    router.push(routes.dashboard)
+  }
 
   function guard() {
     if (!isValid) {
@@ -28,9 +37,10 @@ export function LoginForm() {
 
   function sendMagicLink() {
     if (!guard()) return
-    toast.success("Lien magique envoyé (preview)", {
-      description: `Un lien de connexion a été simulé pour ${email}.`,
+    toast.success("Lien magique validé (preview)", {
+      description: `Connexion simulée pour ${email} — accès à la démo.`,
     })
+    router.push(routes.dashboard)
   }
 
   function sendOtp() {
@@ -49,6 +59,16 @@ export function LoginForm() {
       }}
       className="space-y-4"
     >
+      <Button type="button" size="lg" className="h-11 w-full" onClick={enterDemo}>
+        <Waves />
+        Entrer dans la démo
+      </Button>
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        ou simule une connexion
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="email">Adresse e-mail</Label>
         <Input

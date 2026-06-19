@@ -125,7 +125,7 @@ export function OtpForm() {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Vous n'avez rien reçu ?{" "}
+        Tu n'as rien reçu ?{" "}
         <button
           type="button"
           onClick={resend}
