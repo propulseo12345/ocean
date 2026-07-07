@@ -1,0 +1,6 @@
+export type Platform = "instagram" | "facebook" | "tiktok" | "newsletter" | "custom"
+export type ContentFormat = "post" | "carousel" | "reel" | "story"
+export type MediaType = "image" | "video"
+export type AccountStatus = "connected" | "needs_reauth"
+export type OrgRole = "owner" | "admin"
+export type ClientRole = "reviewer" | "editor"
