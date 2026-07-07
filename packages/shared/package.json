@@ -1,0 +1,10 @@
+{
+  "name": "@ocean/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types/domain": "./src/types/domain.ts",
+    "./schemas": "./src/schemas/index.ts"
+  }
+}
