@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(12);
 
 insert into auth.users (id, email)
 values
@@ -53,11 +53,34 @@ values (
   '90000000-0000-4000-8000-000000000601'
 );
 
-insert into public.content_items (id, org_id, client_id, title, caption, created_by)
+-- Le statut est explicite : la policy content_items_select masque au reviewer
+-- la corbeille et les statuts internes (idea, draft, publishing, failed...).
+-- Un fixture muet sur le statut retomberait sur le defaut 'idea', invisible.
+insert into public.content_items (id, org_id, client_id, title, caption, status, created_by)
 values
-  ('50000000-0000-4000-8000-000000000601', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000601', 'Content 006 A1', 'Caption A1', '00000000-0000-4000-8000-000000000601'),
-  ('50000000-0000-4000-8000-000000000602', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000602', 'Content 006 A2', 'Caption A2', '00000000-0000-4000-8000-000000000601'),
-  ('50000000-0000-4000-8000-000000000603', '10000000-0000-4000-8000-000000000602', '20000000-0000-4000-8000-000000000603', 'Content 006 B1', 'Caption B1', '00000000-0000-4000-8000-000000000602');
+  ('50000000-0000-4000-8000-000000000601', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000601', 'Content 006 A1', 'Caption A1', 'in_review', '00000000-0000-4000-8000-000000000601'),
+  ('50000000-0000-4000-8000-000000000602', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000602', 'Content 006 A2', 'Caption A2', 'in_review', '00000000-0000-4000-8000-000000000601'),
+  ('50000000-0000-4000-8000-000000000603', '10000000-0000-4000-8000-000000000602', '20000000-0000-4000-8000-000000000603', 'Content 006 B1', 'Caption B1', 'in_review', '00000000-0000-4000-8000-000000000602'),
+  -- brouillon du client 1 : le reviewer ne doit PAS le voir (GUARD-04)
+  ('50000000-0000-4000-8000-000000000604', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000601', 'Draft A1', 'Draft caption', 'draft', '00000000-0000-4000-8000-000000000601'),
+  -- contenu du client 1 en corbeille : invisible au reviewer, visible a l'owner
+  ('50000000-0000-4000-8000-000000000605', '10000000-0000-4000-8000-000000000601', '20000000-0000-4000-8000-000000000601', 'Trashed A1', 'Trashed caption', 'approved', '00000000-0000-4000-8000-000000000601');
+
+update public.content_items
+set deleted_at = now()
+where id = '50000000-0000-4000-8000-000000000605';
+
+-- Cible attachee au DRAFT du client 1. Sans elle, l'assertion "reviewer ne lit
+-- pas les content_targets d'un draft" passerait trivialement (0 = 0).
+insert into public.content_targets (id, org_id, client_id, content_item_id, social_account_id, platform)
+values (
+  'c0000000-0000-4000-8000-000000000604',
+  '10000000-0000-4000-8000-000000000601',
+  '20000000-0000-4000-8000-000000000601',
+  '50000000-0000-4000-8000-000000000604',
+  '40000000-0000-4000-8000-000000000601',
+  'instagram'
+);
 
 grant select on public.social_account_secrets to authenticated;
 
@@ -84,6 +107,31 @@ select results_eq(
   $$select count(*)::bigint from public.content_items where client_id = '20000000-0000-4000-8000-000000000602'::uuid$$,
   $$values (0::bigint)$$,
   'reviewer client 1 cannot read client 2 content'
+);
+
+-- GUARD-04 : le front filtre deja (REVIEWER_VISIBLE, deletedAt), mais le
+-- portail interroge PostgREST. Sans policy, le reviewer lit draft et corbeille.
+select results_eq(
+  $$select count(*)::bigint from public.content_items
+    where id = '50000000-0000-4000-8000-000000000604'::uuid$$,
+  $$values (0::bigint)$$,
+  'reviewer cannot read a draft of their own client'
+);
+
+select results_eq(
+  $$select count(*)::bigint from public.content_items
+    where id = '50000000-0000-4000-8000-000000000605'::uuid$$,
+  $$values (0::bigint)$$,
+  'reviewer cannot read a soft-deleted item of their own client'
+);
+
+-- La fuite passerait aussi par la table fille : sans filtre, le reviewer lirait
+-- platform / external_post_id / permalink / metadata des cibles d'un draft.
+select results_eq(
+  $$select count(*)::bigint from public.content_targets
+    where content_item_id = '50000000-0000-4000-8000-000000000604'::uuid$$,
+  $$values (0::bigint)$$,
+  'reviewer cannot read content_targets of a draft'
 );
 
 select results_eq(
@@ -118,6 +166,44 @@ select throws_ok(
     )$$,
   '23503',
   'cross-client content_target insert fails by FK composite'
+);
+
+-- GUARD-01 : sans cet index unique partiel, deux cibles identiques produiraient
+-- deux publish_jobs legitimes -- chacun unique de son point de vue, chacun
+-- publiant. C'est LE chemin structurel vers la double publication.
+select throws_ok(
+  $$insert into public.content_targets (
+      org_id,
+      client_id,
+      content_item_id,
+      social_account_id,
+      platform
+    )
+    values (
+      '10000000-0000-4000-8000-000000000601',
+      '20000000-0000-4000-8000-000000000601',
+      '50000000-0000-4000-8000-000000000604',
+      '40000000-0000-4000-8000-000000000601',
+      'instagram'
+    )$$,
+  '23505',
+  'duplicate content_target on (content_item, social_account) is rejected'
+);
+
+-- Contrepartie de GUARD-04 : l'owner voit tout, y compris draft et corbeille.
+-- Un test qui ne prouve que le refus ne prouve rien sur l'autorisation.
+select results_eq(
+  $$select count(*)::bigint from public.content_items
+    where client_id = '20000000-0000-4000-8000-000000000601'::uuid$$,
+  $$values (3::bigint)$$,
+  'owner reads all their content, including draft and trashed'
+);
+
+select results_eq(
+  $$select count(*)::bigint from public.content_targets
+    where content_item_id = '50000000-0000-4000-8000-000000000604'::uuid$$,
+  $$values (1::bigint)$$,
+  'owner reads content_targets of a draft'
 );
 
 select results_eq(
