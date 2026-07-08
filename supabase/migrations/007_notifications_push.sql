@@ -76,11 +76,21 @@ $$;
 revoke all on function private.has_org_access(uuid) from public;
 grant execute on function private.has_org_access(uuid) to authenticated, service_role;
 
+-- Isolation a deux niveaux (regle 8) :
+--   * org-level (client_id is null) : appartenance a l'org suffit.
+--   * client-level (client_id renseigne) : exiger l'appartenance AU CLIENT.
+-- has_org_access() matche client_members sur org_id : un reviewer du client 1
+-- passerait le predicat pour une notification du client 2 de la meme org.
 create policy notifications_select_own on public.notifications
 for select to authenticated
 using (
   recipient_user_id = (select auth.uid())
   and (select private.has_org_access(org_id))
+  and (
+    client_id is null
+    or (select private.is_org_member(org_id))
+    or (select private.is_client_member(client_id))
+  )
 );
 
 create policy push_subscriptions_select_own on public.push_subscriptions
