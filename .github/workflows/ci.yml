@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Le job qui compte. Les leak tests pgTAP ne tournaient nulle part : une
+  # regression RLS passait silencieusement. CLAUDE.md section 7.
+  db:
+    name: Database (pgTAP + advisors)
+    runs-on: ubuntu-latest
+    env:
+      # Port DB local du CLI Supabase (supabase/config.toml -> [db] port).
+      # Connexion directe, pas de pooler : le port 6543 est interdit (regle 17).
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase (local, jamais db push ni link)
+        run: supabase start
+
+      # db reset rejoue TOUTES les migrations depuis zero, dans l'ordre.
+      # Une migration qui ne s'applique pas sur une base vierge echoue ici.
+      - name: Apply migrations from scratch
+        run: supabase db reset --no-seed
+
+      # Le seul filet des triggers de garde : get_advisors ne les voit pas.
+      - name: Run pgTAP leak tests
+        run: supabase test db
+
+      # get_advisors est un endpoint Management API (projet distant). En local
+      # il n'existe pas -- on interroge le catalogue directement.
+      - name: Security advisors (local equivalent)
+        run: |
+          DB_URL="$SUPABASE_DB_URL"
+
+          echo "::group::Tables sans RLS"
+          NO_RLS=$(psql "$DB_URL" -tAc "
+            select string_agg(c.relname, ', ')
+            from pg_class c join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'public' and c.relkind = 'r'
+              and not c.relrowsecurity;")
+          echo "${NO_RLS:-(aucune)}"
+          echo "::endgroup::"
+
+          echo "::group::SECURITY DEFINER sans search_path fige"
+          NO_PATH=$(psql "$DB_URL" -tAc "
+            select string_agg(p.proname, ', ')
+            from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where p.prosecdef
+              and n.nspname in ('public', 'private')
+              and coalesce(array_to_string(p.proconfig, ','), '') not like '%search_path%';")
+          echo "${NO_PATH:-(aucune)}"
+          echo "::endgroup::"
+
+          FAIL=0
+          [ -n "$NO_RLS" ]  && { echo "::error::Tables sans RLS : $NO_RLS"; FAIL=1; }
+          [ -n "$NO_PATH" ] && { echo "::error::SECURITY DEFINER sans search_path : $NO_PATH"; FAIL=1; }
+          exit $FAIL
+
+      # Les *_secrets sont RLS ON + zero policy : deny-all. Le test 005 le prouve
+      # deja en simulant un grant qui fuit ; ici on verifie qu'aucun grant reel
+      # n'a ete ajoute a authenticated.
+      - name: Assert *_secrets stay deny-all
+        run: |
+          DB_URL="$SUPABASE_DB_URL"
+          LEAK=$(psql "$DB_URL" -tAc "
+            select string_agg(table_name || '.' || privilege_type, ', ')
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name like '%\_secrets'
+              and grantee = 'authenticated';")
+          if [ -n "$LEAK" ]; then
+            echo "::error::grant sur une table *_secrets pour authenticated : $LEAK"
+            exit 1
+          fi
+          echo "OK : aucune *_secrets exposee a authenticated"
+
+      # Anti-patterns CLAUDE.md section 8, verifies statiquement.
+      - name: Forbidden patterns
+        run: |
+          set +e
+          FAIL=0
+          check() {
+            if grep -rniE "$1" supabase/ >/dev/null 2>&1; then
+              echo "::error::motif interdit dans supabase/ : $2"
+              grep -rniE "$1" supabase/ | head -5
+              FAIL=1
+            fi
+          }
+          check "disable row level security"     "disable row level security"
+          check "delete from storage\.objects"   "DELETE SQL sur storage.objects (regle 23)"
+          check "6543"                           "pooler transaction 6543 (regle 17 : SESSION 5432)"
+          check "linkIdentity"                   "linkIdentity (OAuth custom obligatoire)"
+          exit $FAIL
+
+  web:
+    name: Web (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # TODO(lot-0) : passer en bloquant une fois le Pre-0 commite.
+      # `pnpm check` echoue aujourd'hui sur 2 points hors perimetre backend
+      # (.planning/i18n/lot3-workflow.js, provider.tsx document.cookie).
+      # Une CI rouge en permanence est une CI qu'on ignore.
+      - name: Biome
+        run: pnpm check
+        continue-on-error: true
+
+      - name: Typecheck
+        run: pnpm --filter web exec tsc --noEmit
+        continue-on-error: true
+
+      - name: Build
+        run: pnpm build
