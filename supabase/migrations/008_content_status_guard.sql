@@ -25,15 +25,35 @@ begin
   end if;
 
   -- Bypass worker / migrations.
-  --   (a) session_user : le worker se connecte en Postgres direct (Supavisor
-  --       SESSION port 5432, regle 17). Il n'a AUCUN request.jwt.claims -- ce GUC
-  --       est pose par PostgREST uniquement.
-  --   (b) claim JWT : chemin PostgREST en service key (Edge Functions).
   --
-  -- NE JAMAIS remplacer session_user par current_user : sous SECURITY DEFINER,
-  -- current_user vaut le PROPRIETAIRE de la fonction, la garde s'ouvrirait
-  -- alors pour tout le monde.
-  if pg_catalog.session_user in ('postgres', 'supabase_admin')
+  -- L'ancre est `request.jwt.claims` : ce GUC est pose par PostgREST, et par lui
+  -- seul. Un appel utilisateur ou API le porte toujours ; une connexion serveur
+  -- directe (le worker, Supavisor SESSION port 5432, regle 17) ne l'a jamais.
+  --
+  --   (a) GUC absent ou vide  -> worker / migration -> bypass.
+  --   (b) role = service_role -> Edge Function en service key -> bypass.
+  --
+  -- Pourquoi PAS session_user (l'implementation precedente) :
+  --   PostgREST se connecte en `authenticator` puis fait SET ROLE authenticated.
+  --   SET ROLE ne change QUE current_user -- session_user reste le role de
+  --   connexion. La garde dependait donc du nom du role de connexion, non
+  --   teste, et invisible depuis pgTAP (ou session_user vaut 'postgres', ce qui
+  --   ouvrait le bypass et rendait la garde intestable).
+  --   Accessoirement `pg_catalog.session_user` ne compile pas : session_user est
+  --   un mot-cle SQL, pas une fonction schema-qualifiable.
+  --
+  -- Pourquoi PAS current_user : sous SECURITY DEFINER il vaut le PROPRIETAIRE
+  -- de la fonction. La garde s'ouvrirait pour tout le monde.
+  --
+  -- Pourquoi `coalesce(..., '') = ''` et non `IS NULL` : set_config(guc, null, true)
+  -- ne remet pas le GUC a NULL, il le laisse a chaine vide. Un `IS NULL` seul
+  -- refermerait la garde sur le worker des qu'un claim a ete pose puis reinitialise
+  -- dans la meme session (exactement ce que fait le test pgTAP).
+  --
+  -- Limite documentee : si un jour le worker passe par les routes API applicatives
+  -- ou par le client Supabase avec un JWT, il portera des claims et ce bypass ne
+  -- s'appliquera plus. Il devra alors s'authentifier en service_role (branche b).
+  if coalesce(pg_catalog.current_setting('request.jwt.claims', true), '') = ''
      or coalesce(
           pg_catalog.current_setting('request.jwt.claims', true)::jsonb ->> 'role',
           ''

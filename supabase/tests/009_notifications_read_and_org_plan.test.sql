@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 insert into auth.users (id, email)
 values
@@ -38,6 +38,7 @@ select throws_ok(
   $$update public.organizations set plan = 'enterprise'
     where id = '10000000-0000-4000-8000-000000000901'::uuid$$,
   '23514',
+  null,
   'organizations.plan rejects an unknown plan'
 );
 
@@ -48,16 +49,24 @@ set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000901';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000901","role":"authenticated"}';
 
--- Pas de policy UPDATE : l'UPDATE direct n'affecte aucune ligne.
-select results_eq(
-  $$with updated as (
-      update public.notifications set read_at = now()
-      where id = '60000000-0000-4000-8000-000000000901'::uuid
-      returning id
-    )
-    select count(*)::bigint from updated$$,
-  $$values (0::bigint)$$,
-  'authenticated cannot UPDATE notifications directly (no write policy)'
+-- Deux verrous, pas un. `notifications` n'accorde que SELECT a authenticated
+-- (007) : l'UPDATE direct est refuse au niveau PRIVILEGE, avant meme d'atteindre
+-- la RLS. Le test attendait « 0 ligne affectee » -- il obtient un 42501.
+-- Tester le vrai mecanisme, pas celui qu'on croyait avoir ecrit.
+select throws_ok(
+  $$update public.notifications set read_at = now()
+    where id = '60000000-0000-4000-8000-000000000901'::uuid$$,
+  '42501',
+  null,
+  'authenticated cannot UPDATE notifications directly (no table grant)'
+);
+
+-- Ceinture ET bretelles : meme si un GRANT UPDATE etait ajoute un jour, aucune
+-- policy UPDATE n'existe -- la RLS refermerait le chemin.
+select is_empty(
+  $$select polname from pg_policy
+    where polrelid = 'public.notifications'::regclass and polcmd = 'w'$$,
+  'notifications has no UPDATE policy (RLS would hold even with a grant)'
 );
 
 select results_eq(

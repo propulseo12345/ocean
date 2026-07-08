@@ -97,6 +97,7 @@ select throws_ok(
       'admin'
     )$$,
   '42501',
+  null,
   'admin cannot add a new member'
 );
 

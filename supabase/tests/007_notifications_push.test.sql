@@ -100,6 +100,7 @@ select throws_ok(
       'auth-701-usurped-org'
     )$$,
   '42501',
+  null,
   'user cannot create a push subscription under an inaccessible org'
 );
 
