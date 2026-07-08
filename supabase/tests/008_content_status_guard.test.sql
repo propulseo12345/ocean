@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 insert into auth.users (id, email)
 values ('00000000-0000-4000-8000-000000000801', 'lot0-008-owner-a@example.test');
@@ -51,6 +51,34 @@ select throws_ok(
     where id = '50000000-0000-4000-8000-000000000802'::uuid$$,
   '42501',
   'authenticated cannot jump idea -> in_review'
+);
+
+-- Le trigger est `before update of status` : il ne voit pas les INSERT.
+-- Sans le WITH CHECK de content_items_insert, la garde serait contournable
+-- en un POST /rest/v1/content_items {"status":"published"}.
+select throws_ok(
+  $$insert into public.content_items (org_id, client_id, title, status, created_by)
+    values (
+      '10000000-0000-4000-8000-000000000801',
+      '20000000-0000-4000-8000-000000000801',
+      'Born published',
+      'published',
+      '00000000-0000-4000-8000-000000000801'
+    )$$,
+  '42501',
+  'authenticated cannot INSERT a content_item already published'
+);
+
+select lives_ok(
+  $$insert into public.content_items (org_id, client_id, title, status, created_by)
+    values (
+      '10000000-0000-4000-8000-000000000801',
+      '20000000-0000-4000-8000-000000000801',
+      'Born draft',
+      'draft',
+      '00000000-0000-4000-8000-000000000801'
+    )$$,
+  'authenticated can INSERT a content_item as draft'
 );
 
 -- ---------------------------------------------------------------------------
