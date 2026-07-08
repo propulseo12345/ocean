@@ -52,26 +52,68 @@ for each row execute function public.set_updated_at();
 alter table public.notifications enable row level security;
 alter table public.push_subscriptions enable row level security;
 
+create or replace function private.has_org_access(_org uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.organization_members om
+    where om.org_id = _org
+      and om.user_id = (select auth.uid())
+  )
+  or exists (
+    select 1
+    from public.client_members cm
+    where cm.org_id = _org
+      and cm.user_id = (select auth.uid())
+  );
+$$;
+
+revoke all on function private.has_org_access(uuid) from public;
+grant execute on function private.has_org_access(uuid) to authenticated, service_role;
+
 create policy notifications_select_own on public.notifications
 for select to authenticated
-using (recipient_user_id = (select auth.uid()));
+using (
+  recipient_user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+);
 
 create policy push_subscriptions_select_own on public.push_subscriptions
 for select to authenticated
-using (user_id = (select auth.uid()));
+using (
+  user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+);
 
 create policy push_subscriptions_insert_own on public.push_subscriptions
 for insert to authenticated
-with check (user_id = (select auth.uid()));
+with check (
+  user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+);
 
 create policy push_subscriptions_update_own on public.push_subscriptions
 for update to authenticated
-using (user_id = (select auth.uid()))
-with check (user_id = (select auth.uid()));
+using (
+  user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+)
+with check (
+  user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+);
 
 create policy push_subscriptions_delete_own on public.push_subscriptions
 for delete to authenticated
-using (user_id = (select auth.uid()));
+using (
+  user_id = (select auth.uid())
+  and (select private.has_org_access(org_id))
+);
 
 grant select on public.notifications to authenticated;
 grant select, insert, update, delete on public.push_subscriptions to authenticated;
