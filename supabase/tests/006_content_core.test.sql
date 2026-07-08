@@ -165,6 +165,7 @@ select throws_ok(
       'instagram'
     )$$,
   '23503',
+  null,
   'cross-client content_target insert fails by FK composite'
 );
 
@@ -187,6 +188,7 @@ select throws_ok(
       'instagram'
     )$$,
   '23505',
+  null,
   'duplicate content_target on (content_item, social_account) is rejected'
 );
 
