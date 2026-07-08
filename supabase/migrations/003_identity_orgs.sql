@@ -96,6 +96,29 @@ $$;
 revoke all on function private.is_org_member(uuid) from public;
 grant execute on function private.is_org_member(uuid) to authenticated, service_role;
 
+-- Les enums org_role / client_role existaient sans qu'aucune policy ne les lise :
+-- un admin pouvait s'auto-promouvoir owner, ou supprimer l'owner. Le controle de
+-- role vivait uniquement cote applicatif (CLAUDE.md section 3) -- defense en
+-- profondeur incomplete : la DB doit tenir seule.
+create or replace function private.is_org_owner(_org uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.organization_members om
+    where om.org_id = _org
+      and om.user_id = (select auth.uid())
+      and om.role = 'owner'
+  );
+$$;
+
+revoke all on function private.is_org_owner(uuid) from public;
+grant execute on function private.is_org_owner(uuid) to authenticated, service_role;
+
 create policy organizations_select on public.organizations
 for select to authenticated
 using ((select private.is_org_member(id)));
@@ -121,18 +144,22 @@ using (
   or (select private.is_org_member(org_id))
 );
 
+-- Seul un owner gere les membres de l'org. Un admin qui pourrait ecrire ici
+-- s'auto-promouvrait owner, ou supprimerait l'owner.
+-- Le tout premier owner est insere par service_role : `organizations` n'a
+-- aucune policy INSERT pour authenticated, l'amorcage passe donc par le serveur.
 create policy organization_members_insert on public.organization_members
 for insert to authenticated
-with check ((select private.is_org_member(org_id)));
+with check ((select private.is_org_owner(org_id)));
 
 create policy organization_members_update on public.organization_members
 for update to authenticated
-using ((select private.is_org_member(org_id)))
-with check ((select private.is_org_member(org_id)));
+using ((select private.is_org_owner(org_id)))
+with check ((select private.is_org_owner(org_id)));
 
 create policy organization_members_delete on public.organization_members
 for delete to authenticated
-using ((select private.is_org_member(org_id)));
+using ((select private.is_org_owner(org_id)));
 
 grant select, update on public.organizations to authenticated;
 grant select, update on public.profiles to authenticated;
