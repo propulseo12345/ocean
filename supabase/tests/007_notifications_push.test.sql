@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(4);
+select plan(6);
 
 insert into auth.users (id, email)
 values
@@ -43,6 +43,43 @@ select results_eq(
   $$select count(*)::bigint from public.push_subscriptions where user_id = '00000000-0000-4000-8000-000000000702'::uuid$$,
   $$values (0::bigint)$$,
   'user cannot read another user push subscription'
+);
+
+select lives_ok(
+  $$insert into public.push_subscriptions (
+      org_id,
+      user_id,
+      endpoint,
+      p256dh,
+      auth
+    )
+    values (
+      '10000000-0000-4000-8000-000000000701',
+      '00000000-0000-4000-8000-000000000701',
+      'https://push.example.test/701-new',
+      'p256dh-701-new',
+      'auth-701-new'
+    )$$,
+  'user can create a push subscription for an accessible org'
+);
+
+select throws_ok(
+  $$insert into public.push_subscriptions (
+      org_id,
+      user_id,
+      endpoint,
+      p256dh,
+      auth
+    )
+    values (
+      '10000000-0000-4000-8000-000000000702',
+      '00000000-0000-4000-8000-000000000701',
+      'https://push.example.test/701-usurped-org',
+      'p256dh-701-usurped-org',
+      'auth-701-usurped-org'
+    )$$,
+  '42501',
+  'user cannot create a push subscription under an inaccessible org'
 );
 
 select results_eq(
