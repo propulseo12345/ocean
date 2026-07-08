@@ -67,7 +67,7 @@ grant execute on function private.is_client_member(uuid) to authenticated, servi
 
 create policy clients_select on public.clients
 for select to authenticated
-using ((select private.is_org_member(org_id)));
+using ((select private.is_org_member(org_id)) or (select private.is_client_member(id)));
 
 create policy clients_insert on public.clients
 for insert to authenticated
