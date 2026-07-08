@@ -166,9 +166,16 @@ using (
   )
 );
 
+-- Le trigger de garde (008) est `before update of status` : il ne voit pas les
+-- INSERT. Sans cette restriction, un `POST {"status":"published"}` creerait un
+-- contenu publie sans jamais passer par l'approbation ni par le worker.
+-- Un contenu naît toujours dans un statut de redaction.
 create policy content_items_insert on public.content_items
 for insert to authenticated
-with check ((select private.is_org_member(org_id)));
+with check (
+  (select private.is_org_member(org_id))
+  and status in ('idea', 'draft')
+);
 
 create policy content_items_update on public.content_items
 for update to authenticated
