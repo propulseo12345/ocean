@@ -1,23 +1,32 @@
-# Session State — 2026-06-11 16:55 (implémentation audit pages client — TERMINÉE)
+# Session State — 2026-07-08 (guardrails Lot 0 + audit Lot 5)
 
 ## Branch / Commit
-`main` @ `9594f59` (dirty : tout `apps/` + `.planning/` untracked — jamais commité depuis le scaffold)
+`feat/i18n-fr-en` @ `85f3076` (dirty: 71 fichiers — Pré-0 front, non touché cette session)
 
 ## Completed This Session
-- Audit multi-agents des 3 pages client (Grille / Calendrier / Studio) → `docs/AUDIT-PAGES-CLIENT.md` : 113 features priorisées P0/P1/P2 avec faisabilité API.
-- Implémentation COMPLÈTE des 113 features en 5 vagues (fondation mocks gelée → composer/grille/calendrier → détail/board/médiathèque/shell → performance/onboarding/réglages → QA).
-- QA finale : revue 4 code-reviewers (0 bug bloquant), fixes appliqués (cohérence couleurs statut, DST, factorisation TZ `lib/tz.ts`, query params composer, etc.). 23 routes, build vert.
+- 9 commits sur `supabase/` + `.github/`. Couverture pgTAP 27 → 56 assertions.
+- GUARD-09/00/01/02/04/05/08/10/14 appliqués. 2 migrations neuves : `008` (garde de
+  transition `content_items.status`), `009` (RPC `read_at` + colonnes `plan`/`seats`).
+- CI GitHub Actions créée : `db reset` + `test db` + équivalent local de `get_advisors`.
+- Audit adversarial du Lot 5 → **ROUGE, 6 bloquants** (`_research/audits/2026-07-08-*.md`).
+- `docs/architecture/lot-0-sql-review.md` remis à jour (son STOP était périmé).
+- Auto-review : la garde 008 était contournable par `INSERT` (trigger `of status` ne voit
+  pas les INSERT). Corrigé dans `content_items_insert` + 2 assertions.
 
 ## Next Task
-- Décider du **commit git** (rien n'est commité). Optionnel : `pnpm --filter web dev` + parcours visuel des nouvelles pages.
+- **Exécuter les tests** — rien n'a encore tourné. Conteneur jetable `ocean_pgtap`
+  (port 55432), appliquer `migrations/001→009` puis les 7 tests pgTAP.
+  Protocole complet en mémoire persistante (`ocean-tester-pgtap-localement`).
 
 ## Blockers
-- None.
+- Aucun. Docker tourne (hors PATH — préfixer `$env:Path`, cf. mémoire).
 
 ## Key Context
-- Lancer : `pnpm --filter web dev`. Vérif : `cd apps/web && npx tsc --noEmit && npx biome check . && npx next build`.
-- shadcn base-nova = Base UI → composition via prop `render` (PAS asChild). Horloge figée `MOCK_NOW` (2026-06-11) — jamais `Date.now()` au rendu (compteurs stables pour les ids locaux).
-- Phase = preview front UI-only, mocks `apps/web/lib/mocks/` (types miroir PRD §6). AUCUN backend. Convention copy = TUTOIEMENT (vous gardé uniquement portail reviewer + rapport client).
-- Plan détaillé + manques de fondation à câbler plus tard : `.planning/audit-impl/PLAN.md`. Backups : `.planning/audit-impl/backups/wave{1-5}-src.tgz`.
-- MCP connecté = `vibe-library` (biblio-only) : pas de tools projet `get_project_documents`/`list_projects`.
-- EN ATTENTE feu vert (reporté des sessions précédentes) : 2 bugs biblio (09-notif=Resend, 07-rls=JWT) + enrichissements biblio/MCP ci-dessous.
+- **Ne rien pousser sur le projet Supabase online** avant CI verte. Base locale uniquement.
+- La stack `supabase_db_context-os` tourne pour un AUTRE projet — ne pas y toucher.
+- L'image `supabase/postgres:15.8.1.085` fournit déjà `auth.users`, `auth.uid()`, les
+  rôles et pgTAP. Aucun shim `auth` (le schéma appartient à `supabase_admin`).
+- Écrire les boucles shell dans un fichier : PowerShell mange les guillemets doubles.
+- Décision ouverte non tranchée : policies `DELETE` ouvertes à `authenticated` (8 tables).
+- Remote GitHub prévu : `github.com/propulseo12345/ocean` (pas encore configuré).
+- `project_id` Laboratoire : inconnu → `list_projects` au prochain `start`.
