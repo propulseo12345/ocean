@@ -1,0 +1,277 @@
+{
+ "domain": "Types bilingues L<string> et impact du passage a text simple (DB monolingue)",
+ "new_tables": [
+  {
+   "name": "media_assets",
+   "purpose": "Medias attaches a un ContentItem (carrousel ordonne). Porte altText, le seul champ narratif L<> de MediaAsset.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null -- denormalise\nclient_id: uuid not null -- table fille de client\ncontent_item_id: uuid not null\ntype: public.media_type not null -- enum image|video\nstorage_path: text not null -- {org_id}/{client_id}/{content_item_id}/{id}/...\nthumb_path: text -- bucket media-thumbs public\nwidth: integer not null\nheight: integer not null\nduration_sec: integer\nposition: integer not null default 0\nalt_text: text -- MONOLINGUE (ex L<string>), redige par le freelance\nfile_size_bytes: bigint\nmime_type: text\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade ; unique (content_item_id, position) deferrable",
+   "mock_source": "MediaAsset dans apps/web/lib/mocks/types/core.ts:115-130 ; instances via apps/web/lib/mocks/content.ts et lib/mocks/images.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select/insert/update/delete pour is_org_member(org_id) ; select seul pour is_client_member(client_id) (le Reviewer voit les medias des contenus qu'il doit valider, ne les modifie jamais). Toutes les policies TO authenticated, wrappees (select private.fn()).",
+   "ui_consumers": "apps/web/components/app/studio/composer/composer-types.ts (mediaFromLibrary, draftFromContent -> altText), apps/web/components/app/studio/detail-preview-media.tsx, detail-native-preview.tsx, content-detail-media.tsx, apps/web/components/portal/annotation-viewer.tsx",
+   "priority": "P0",
+   "blocking_for": "Composer (upload + alt text), detail contenu, portail Reviewer. Sans cette table, ContentItem.media n'a aucune source Supabase."
+  },
+  {
+   "name": "library_assets",
+   "purpose": "Mediatheque client independante des contenus (upload, depot client, import). Porte altText L<>.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ntype: public.media_type not null\nstorage_path: text not null\nthumb_path: text\nwidth: integer not null\nheight: integer not null\nduration_sec: integer\nsource: public.library_asset_source not null -- enum upload|depot_client|import\nalt_text: text -- MONOLINGUE (ex L<string>)\nfile_size_bytes: bigint\nmime_type: text\nuploaded_by: uuid references profiles(id) on delete set null\nuploaded_at: timestamptz not null default now()\ndeleted_at: timestamptz\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade",
+   "mock_source": "LibraryAsset dans apps/web/lib/mocks/types/library.ts:10-28 ; seed apps/web/lib/mocks/library.ts (ALT_TEXTS: Record<theme, L<string>[]> a aplatir)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). Reviewer : select + insert seulement si le depot client est active (source='depot_client'), sinon aucun acces. Jamais de delete Reviewer.",
+   "ui_consumers": "apps/web/app/(app)/clients/[clientId]/library/page.tsx, apps/web/components/app/library/{asset-card,asset-details,asset-sheet,delete-asset-dialog,library-types,use-library-assets}.tsx, apps/web/components/app/studio/composer/media-picker-dialog.tsx",
+   "priority": "P0",
+   "blocking_for": "Page Mediatheque entiere + picker de medias du composer."
+  },
+  {
+   "name": "library_asset_usages",
+   "purpose": "Lien N-N asset de mediatheque <-> contenu (LibraryAsset.usedInContentIds). Evite un array d'uuid non contraint.",
+   "columns": "org_id: uuid not null\nclient_id: uuid not null\nlibrary_asset_id: uuid not null\ncontent_item_id: uuid not null\ncreated_at: timestamptz not null default now()",
+   "fk_composites": "primary key (library_asset_id, content_item_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (library_asset_id, client_id) references library_assets(id, client_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade",
+   "mock_source": "LibraryAsset.usedInContentIds dans apps/web/lib/mocks/types/library.ts:22",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select pour is_org_member(org_id) et is_client_member(client_id) ; write reserve a is_org_member. Aucun champ narratif, donc aucun impact bilingue direct.",
+   "ui_consumers": "apps/web/components/app/library/asset-details.tsx et library-types.ts (UsageRef.title est un L<string> local a passer en string)",
+   "priority": "P1",
+   "blocking_for": "Panneau « utilise dans » de la mediatheque."
+  },
+  {
+   "name": "comments",
+   "purpose": "Fil de commentaires d'un contenu (freelance + Reviewer), avec annotation optionnelle sur un media. body est le plus gros volume de L<> du portail.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ncontent_item_id: uuid not null\nauthor_user_id: uuid not null references profiles(id) on delete cascade\nauthor_role: public.member_role not null -- owner|reviewer\nbody: text not null -- MONOLINGUE (ex L<string>) : ecrit par un humain\nannotation_media_asset_id: uuid -- annotation ancree sur un media\nannotation_slide_index: integer\nannotation_x: numeric(5,4) -- 0..1\nannotation_y: numeric(5,4)\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()\ndeleted_at: timestamptz",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade ; foreign key (annotation_media_asset_id, client_id) references media_assets(id, client_id) on delete set null ; check (length(trim(body)) > 0)",
+   "mock_source": "Comment dans apps/web/lib/mocks/types/collab.ts:35-43 ; seed apps/web/lib/mocks/interactions.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member(org_id) OR is_client_member(client_id). insert : idem, mais author_user_id force a auth.uid() et author_role derive cote serveur (jamais depuis le client). update/delete : auteur uniquement (author_user_id = auth.uid()). Le Reviewer du client 1 ne voit rien du client 2 par construction (client_members).",
+   "ui_consumers": "apps/web/components/app/studio/detail-thread-items.tsx, content-review-panel.tsx, content-detail-media.tsx, apps/web/components/portal/annotation-viewer.tsx, apps/web/app/(portal)/portal/[contentId]/page.tsx",
+   "priority": "P0",
+   "blocking_for": "Portail de validation (boucle de retour client) + panneau de revue du studio. C'est le coeur produit."
+  },
+  {
+   "name": "approvals",
+   "purpose": "Decision de validation d'un Reviewer sur un contenu (approuve / modifications demandees) avec message libre.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ncontent_item_id: uuid not null\nreviewer_user_id: uuid not null references profiles(id) on delete cascade\ndecision: public.approval_decision not null -- enum approved|changes_requested\nmessage: text -- MONOLINGUE (ex L<string>)\nversion_label: text not null -- \"v1\", \"v2\"...\ncontent_version_id: uuid -- version exacte approuvee (tracabilite)\ncreated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade ; foreign key (content_version_id, client_id) references content_versions(id, client_id) on delete set null",
+   "mock_source": "Approval dans apps/web/lib/mocks/types/collab.ts:18-26 ; seed apps/web/lib/mocks/interactions.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member(org_id) OR is_client_member(client_id). insert : is_client_member(client_id) uniquement (seul un Reviewer approuve), reviewer_user_id = auth.uid() force. Aucun update ni delete (une decision est un fait horodate, immuable — c'est la preuve en cas de litige).",
+   "ui_consumers": "apps/web/components/app/studio/content-review-panel.tsx, detail-versions.tsx, apps/web/components/portal/portal-card.tsx, apps/web/app/(portal)/portal/[contentId]/page.tsx",
+   "priority": "P0",
+   "blocking_for": "Invariant « pas de publication sans approbation » (clients.approval_mode). Sans cette table, approval_mode='required' n'est pas verifiable."
+  },
+  {
+   "name": "content_versions",
+   "purpose": "Snapshot d'une legende envoyee en validation (v1, v2...) + note expliquant le changement. Deux champs L<> narratifs.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ncontent_item_id: uuid not null\nlabel: text not null -- \"v1\", \"v2\"\ncaption: text -- MONOLINGUE (ex L<string>) : snapshot de la legende\nnote: text -- MONOLINGUE (ex L<string>) : motif de la version\ncreated_by: uuid references profiles(id) on delete set null\ncreated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; unique (content_item_id, label) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade",
+   "mock_source": "ContentVersion dans apps/web/lib/mocks/types/collab.ts:73-82 ; seed apps/web/lib/mocks/history.ts (CONTENT_VERSIONS)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member(org_id) OR is_client_member(client_id) (le Reviewer doit voir le diff v1->v2). insert : is_org_member uniquement. Pas d'update ni delete (snapshot immuable, sinon le badge « approbation perimee » ment).",
+   "ui_consumers": "apps/web/components/app/studio/detail-versions.tsx (4 appels pick()), content-review-panel.tsx",
+   "priority": "P1",
+   "blocking_for": "Badge approval_stale (deja colonne sur content_items) et diff de legende du portail."
+  },
+  {
+   "name": "review_requests",
+   "purpose": "Envoi groupe de contenus en validation a un ou plusieurs Reviewers, avec message d'accompagnement.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\nmessage: text -- MONOLINGUE (ex L<string>)\nstate: public.review_request_state not null default 'pending' -- pending|partial|done\nsent_by: uuid references profiles(id) on delete set null\nsent_at: timestamptz not null default now()\nlast_reminder_at: timestamptz -- bouton « relancer » du board\nreminder_count: integer not null default 0\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade",
+   "mock_source": "ReviewRequest dans apps/web/lib/mocks/types/collab.ts:47-55 ; seed apps/web/lib/mocks/interactions.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member OR is_client_member. insert/update : is_org_member uniquement (le freelance envoie, le Reviewer subit). state est recalcule par trigger a partir des approvals — ne jamais laisser le client l'ecrire.",
+   "ui_consumers": "apps/web/components/app/studio/board-review-dialog.tsx, board-state.ts (localRequest), board-utils.ts (suivi de relance)",
+   "priority": "P1",
+   "blocking_for": "Bouton « envoyer en validation » + relance. Emails Brevo review-requested."
+  },
+  {
+   "name": "review_request_items",
+   "purpose": "Jointure review_request <-> content_items (ReviewRequest.contentIds).",
+   "columns": "org_id: uuid not null\nclient_id: uuid not null\nreview_request_id: uuid not null\ncontent_item_id: uuid not null\ncreated_at: timestamptz not null default now()",
+   "fk_composites": "primary key (review_request_id, content_item_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (review_request_id, client_id) references review_requests(id, client_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade",
+   "mock_source": "ReviewRequest.contentIds dans apps/web/lib/mocks/types/collab.ts:51",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "Herite : select is_org_member OR is_client_member ; write is_org_member. Aucun champ narratif.",
+   "ui_consumers": "apps/web/components/app/studio/board-review-dialog.tsx, apps/web/app/(portal)/portal/page.tsx",
+   "priority": "P1",
+   "blocking_for": "Liste des contenus a valider dans le portail."
+  },
+  {
+   "name": "review_request_recipients",
+   "purpose": "Jointure review_request <-> Reviewers destinataires (ReviewRequest.reviewerIds).",
+   "columns": "org_id: uuid not null\nclient_id: uuid not null\nreview_request_id: uuid not null\nreviewer_user_id: uuid not null references profiles(id) on delete cascade\nnotified_at: timestamptz\ncreated_at: timestamptz not null default now()",
+   "fk_composites": "primary key (review_request_id, reviewer_user_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (review_request_id, client_id) references review_requests(id, client_id) on delete cascade",
+   "mock_source": "ReviewRequest.reviewerIds dans apps/web/lib/mocks/types/collab.ts:52 ; Reviewer dans collab.ts:7-14 (mappe sur client_members existant, pas de nouvelle table)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member OR (is_client_member AND reviewer_user_id = auth.uid()) — un Reviewer ne doit pas decouvrir les autres destinataires. write : is_org_member.",
+   "ui_consumers": "apps/web/components/app/studio/board-review-dialog.tsx",
+   "priority": "P1",
+   "blocking_for": "Ciblage des emails Brevo review-requested."
+  },
+  {
+   "name": "content_activity",
+   "purpose": "Journal d'activite d'un contenu (qui/quoi/quand). ATTENTION : detail est du TEXTE SYSTEME, pas de la donnee client — a stocker en kind + payload jsonb, PAS en text fige.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ncontent_item_id: uuid not null\nkind: public.activity_kind not null -- created|updated|sent_for_review|commented|approved|changes_requested|scheduled|rescheduled|published|failed|retried\nactor_user_id: uuid references profiles(id) on delete set null -- null = systeme (worker)\nactor_name: text -- denormalise pour survivre a la suppression du compte\npayload: jsonb not null default '{}'::jsonb -- params du message i18n (plateforme, version, nom du reviewer...)\ndetail_override: text -- SEULEMENT si un humain a saisi du texte libre ; sinon null\nat: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (content_item_id, client_id) references content_items(id, client_id) on delete cascade",
+   "mock_source": "ActivityEntry dans apps/web/lib/mocks/types/collab.ts:98-106 ; seed apps/web/lib/mocks/history.ts (detail: loc(...) sur ~20 entrees)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select : is_org_member OR is_client_member (le Reviewer voit l'historique du contenu qu'il valide). insert : is_org_member + service_role (le worker ecrit published/failed/retried). Aucun update ni delete : c'est la preuve en cas de litige (« vous avez approuve le 12 a 14h32 »).",
+   "ui_consumers": "apps/web/components/app/studio/detail-activity.tsx (deja base sur activityKindMeta[kind].labelKey pour le libelle — la moitie du travail i18n est faite)",
+   "priority": "P1",
+   "blocking_for": "Onglet Activite du detail contenu. Le rendu doit passer par t(`activity.${kind}.detail`, payload), pas par une colonne text."
+  },
+  {
+   "name": "content_pillars",
+   "purpose": "Piliers editoriaux d'un client (« Coulisses », « Produit »...). name est une donnee client redigee par le freelance.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\nname: text not null -- MONOLINGUE (ex L<string>)\ncolor_token: text -- ex \"chart-2\", resolu en var(--chart-2) cote UI (jamais de couleur hardcodee)\ntarget_share: integer not null default 0 -- % du mix editorial, somme ~100\nsort_order: integer not null default 0\narchived_at: timestamptz\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; check (length(trim(name)) > 0) ; check (target_share between 0 and 100)",
+   "mock_source": "ContentPillar dans apps/web/lib/mocks/types/pro.ts:8-16 ; seed apps/web/lib/mocks/pillars.ts (CONTENT_PILLARS)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). select seul pour is_client_member (le Reviewer voit le pilier d'un contenu, ne le gere pas).",
+   "ui_consumers": "apps/web/components/app/calendar/pillar-mix-panel.tsx, apps/web/components/app/performance/perf-pillar-split.tsx et perf-breakdown.ts (PillarSlice.name: L<string> local), apps/web/components/app/studio/board-filters.tsx, apps/web/lib/mocks/labels.ts (pillarMeta)",
+   "priority": "P1",
+   "blocking_for": "Filtre pilier du board, mix editorial du calendrier, page Performance. Debloque aussi content_items.pillar_id (colonne manquante)."
+  },
+  {
+   "name": "client_events",
+   "purpose": "Note ou evenement client affiche en overlay du calendrier editorial (« lancement collection », « fermeture aout »).",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\ntitle: text not null -- MONOLINGUE (ex L<string>)\nkind: public.client_event_kind not null default 'note' -- note|event\nevent_date: date not null -- jour entier, affiche dans le fuseau du client\ncreated_by: uuid references profiles(id) on delete set null\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; check (length(trim(title)) > 0)",
+   "mock_source": "ClientEvent dans apps/web/lib/mocks/types/pro.ts:21-28 ; seed apps/web/lib/mocks/planning.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). select seul pour is_client_member.",
+   "ui_consumers": "apps/web/components/app/calendar/{day-cell,day-sheet,entry-markers,week-view}.tsx",
+   "priority": "P2",
+   "blocking_for": "Overlay du calendrier editorial. NE PAS confondre avec les marronniers (catalogue statique code, voir findings)."
+  },
+  {
+   "name": "brand_kits",
+   "purpose": "Identite de marque et garde-fous de redaction. 3 champs L<> (tone + 2 listes) qui deviennent text / text[].",
+   "columns": "client_id: uuid pk -- 1 brand kit par client\norg_id: uuid not null\npalette: text[] not null default '{}' -- valeurs oklch\ntone: text -- MONOLINGUE (ex L<string>)\ndo_list: text[] not null default '{}' -- MONOLINGUE (ex L<string>[])\ndont_list: text[] not null default '{}' -- MONOLINGUE (ex L<string>[])\nbanned_words: text[] not null default '{}' -- deja string dans le mock (proper nouns)\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; unique (client_id, org_id)",
+   "mock_source": "BrandKit dans apps/web/lib/mocks/types/pro.ts:43-53 ; seed apps/web/lib/mocks/brand.ts (BRAND_KITS)",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). select pour is_client_member (le client peut vouloir relire sa charte). Pas de secret ici, mais aucune raison de l'exposer en ecriture au Reviewer.",
+   "ui_consumers": "apps/web/components/app/client-settings/section-brand-kit.tsx (resolveList(list: L<string>[]) a supprimer), apps/web/lib/caption.ts (bannedWords)",
+   "priority": "P2",
+   "blocking_for": "Onglet Brand kit des reglages client + garde-fous de legende du composer."
+  },
+  {
+   "name": "hashtag_groups",
+   "purpose": "Groupes de hashtags nommes, insereables en un clic dans une legende.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\nname: text not null -- MONOLINGUE (ex L<string>)\ntags: text[] not null default '{}' -- avec le « # », deja string dans le mock\nsort_order: integer not null default 0\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; check (length(trim(name)) > 0)",
+   "mock_source": "HashtagGroup dans apps/web/lib/mocks/types/library.ts:31-37 ; seed apps/web/lib/mocks/hashtags.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). Aucun acces Reviewer (outil interne de redaction).",
+   "ui_consumers": "apps/web/components/app/studio/composer/hashtag-popover.tsx",
+   "priority": "P2",
+   "blocking_for": "Popover hashtags du composer."
+  },
+  {
+   "name": "saved_views",
+   "purpose": "Vue filtree enregistree du studio. name est L<>, ET filters.labels contient aujourd'hui des libelles FR en dur — bug a corriger en stockant des label_id.",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\nowner_user_id: uuid references profiles(id) on delete cascade -- null = vue partagee de l'org\nname: text not null -- MONOLINGUE (ex L<string>)\nfilters: jsonb not null default '{}'::jsonb -- statuses[], platforms[], formats[], pillar_ids[] (uuid), label_ids[] (uuid), search\nsort_order: integer not null default 0\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; check (length(trim(name)) > 0) ; check (jsonb_typeof(filters) = 'object')",
+   "mock_source": "SavedView + SavedViewFilters dans apps/web/lib/mocks/types/pro.ts:56-71 ; seed apps/web/lib/mocks/views.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "select/insert/update/delete pour is_org_member(org_id), restreint a owner_user_id = auth.uid() OR owner_user_id is null. Aucun acces Reviewer.",
+   "ui_consumers": "apps/web/components/app/studio/board-views.tsx, board-state.ts (viewToFilters), board-filters.tsx, board-utils.ts (matchesFilters)",
+   "priority": "P2",
+   "blocking_for": "Vues enregistrees du board. Le passage filters.labels (string[] FR) -> label_ids (uuid[]) corrige un bug de filtre casse en EN (voir findings)."
+  },
+  {
+   "name": "recurring_slots",
+   "purpose": "Creneaux de publication recurrents convenus avec le client. Aucun champ L<> (inclus car pillar_id pointe vers content_pillars que je propose).",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nclient_id: uuid not null\nweekday: smallint not null -- 1=lundi ... 7=dimanche\ntime_local: time not null -- heure locale du client\nplatforms: public.platform[] not null default '{}'\npillar_id: uuid\nactive: boolean not null default true\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, client_id) ; foreign key (client_id, org_id) references clients(id, org_id) on delete cascade ; foreign key (pillar_id, client_id) references content_pillars(id, client_id) on delete set null ; check (weekday between 1 and 7)",
+   "mock_source": "RecurringSlot dans apps/web/lib/mocks/types/pro.ts:31-40 ; seed apps/web/lib/mocks/planning.ts",
+   "org_scoped": true,
+   "client_scoped": true,
+   "rls_summary": "CRUD pour is_org_member(org_id). select pour is_client_member (transparence sur le rythme convenu).",
+   "ui_consumers": "apps/web/components/app/client-settings/slot-row.tsx, apps/web/components/app/calendar/planning-shelf.tsx",
+   "priority": "P2",
+   "blocking_for": "Onglet planning des reglages client."
+  },
+  {
+   "name": "calendar_accounts",
+   "purpose": "Compte d'agenda externe connecte (Google/Microsoft). label est L<> dans le mock mais c'est en realite une donnee EXTERNE monolingue (nom du calendrier chez le fournisseur).",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\nuser_id: uuid not null references profiles(id) on delete cascade -- l'agenda appartient au freelance, PAS a un client\nprovider: public.calendar_provider not null -- google|microsoft\nlabel: text not null -- MONOLINGUE : nom renvoye par le fournisseur\nexternal_account_id: text not null\nemail: text not null\nstatus: public.account_status not null default 'connected'\nlast_synced_at: timestamptz\ncreated_at: timestamptz not null default now()\nupdated_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, org_id) ; unique (org_id, provider, external_account_id) ; NB : table soeur calendar_account_secrets en DENY-ALL (RLS on, zero policy) pour les tokens OAuth — voir regle 11",
+   "mock_source": "CalendarAccount dans apps/web/lib/mocks/types/core.ts:179-185 ; seed apps/web/lib/mocks/agenda.ts",
+   "org_scoped": true,
+   "client_scoped": false,
+   "rls_summary": "select/update/delete pour is_org_member(org_id) AND user_id = auth.uid(). Aucun acces Reviewer (l'agenda du freelance ne concerne aucun client). Les tokens vivent exclusivement dans calendar_account_secrets (deny-all, service role).",
+   "ui_consumers": "apps/web/components/app/settings/calendars-tab.tsx, apps/web/components/app/agenda/agenda-sidebar.tsx",
+   "priority": "P2",
+   "blocking_for": "Onglet Agendas des reglages + agenda unifie."
+  },
+  {
+   "name": "calendar_events",
+   "purpose": "Cache local des evenements d'agenda externes. 3 champs L<> qui sont en realite des donnees externes monolingues (Google ne renvoie qu'une langue).",
+   "columns": "id: uuid pk default gen_random_uuid()\norg_id: uuid not null\ncalendar_account_id: uuid not null\nexternal_event_id: text not null\nexternal_calendar_id: text not null -- IDENTITE STABLE du calendrier (remplace calendarKey(name.fr), voir findings)\ncalendar_name: text -- MONOLINGUE : libelle affichable, jamais une cle\ncolor_token: text -- ex \"chart-2\"\ntitle: text -- MONOLINGUE (ex L<string>)\nlocation: text -- MONOLINGUE (ex L<string>)\nstarts_at: timestamptz not null\nends_at: timestamptz not null\nall_day: boolean not null default false\nenabled: boolean not null default true\nsynced_at: timestamptz not null default now()",
+   "fk_composites": "unique (id, org_id) ; foreign key (calendar_account_id, org_id) references calendar_accounts(id, org_id) on delete cascade ; unique (calendar_account_id, external_event_id)",
+   "mock_source": "CalendarEvent dans apps/web/lib/mocks/types/core.ts:187-199 ; seed apps/web/lib/mocks/agenda.ts",
+   "org_scoped": true,
+   "client_scoped": false,
+   "rls_summary": "select pour is_org_member(org_id) via jointure implicite sur calendar_accounts.user_id = auth.uid(). Ecriture par service role (worker de sync) uniquement. Aucun acces Reviewer.",
+   "ui_consumers": "apps/web/components/app/agenda/{agenda-sidebar,event-block,agenda-utils}.tsx, apps/web/app/(app)/agenda/page.tsx",
+   "priority": "P2",
+   "blocking_for": "Agenda unifie Google+Outlook. La colonne external_calendar_id est ce qui remplace le hack calendarKey(name) => name.fr."
+  }
+ ],
+ "existing_table_changes": [
+  {
+   "table": "content_items",
+   "change": "AJOUTER la colonne manquante `first_comment text` (premier commentaire Instagram, hashtags hors legende).",
+   "reason": "ContentItem.firstComment est declare L<string> dans apps/web/lib/mocks/types/core.ts:164 et consomme par composer-types.ts (draftFromContent) + detail-native-preview.tsx, mais AUCUNE colonne n'existe dans 006_content_core.sql. Sans elle, le composer perd un champ deja construit dans l'UI."
+  },
+  {
+   "table": "content_items",
+   "change": "AJOUTER `pillar_id uuid` avec foreign key (pillar_id, client_id) references content_pillars(id, client_id) on delete set null.",
+   "reason": "ContentItem.pillarId (core.ts:166) est utilise par board-filters.tsx, pillar-mix-panel.tsx et perf-pillar-split.tsx. La colonne n'existe pas. La FK composite est obligatoire : un contenu ne doit physiquement pas pouvoir pointer vers un pilier d'un autre client."
+  },
+  {
+   "table": "content_items",
+   "change": "NE PAS convertir `last_error` de jsonb vers text. Le garder en jsonb et y stocker {code, platform, params}, pas une phrase.",
+   "reason": "Le mock type lastError en L<string> (core.ts:162) et 8 sites d'affichage font pick(content.lastError, locale) — mais cette valeur est ecrite par le WORKER, a un moment ou la locale du lecteur est inconnue. Figer la phrase en text = message d'erreur bloque dans une langue. La colonne jsonb existe deja : il faut que l'UI rende via t(`error.${code}`, params). Sites a reprendre : app/(app)/clients/[clientId]/content/[contentId]/page.tsx:185, grid/page.tsx:108, calendar/content-quick-view.tsx:96, calendar/day-entry.tsx:24, calendar/day-sheet-row.tsx:32, calendar/entry-markers.tsx:44, studio/detail-header.tsx:90, lib/mocks/index.ts:180."
+  },
+  {
+   "table": "notifications",
+   "change": "Rendre `title` nullable (retirer le not null + le check length) et traiter title/body comme un FALLBACK, pas comme la source d'affichage. Le rendu passe par `type` + `payload` jsonb via t(`notification.${type}.title`, payload).",
+   "reason": "AppNotification.title/body sont L<string> (collab.ts:63-64) et les 4 notifications mockees (lib/mocks/notifications.ts) sont du texte 100% genere par le systeme. La table a DEJA `type notification_type` + `payload jsonb` : l'infrastructure du rendu i18n est en place, l'UI ne l'utilise simplement pas. Si on ecrit title/body en text au moment ou le worker publie, une notif creee la nuit reste en francais meme si le freelance bascule l'UI en anglais. Composants concernes : components/app/notifications-button.tsx, components/app/notifications/notification-row.tsx, app/(app)/notifications/page.tsx."
+  },
+  {
+   "table": "clients",
+   "change": "Aucun changement de schema. bio/category/notes sont deja `text` — confirmer simplement que le seed aplatit L<string> vers la valeur `fr`.",
+   "reason": "Client.bio/category/notes sont L<string> dans core.ts:76-81 mais 004_clients_members.sql declare deja `bio text, category text, notes text`. La DB est correcte, c'est le mock qui est en avance. Consommateurs : components/app/client-settings/section-profile.tsx (3 pick), app/(app)/clients/[clientId]/grid/page.tsx."
+  },
+  {
+   "table": "content_targets",
+   "change": "Aucun changement. `caption_override text` est deja correct.",
+   "reason": "ContentTarget.captionOverride est L<string> (core.ts:141) mais 006_content_core.sql declare deja text. Seed a aplatir depuis lib/mocks/content-extra.ts (TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, L<string>>>>)."
+  },
+  {
+   "table": "content_labels",
+   "change": "Aucun changement de schema (`name text` est correct). En revanche, `color_token` doit etre la source du colorVar cote UI, et les vues enregistrees doivent referencer content_labels.id, jamais content_labels.name.",
+   "reason": "ContentItem.labels est L<string>[] dans le mock (core.ts:176) alors que la DB fait deja la bonne chose : entite content_labels + jointure content_item_labels. C'est le modele DB qui a raison. Aujourd'hui SavedView.filters.labels stocke des libelles FR en dur (lib/mocks/views.ts : labels: [\"Lancement\", \"Promo\"]) compares a pick(label, locale) dans board-utils.ts — donc le filtre ne matche plus rien en anglais. Bug reel, resolu par le passage aux ids."
+  }
+ ],
+ "findings": "## 1. Mesure exacte du blast radius\n\n**32 declarations de champs `L<>` dans les 4 fichiers de types** (`apps/web/lib/mocks/types/`) :\n- `core.ts` (16) : `Client.bio`, `Client.category`, `Client.notes`, `MediaAsset.altText`, `ContentTarget.captionOverride`, `ContentItem.title`, `.caption`, `.newsletterSubject`, `.internalNotes`, `.lastError`, `.firstComment`, `.labels` (`L<string>[]`), `CalendarAccount.label`, `CalendarEvent.calendarName`, `.title`, `.location`\n- `collab.ts` (8) : `Approval.message`, `Comment.body`, `ReviewRequest.message`, `AppNotification.title`, `.body`, `ContentVersion.caption`, `.note`, `ActivityEntry.detail`\n- `library.ts` (2) : `LibraryAsset.altText`, `HashtagGroup.name`\n- `pro.ts` (6) : `ContentPillar.name`, `ClientEvent.title`, `BrandKit.tone`, `.doList`, `.dontList`, `SavedView.name`\n\n**+ 6 types LOCAUX hors `lib/mocks/types/` qui redeclarent du `L<>`** — souvent oublies dans ce genre de migration :\n- `apps/web/components/app/library/library-types.ts:11` — `UsageRef.title: L<string>`\n- `apps/web/components/app/performance/perf-data.ts:39` — `PostRow.title: L<string>`\n- `apps/web/components/app/performance/perf-breakdown.ts:12` — `PillarSlice.name: L<string>`\n- `apps/web/components/app/agenda/agenda-sidebar.tsx:15` — `CalendarFilter.name: L<string>`\n- `apps/web/lib/marronniers.ts:14` — `Marronnier.label: L<string>`\n- `apps/web/components/app/studio/board-state.ts:66` — `useState<Record<string, L<string>[]>>` (labelOverrides)\n\n**Consommation reelle : 70 fichiers, 144 appels `pick()`.** Repartition : **45 client components**, **24 fichiers serveur/utilitaires**. Les 5 plus denses : `composer/composer-types.ts` (9), `clients/[clientId]/grid/page.tsx` (6), `content/[contentId]/page.tsx` (6), `studio/board-utils.ts` (5), `studio/detail-versions.tsx` (4).\n\n**Correction d'un chiffre de la mission** : 176 fichiers importent `@/lib/mocks/types` et 261 importent `@/lib/i18n` — mais **seuls 70 touchent `pick()`**. Le blast radius du passage a `text` est de 70 fichiers, pas 125 ni 176. Les 106 autres importent des types sans champs narratifs (enums `Platform`, `ContentStatus`, `MediaType`...) et ne bougeront pas d'une ligne.\n\n**18 fichiers utilisent `loc()`** dont 15 sont des fichiers de seed (`lib/mocks/*.ts`) qui disparaissent avec les mocks. Les 3 restants a nettoyer manuellement : `lib/marronniers.ts`, `components/app/studio/board-state.ts`, `components/app/calendar/use-calendar-state.ts`.\n\n## 2. La distinction demandee : DONNEE CLIENT / LIBELLE UI / TEXTE SYSTEME\n\nC'est trois categories, pas deux, et les traiter pareil est le piege principal du chantier.\n\n**(a) DONNEE CLIENT — redigee par un humain, devient `text` monolingue.** 27 des 32 champs. Legendes, titres, bios, notes internes, alt text, commentaires, messages de validation, notes de version, noms de piliers, ton de marque, do/don't, noms de vues, noms de groupes de hashtags. Rien a debattre : un contenu appartient au client du freelance, il a une seule langue. Idem pour les champs d'agenda (`calendarName`, `title`, `location`) qui viennent de Google/Outlook et sont monolingues **par nature** — les avoir types `L<>` etait deja artificiel.\n\n**(b) LIBELLE UI — genere par l'app, reste dans `lib/i18n`, ne va JAMAIS en DB.** Cette couche est **deja propre et ne bouge pas** : `apps/web/lib/mocks/labels.ts` stocke des `labelKey: MessageKey` (pas des libelles) pour `contentStatusMeta`, `targetStatusMeta`, `accountStatusMeta`, `reviewStateMeta`, `approvalModeMeta`, `activityKindMeta`, `formatLabelKey` ; `apps/web/lib/i18n/labels.ts` (`makeLabels(t)`) les resout. `QuotaUsage.windowKey` est deja un `MessageKey` (`pro.ts:78`). `DashboardTask.title/detail` sont deja des `string` produits par un `Translator` (`core.ts:222-223`, genere dans `lib/mocks/index.ts:160,180`). Les 38 fichiers de `lib/i18n/dictionaries/zones/` sont intouches.\n\n**(c) TEXTE SYSTEME — genere par le serveur/worker, lu par un utilisateur dont la locale est inconnue a l'ecriture.** C'est le seul vrai travail de conception. **3 cas** :\n- `AppNotification.title/body` — les 4 notifs de `lib/mocks/notifications.ts` sont 100% systeme (« Echec de publication », « Compte a reconnecter »...). La table `notifications` a **deja** `type notification_type` + `payload jsonb` : l'infra existe, l'UI ne s'en sert pas.\n- `ActivityEntry.detail` — journal genere (« Publie sur Instagram et Facebook. »). `detail-activity.tsx` utilise **deja** `activityKindMeta[kind].labelKey` pour l'icone et le libelle du type : la moitie du chemin est faite.\n- `ContentItem.lastError` — la colonne DB est **deja `jsonb`**, pas `text`. Le worker ecrit, le freelance lit potentiellement des heures plus tard.\n\nPour ces trois-la, figer une phrase en `text` = message bloque dans la langue d'ecriture. Le pattern correct : `kind/type` + `payload jsonb`, rendu via `t(cle, payload)` a la lecture. **Cette regle est ce qui empeche le chantier « anti-i18n » de casser l'i18n legitime.**\n\n## 3. Trois pieges concrets trouves dans le code\n\n**Piege 1 — identite d'un calendrier = sa valeur FR.** `apps/web/components/app/agenda/agenda-utils.ts:119` :\n```ts\nexport function calendarKey(name: L<string>): string {\n  return name.fr\n}\n```\nLa cle de filtrage d'un calendrier est la chaine francaise de son libelle. En `text` simple ca devient `name` tout court — et alors **renommer un calendrier chez Google casse silencieusement tous les filtres enregistres**. Il faut une vraie identite : `calendar_events.external_calendar_id` (propose ci-dessus). Consommateurs : `isItemEnabled()` dans le meme fichier, `agenda-sidebar.tsx`, `app/(app)/agenda/page.tsx`.\n\n**Piege 2 — BUG ACTUEL : les vues enregistrees filtrent sur des libelles francais.** `apps/web/lib/mocks/views.ts` : `filters: { labels: [\"Lancement\", \"Promo\"] }` (`SavedViewFilters.labels?: string[]`, `pro.ts:60`). Confronte a `apps/web/components/app/studio/board-utils.ts:46` :\n```ts\nif (f.labels.length > 0 && !(item.labels ?? []).some((l) => f.labels.includes(pick(l, locale)))) {\n```\nEn locale `en`, `pick(l, \"en\")` renvoie « Launch » qui ne matchera jamais « Lancement ». **La vue « Drops & promos » est cassee en anglais aujourd'hui.** Le modele DB fait deja la bonne chose (`content_labels.id` + `content_item_labels`) : passer `saved_views.filters` a des `label_ids uuid[]` corrige le bug **et** supprime le `L<>`. Un des rares cas ou la migration repare quelque chose au lieu de degrader.\n\n**Piege 3 — `loc(s, s)` : du faux bilingue deja present.** `apps/web/components/app/studio/board-state.ts:64-66` stocke les etiquettes saisies (deja resolues) en `L<string>` via `loc(s, s)` — meme valeur des deux cotes — uniquement pour rester compatible avec le type `ContentItem`. C'est du code mort par anticipation : il disparait entierement. Meme motif dans `components/app/calendar/use-calendar-state.ts`.\n\n## 4. Le fait le plus important : le chemin d'ECRITURE est deja monolingue\n\n`apps/web/components/app/studio/composer/composer-types.ts` — `ComposerDraft` n'a **aucun** champ `L<>` : `title: string`, `caption: string`, `captionOverrides: Partial<Record<Platform, string>>`, `firstComment: string`, `newsletterSubject: string`, `internalNotes: string`, `labels: string[]`, `altText: string`. Les fonctions `draftFromContent(content, locale)` et `mediaFromLibrary(asset, position, locale)` **effondrent deja `L<>` -> `string` a l'entree** (9 appels `pick()`, le plus gros site du repo).\n\nConsequence : le passage a `text` **supprime du code, il n'en ajoute aucun**. L'UI d'edition n'a jamais su produire du bilingue — le parametre `locale` de ces deux fonctions devient inutile et s'en va avec. C'est le principal argument pour dire que ce chantier est **a faible risque**, contrairement a ce que le chiffre « 70 fichiers » suggere.\n\n## 5. Strategie de migration la moins risquee (4 temps, build vert a chaque etape)\n\nLe big-bang « supprimer `L<>` partout » casserait 70 fichiers d'un coup, dont 45 client components. A eviter. Ordre propose :\n\n**T1 — Shim de tolerance (1 seul fichier modifie).** Dans `apps/web/lib/i18n/localized.ts`, rendre `pick()` tolerant :\n```ts\nexport function pick<T>(value: L<T> | T, locale: Locale): T {\n  return value !== null && typeof value === \"object\" && \"fr\" in (value as object)\n    ? (value as L<T>)[locale]\n    : (value as T)\n}\n```\nA partir de la, les **144 sites d'appel acceptent indifferemment `L<string>` et `string`**. Ce shim est ce qui decouple le changement de type du changement d'UI — sans lui, T2 et T4 doivent etre le meme commit.\n\n**T2 — Bascule des types (10 fichiers).** Les 4 fichiers `lib/mocks/types/*.ts` + les 6 types locaux listes au §1 : `L<string>` -> `string`. TypeScript reste vert grace a T1. En parallele, aplatir les 15 fichiers de seed `lib/mocks/*.ts` sur la valeur `fr` (ou generer directement le seed SQL depuis eux — ils sont la source de verite des donnees de demo).\n\n**T3 — Traiter les 3 cas SYSTEME separement.** `notifications` (type + payload), `content_activity` (kind + payload), `last_error` (jsonb deja en place). Perimetre : 3 composants (`notifications-button.tsx`, `notifications/notification-row.tsx`, `studio/detail-activity.tsx`) + les 8 sites `lastError` listes dans `existing_table_changes`. **C'est la seule etape qui demande de la conception** — a faire avant T4 pour ne pas nettoyer des `pick()` qu'il faudra reintroduire sous forme de `t()`.\n\n**T4 — Nettoyage mecanique, etalable fichier par fichier.** Supprimer les 144 `pick()`, retirer le parametre `locale` des signatures qui n'existent que pour resoudre du `L<>` (`matchesSearch`, `matchesFilters` dans `board-utils.ts`, `draftFromContent`, `mediaFromLibrary`, `calendarKey`, `resolveList` dans `section-brand-kit.tsx`), puis retirer `L`/`loc`/`pick` de `lib/i18n/localized.ts` et de l'export barrel `lib/i18n/index.ts:15`. Chaque fichier nettoye compile independamment.\n\n**Ce qui ne bouge a aucun moment** : `lib/i18n/dictionaries/**` (38 fichiers de zones), `translator.ts`, `format-message.ts`, `format-bound.ts`, `labels.ts`, `provider.tsx`, `server.ts`, `config.ts`, `lib/mocks/labels.ts`. **L'i18n de l'interface est integralement preservee** — seule la couche « contenu de demo bilingue » disparait.\n\n## 6. Consequence produit a valider avec le proprietaire\n\nApres migration, basculer l'UI en anglais traduira les libelles, les statuts, les dates et la navigation — **mais les legendes, bios et notes resteront dans leur langue d'origine**. C'est le comportement normal d'un SaaS (le contenu appartient au client, pas a l'interface), et c'est coherent avec `CLAUDE.md` §1 (`i18n: FR only au MVP`). Mais la demo « tout bascule d'un coup » perd son effet : a signaler avant, pas apres.\n\n## 7. Ce qu'il ne faut PAS mettre en table (derivable ou statique)\n\n- **Marronniers** (`apps/web/lib/marronniers.ts`) : 38 entrees `L<string>` — c'est un **catalogue applicatif statique FR 2026**, pas de la donnee tenant. Il reste dans le code et **reste bilingue** via `loc()` : c'est un LIBELLE UI, categorie (b). Aucune table `marronniers`. (Le champ `kind` est deja traduit par cle `marronnier.kind.*` — le pattern correct est deja la.)\n- **`DashboardTask`** (`core.ts:212-228`) : deja `string`, entierement derive a la volee par `getDashboardTasks(t, locale)` (`lib/data/mock.ts:133`) a partir des contenus, comptes et jobs. **Aucune table `dashboard_tasks`.**\n- **`QuotaUsage`** (`pro.ts:74-79`) : `used`/`limit` viennent des API plateformes en temps reel (regle 19), `windowKey` est deja un `MessageKey`. Pas de table (au plus un compteur worker cote `social_accounts`, hors de ce domaine).\n- **`PostMetrics`, `PostRow`, `PillarSlice`** (`library.ts:40`, `perf-data.ts`, `perf-breakdown.ts`) : agregats calcules. Seules les metriques brutes justifieront une table (domaine Performance, hors perimetre ici) ; les lignes affichees sont derivees.\n- **`platformMeta`, `toneDotClass`, `toneTextClass`, `API_PLATFORMS`, `MANUAL_PLATFORMS`** (`lib/mocks/labels.ts`) : constantes de code, jamais en DB.\n- **`Reviewer`** (`collab.ts:7-14`) : aucun champ `L<>`, et c'est deja `client_members` + `profiles`. Pas de nouvelle table."
+}

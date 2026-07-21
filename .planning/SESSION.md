@@ -1,23 +1,21 @@
-# Session State — 2026-06-11 16:55 (implémentation audit pages client — TERMINÉE)
+# Session State — 2026-07-21 (câblage Supabase, Phase 0 faite)
 
 ## Branch / Commit
-`main` @ `9594f59` (dirty : tout `apps/` + `.planning/` untracked — jamais commité depuis le scaffold)
+`feat/cablage-supabase` @ `2a57f46` (dirty: 2 — `__tz_repro.mjs` debug + `scripts/` non commités)
 
 ## Completed This Session
-- Audit multi-agents des 3 pages client (Grille / Calendrier / Studio) → `docs/AUDIT-PAGES-CLIENT.md` : 113 features priorisées P0/P1/P2 avec faisabilité API.
-- Implémentation COMPLÈTE des 113 features en 5 vagues (fondation mocks gelée → composer/grille/calendrier → détail/board/médiathèque/shell → performance/onboarding/réglages → QA).
-- QA finale : revue 4 code-reviewers (0 bug bloquant), fixes appliqués (cohérence couleurs statut, DST, factorisation TZ `lib/tz.ts`, query params composer, etc.). 23 routes, build vert.
+- Schéma Lot 0 déployé et vérifié EN LIGNE (hgdeopkmkwyoumsfggrm) : RLS OK, secrets 401/403, compte owner linda@socean.com.
+- Audit multi-agents (12 domaines) → plan par phases : `docs/superpowers/plans/2026-07-21-cablage-supabase-PLAN-DETAILLE.md`.
+- **Phase 0 câblage faite** : auth mot de passe RÉELLE (login linda → /dashboard vérifié Playwright), migration 010 (pgTAP 9/9), clients Supabase, DAL, proxy corrigé, OTP supprimé.
 
 ## Next Task
-- Décider du **commit git** (rien n'est commité). Optionnel : `pnpm --filter web dev` + parcours visuel des nouvelles pages.
+- **Phase 1** : migration 011 (config éditoriale + `client_settings` org-only) + câblage 6 pages. Suivre `.planning/PROGRESS_cablage-supabase.md` (méthode par phase invariante).
 
 ## Blockers
-- None.
+- Étienne doit appliquer `deploy/03_migration_010.sql` en ligne (SQL Editor — MCP Supabase sur mauvais compte).
 
 ## Key Context
-- Lancer : `pnpm --filter web dev`. Vérif : `cd apps/web && npx tsc --noEmit && npx biome check . && npx next build`.
-- shadcn base-nova = Base UI → composition via prop `render` (PAS asChild). Horloge figée `MOCK_NOW` (2026-06-11) — jamais `Date.now()` au rendu (compteurs stables pour les ids locaux).
-- Phase = preview front UI-only, mocks `apps/web/lib/mocks/` (types miroir PRD §6). AUCUN backend. Convention copy = TUTOIEMENT (vous gardé uniquement portail reviewer + rapport client).
-- Plan détaillé + manques de fondation à câbler plus tard : `.planning/audit-impl/PLAN.md`. Backups : `.planning/audit-impl/backups/wave{1-5}-src.tgz`.
-- MCP connecté = `vibe-library` (biblio-only) : pas de tools projet `get_project_documents`/`list_projects`.
-- EN ATTENTE feu vert (reporté des sessions précédentes) : 2 bugs biblio (09-notif=Resend, 07-rls=JWT) + enrichissements biblio/MCP ci-dessous.
+- Reprise 100% guidée par `.planning/PROGRESS_cablage-supabase.md` (phases, pièges, décisions actées : password only, D1 text mono, D4 client_settings org-only, merge à la fin).
+- Dev sur `PORT=3010` (3000/3001 pris par d'autres projets). Conteneur pgtap = `ocean_rev2`.
+- `scripts/gen-types.py` régénère `apps/web/lib/supabase/types.ts` après chaque migration en ligne.
+- PR #1 (`fix/lot-0-guardrails`) ouverte non mergée ; i18n déjà sur origin/main.
