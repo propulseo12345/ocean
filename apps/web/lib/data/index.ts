@@ -9,11 +9,13 @@ import "server-only"
 export * from "./mock"
 export type { ClientSettings } from "./pro"
 // Phase 1 — configuration éditoriale câblée sur Supabase (migration 011).
+// Phase 2 — médiathèque (getLibraryAssets, migration 012).
 export {
   getBrandKit,
   getClientEvents,
   getClientSettings,
   getHashtagGroups,
+  getLibraryAssets,
   getPillars,
   getRecurringSlots,
   getSavedViews,

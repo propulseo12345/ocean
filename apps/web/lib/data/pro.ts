@@ -8,12 +8,19 @@ import type {
   ClientEvent,
   ContentPillar,
   HashtagGroup,
+  LibraryAsset,
+  LibraryAssetSource,
+  MediaType,
   Platform,
   RecurringSlot,
   SavedView,
   SavedViewFilters,
 } from "@/lib/mocks/types"
 import { createClient } from "@/lib/supabase/server"
+
+const ORIGINALS_BUCKET = "media-originals"
+const THUMBS_BUCKET = "media-thumbs"
+const SIGNED_URL_TTL = 3600 // 1 h
 
 // Câblage Supabase de la configuration éditoriale (Phase 1). Les lectures
 // filtrent explicitement org_id + client_id (défense en profondeur, règle 7) en
@@ -170,6 +177,77 @@ export const getSavedViews = cache(
         name: loc(row.name, row.name),
         filters,
         isDefault: row.is_default,
+      }
+    })
+  }
+)
+
+export const getLibraryAssets = cache(
+  async (orgId: string, clientId: string): Promise<LibraryAsset[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+
+    const { data } = await supabase
+      .from("media_assets")
+      .select(
+        "id, client_id, type, storage_path, thumb_path, width, height, duration_ms, alt_text, source, mime_type, byte_size, created_at"
+      )
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+
+    const rows = data ?? []
+    if (rows.length === 0) return []
+
+    // usedInContentIds : dérivé de content_media (un asset sert N contenus).
+    const { data: links } = await supabase
+      .from("content_media")
+      .select("media_asset_id, content_item_id")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+    const usedBy = new Map<string, string[]>()
+    for (const link of links ?? []) {
+      const list = usedBy.get(link.media_asset_id) ?? []
+      list.push(link.content_item_id)
+      usedBy.set(link.media_asset_id, list)
+    }
+
+    // thumbUrl : URL publique (bucket public). fullUrl : URL signée 1h de
+    // l'original (batch, un seul appel) — jamais d'URL stockée en base.
+    const thumbUrl = (path: string | null) =>
+      path ? supabase.storage.from(THUMBS_BUCKET).getPublicUrl(path).data.publicUrl : ""
+
+    const originalPaths = rows.map((r) => r.storage_path).filter((p): p is string => p !== null)
+    const signed = new Map<string, string>()
+    if (originalPaths.length > 0) {
+      const { data: urls } = await supabase.storage
+        .from(ORIGINALS_BUCKET)
+        .createSignedUrls(originalPaths, SIGNED_URL_TTL)
+      for (const u of urls ?? []) {
+        if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl)
+      }
+    }
+
+    return rows.map((row) => {
+      const thumb = thumbUrl(row.thumb_path)
+      const full = row.storage_path ? (signed.get(row.storage_path) ?? thumb) : thumb
+      return {
+        id: row.id,
+        clientId: row.client_id,
+        type: row.type as MediaType,
+        thumbUrl: thumb,
+        fullUrl: full,
+        width: row.width ?? 0,
+        height: row.height ?? 0,
+        durationSec: row.duration_ms != null ? Math.round(row.duration_ms / 1000) : undefined,
+        uploadedAt: row.created_at,
+        source: row.source as LibraryAssetSource,
+        usedInContentIds: usedBy.get(row.id) ?? [],
+        altText: row.alt_text ? loc(row.alt_text, row.alt_text) : undefined,
+        fileSizeMb:
+          row.byte_size != null ? Math.round((row.byte_size / (1024 * 1024)) * 10) / 10 : undefined,
+        mimeType: row.mime_type ?? undefined,
       }
     })
   }

@@ -20,10 +20,15 @@ grant anon, authenticated, service_role to postgres;
 SQL
 
 # 2. Migrations dans l'ordre, jusqu'à UPTO.
+#    On saute les fichiers *_storage.sql : le conteneur a un schéma storage
+#    ancien (pas de colonnes public/file_size_limit/allowed_mime_types) — ces
+#    migrations ne sont testables qu'en ligne.
 for f in $(docker exec "$CTN" bash -c "ls /tmp/migrations/*.sql | sort"); do
-  num=$(basename "$f" | cut -c1-3)
+  base=$(basename "$f")
+  case "$base" in *_storage.sql) echo ">>> (skip storage) $base"; continue;; esac
+  num=$(echo "$base" | cut -c1-3)
   if [[ "$num" > "$UPTO" ]]; then continue; fi
-  echo ">>> migration $(basename "$f")"
+  echo ">>> migration $base"
   docker exec -i "$CTN" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f "$f"
 done
 

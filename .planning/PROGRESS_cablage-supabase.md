@@ -43,7 +43,49 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   fail-closed OK ; plus de boucle. Données affichées encore mockées (normal).
 - `deploy/03_migration_010.sql` prêt. `scripts/gen-types.py` (régénère types.ts).
 
-## À FAIRE — reprise ici (Phase 1)
+## FAIT (Phase 1) ✅ — commit f2cb402 + migration 011
+- Migration `011_editorial_config.sql` : content_pillars → recurring_slots →
+  hashtag_groups, brand_kits (PK client_id), client_events (event_date DATE),
+  saved_views (owner_user_id, is_default), **client_settings (D4 org-only)** ;
+  ALTER content_items (pillar_id FK composite `on delete set null (pillar_id)`,
+  first_comment, pinned, exclude_from_grid, platform_options, updated_by).
+  RLS org-only, `revoke all` GUARD-05, checks (color chart-1..5, platforms `<@`
+  + cardinality, tags 1..30). pgTAP 011 = **33/33** sur ocean_rev2 (plan==émis).
+- `deploy/04_migration_011.sql` (begin/commit) prêt. types.ts 011 à la main.
+- Lectures : `lib/data/pro.ts` (7 lectures) + bascule `index.ts` (export nommé
+  prime sur `export *`). Mapping `text→loc(x,x)`, colorVar depuis color_token.
+- Server Actions `lib/actions/` : _helpers (requireClientInOrg), brand-kit,
+  client-settings (cadence + updateApprovalSettings), recurring-slots (add/
+  update/delete), pillars (create/update/archive), client-events, saved-views.
+- Sections câblées : brand-kit, cadence (settings threadées), approval (dirty
+  relance corrigé + persistance), slots (add/remove/patch optimiste, id temp
+  non-uuid non persisté). pillarMeta cross-tenant retiré ; board is_default.
+- **typecheck 0 erreur.** Biome : seules erreurs = CRLF Windows (mock.ts non
+  modifié échoue pareil → environnemental, CI Linux LF passe).
+- ⚠️ Runtime NON vérifié : 010+011 pas en ligne (blocage Étienne). Vérif =
+  pgTAP local + typecheck. Dettes : label_ids matching (P1), activity_kind enum.
+
+## FAIT (Phase 2) ✅ — migration 012 (médias)
+- `012_media.sql` (testable local) : media_assets (pool fille client, dims/mime/
+  byte nullable pour import, soft-delete), content_media (liaison N-N, position,
+  unique(item,position) DEFERRABLE, FK media restrict), ALTER content_items
+  (cover_media_asset_id restrict D11 + cover_frame_ms, exclusion mutuelle),
+  helpers is_reviewer_visible_media + can_write_client_media, trigger cardinalité
+  IMMÉDIAT (post/story 1, reel 1+vidéo, carousel ≤10), RPC reorder_content_media.
+  **pgTAP 27/27** (leak reviewer via table fille, cardinalité 4 formats, cover
+  restrict, cascade client A1 malgré restrict cross-child, reorder, GUARD-05).
+- `012_media_storage.sql` (**online-only** ; runner saute *_storage.sql) : buckets
+  media-originals(privé,300MB,mimes) + media-thumbs(public,1MB,webp), policies
+  storage.objects via can_write_client_media([1]=org,[2]=client). **D2** (chemin
+  sans content_item_id) + **D3** (thumbs public) = recommandés, À RECONFIRMER.
+- deploy/05 prêt. Types media_assets/content_media/cover/RPC à la main.
+- `getLibraryAssets` réel (thumb=public URL, full=signed URL batch, usedInContentIds
+  depuis content_media). Server Actions `lib/actions/media.ts`.
+- ⚠️ NON câblé (runtime-dépendant, online + seed requis) : injection des médias
+  DANS content_items (getContentItems reste mock), upload TUS client + conversion
+  JPEG/HEIC + vignette WebP, URL signées portail. media_deposit_links → migr 016.
+
+## À FAIRE — Phase 3 et suivantes
 Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`

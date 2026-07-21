@@ -136,6 +136,8 @@ export type Database = {
           exclude_from_grid: boolean
           platform_options: Json
           updated_by: string | null
+          cover_media_asset_id: string | null
+          cover_frame_ms: number | null
           created_at: string
           updated_at: string
         }
@@ -162,6 +164,8 @@ export type Database = {
           exclude_from_grid?: boolean
           platform_options?: Json
           updated_by?: string | null
+          cover_media_asset_id?: string | null
+          cover_frame_ms?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -188,6 +192,8 @@ export type Database = {
           exclude_from_grid?: boolean
           platform_options?: Json
           updated_by?: string | null
+          cover_media_asset_id?: string | null
+          cover_frame_ms?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -904,6 +910,111 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          type: string
+          storage_path: string | null
+          thumb_path: string | null
+          mime_type: string | null
+          byte_size: number | null
+          width: number | null
+          height: number | null
+          duration_ms: number | null
+          file_name: string | null
+          alt_text: string | null
+          source: string
+          uploaded_by: string | null
+          original_deleted_at: string | null
+          expires_at: string | null
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          type: string
+          storage_path?: string | null
+          thumb_path?: string | null
+          mime_type?: string | null
+          byte_size?: number | null
+          width?: number | null
+          height?: number | null
+          duration_ms?: number | null
+          file_name?: string | null
+          alt_text?: string | null
+          source?: string
+          uploaded_by?: string | null
+          original_deleted_at?: string | null
+          expires_at?: string | null
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          type?: string
+          storage_path?: string | null
+          thumb_path?: string | null
+          mime_type?: string | null
+          byte_size?: number | null
+          width?: number | null
+          height?: number | null
+          duration_ms?: number | null
+          file_name?: string | null
+          alt_text?: string | null
+          source?: string
+          uploaded_by?: string | null
+          original_deleted_at?: string | null
+          expires_at?: string | null
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      content_media: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          media_asset_id: string
+          position: number
+          alt_text_override: string | null
+          crop_preset: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          media_asset_id: string
+          position: number
+          alt_text_override?: string | null
+          crop_preset?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          content_item_id?: string
+          media_asset_id?: string
+          position?: number
+          alt_text_override?: string | null
+          crop_preset?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -920,6 +1031,10 @@ export type Database = {
       create_organization: {
         Args: { _name: string; _slug: string }
         Returns: Database["public"]["Tables"]["organizations"]["Row"]
+      }
+      reorder_content_media: {
+        Args: { _content_item: string; _ordered_media_ids: string[] }
+        Returns: undefined
       }
     }
     Enums: {
