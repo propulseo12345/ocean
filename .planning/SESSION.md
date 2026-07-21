@@ -1,16 +1,37 @@
 # Session State — 2026-07-22 (câblage Supabase : Phases 1→8 faites)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `42a75cd`. Working tree propre.
-Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
+`feat/cablage-supabase` @ `d48d663`. Working tree propre.
+Rien n'est poussé, aucune PR mergée (décision actée : Étienne merge au réveil).
 
-## ⏭️ REPRISE — Phase 11 (DERNIÈRE, plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
-Exécution autonome des 4 dernières phases (8→11). **Phases 8 (2/2) + 9 + 10
-FAITES et vérifiées** (commits `dcc5d0c`, `bf6d8dc`, `42a75cd`). Reprendre à la
-**Phase 11** : DÉGELER `lib/clock.ts` (vrai now()), relocaliser
-`lib/mocks/types`→`lib/domain`, SUPPRIMER `lib/mocks/**` (+ `loc`, `Client.theme`,
-`lib/mocks/images`, DemoBanner), suite pgTAP complète rejouée, vérif runtime
-post-dégel. `get_advisors` + régén types.ts = handoff Étienne (MCP autre compte).
+## ✅✅ CÂBLAGE SUPABASE TERMINÉ — les 4 phases de nuit (8→11) faites & vérifiées
+Toutes committées, chacune vérifiée PAR EXÉCUTION (typecheck + pgTAP + build +
+runtime Playwright create-verify-delete). **L'UI ne consomme QUE Supabase :
+`grep -r @/lib/mocks apps/web` = 0.**
+- Phase 8 (2/2) `dcc5d0c` — écritures cœur (composer/board/calendrier/corbeille)
+- Phase 9 `bf6d8dc` — RPC manual-publish/retry + portail submitReviewDecision + fil
+- Phase 10 `42a75cd` — perf RÉELLE (mocks + deltas inventés supprimés), N+1 grille, saved_views
+- Phase 11 `d48d663` — dégel horloge + suppression TOTALE de lib/mocks/** + loc + theme + DemoBanner
+
+**pgTAP suite complète rejouée en fin de Phase 11 : 231/231, plan == émis sur 16
+fichiers, 0 échec.** typecheck 0, build vert, runtime dégel OK (dashboard « July
+22, 2026 », zéro erreur d'hydratation).
+
+## 🤝 ACTIONS OUVERTES POUR ÉTIENNE (handoff, hors périmètre nuit)
+1. **Merger** la branche `feat/cablage-supabase` (non poussée, non mergée).
+2. **`get_advisors`** sur le projet online (hgdeopkmkwyoumsfggrm) — MCP sur autre
+   compte ici, je n'ai pas pu le lancer. **Régénérer `types.ts`** (maintenu à la
+   main jusqu'ici) après confirmation du schéma.
+3. **Purger 2 résidus de test** (client « Client de demo ») :
+   `delete from content_items where id in ('c092f256-d215-4f7a-9a15-653d3371857d','f69aa705-d43d-4994-8792-8ec6d0f3ae9e');`
+4. **Handoffs de câblage restants** (Lot 2+, hors nuit) : upload TUS + conversion
+   JPEG/HEIC + vignette WebP ; emails Brevo ; OAuth Meta/TikTok/Google/MS + worker ;
+   Route Handler d'acceptation d'invitation (D8/D9). Une fois TUS fait, câbler
+   attachMedia/deleteAsset/updateAssetAlt (actions prêtes) + le composer de
+   commentaire/annotation du PORTAIL (UI à construire — annotation-viewer read-only).
+5. **14 warnings biome pré-existants** (params `locale` inutilisés depuis
+   l'aplatissement Phase 7) — non bloquants ; nettoyage optionnel.
+6. Optionnel : `profiles.full_name='Linda'` en ligne (cosmétique dashboard).
 
 ## ⚠️ RÉSIDUS DE TEST EN LIGNE (Client de demo — à purger SQL par Étienne)
 Deux contenus de test créés au runtime, non supprimables via l'UI :
@@ -89,6 +110,7 @@ client « Client de demo ») :
 | **8 (2/2) — câblage UI écritures** | **dcc5d0c** | — | — (UI-only, actions déjà testées) |
 | **9 — câblage RPC + portail + fil** | **bf6d8dc** | — | — (UI-only, RPC déjà testées 013/016) |
 | **10 — perf réelle & dettes lecture** | **42a75cd** | — | — (lectures ; getPostMetricsBatch + getSavedViews) |
+| **11 — dégel + suppression mocks** | **d48d663** | — | **231/231** (suite complète rejouée) |
 
 **Suite pgTAP complète 003→016 + 090 + 091 : 231/231, plan == émis sur 16 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
@@ -218,11 +240,9 @@ formateur global (`--formatter-enabled=false` bloque aussi le retrait d'imports)
 Overview, Awaiting approval, Free day…), le contenu reste FR (Maison Verde,
 « Recette express en 30 secondes », « Jeton Instagram expire… »). D1 exact.
 
-## Reste à faire — phases du plan de nuit (§ PLAN_NUIT), dans l'ordre
-- **Phase 11** (DERNIÈRE, prochaine) — **dégel `lib/clock.ts`** (vrai now()) ; relocaliser
-  `lib/mocks/types` → `lib/domain` ; **supprimer `lib/mocks/**`** (+ `loc`,
-  `Client.theme`, `lib/mocks/images`, DemoBanner) ; suite pgTAP complète
-  rejouée ; `get_advisors` à faire faire par Étienne (MCP autre compte).
+## Reste à faire — plan de nuit (§ PLAN_NUIT)
+✅ **Les 4 phases (8→11) sont FAITES.** Reste = handoff Étienne (voir la section
+« ACTIONS OUVERTES POUR ÉTIENNE » en tête de ce fichier).
 
 ## Dettes connues
 - **Phase 6 : les 2 RPC ne sont pas encore appelées par des composants.** Les

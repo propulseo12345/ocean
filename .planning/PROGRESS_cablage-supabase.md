@@ -243,8 +243,31 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   build vert. Dette : reach reste number (coerce null→0), propagation « non
   disponible » à faire quand de vraies métriques existent.
 
-## À FAIRE — Phase 11 (DERNIÈRE, plan de nuit §)
-Reprendre à la **Phase 11**. Méthode par phase, INVARIANTE (pour toute migration) :
+## FAIT (Phase 11, DERNIÈRE) ✅ — dégel + suppression des mocks — commit d48d663
+- **Dégel `lib/clock.ts`** : now()/nowIso() = vrai temps ; helpers hours/days/
+  fromNow déménagés de lib/mocks/time vers lib/clock (5 composants repointés).
+- **Types relocalisés** lib/mocks/types → **lib/domain** (git mv + 163 imports
+  sed'd). Deux modules PERMANENTS mal rangés extraits vers lib/domain :
+  **labels.ts** (méta status/tone/platform, sans pillarMeta mock) et
+  **quotas.ts** (PLATFORM_QUOTAS, sans le mock getQuotaUsage). ⚠️ Piège payé :
+  mon grep d'exclusion masquait `from "@/lib/mocks/labels"` → j'avais failli
+  supprimer ces 2 fichiers permanents ; restaurés depuis HEAD puis relocalisés.
+- **`loc` éliminé** : marronniers (bilingue → FR), board-state/use-calendar-state
+  (identité) ; localized.ts supprimé + export retiré de lib/i18n.
+- **Client.theme + themeFor + images + addMockAssets** retirés ; use-library-assets
+  réécrit (upload = handoff TUS annoncé, plus de simulation). **DemoBanner shell**
+  (« nothing is saved », faux) retiré du layout.
+- **`lib/mocks/**` ENTIER supprimé** + __tz_repro.mjs. `grep -r @/lib/mocks` = 0.
+- **VÉRIF FINALE** : typecheck 0 ; build vert (attrape la frontière client/serveur
+  — cf. Phase 10) ; **pgTAP complète rejouée 231/231, plan == émis / 16 fichiers,
+  0 échec** ; runtime : dashboard « July 22, 2026 » (dégel), ZÉRO hydratation,
+  bandeau démo absent, calendrier/médiathèque/toggle FR OK.
+
+## ✅ CÂBLAGE SUPABASE TERMINÉ
+L'UI ne consomme QUE Supabase. Handoffs restants (TUS, Brevo, OAuth+worker,
+get_advisors/types.ts, merge) = section « ACTIONS OUVERTES » de SESSION.md.
+
+## (archive) Méthode par phase, INVARIANTE (pour toute future migration) :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
    GUARD-05, `on delete set null` + snapshot noms, `set null (col)` PG15).
