@@ -12,9 +12,10 @@ import {
 } from "@dnd-kit/core"
 import { useState } from "react"
 import { toast } from "sonner"
+import { canApplyIntent } from "@/lib/domain/content-status"
 import { useLabels, useT } from "@/lib/i18n"
 import { days, fromNow } from "@/lib/mocks/time"
-import type { Client, ContentItem, ContentStatus } from "@/lib/mocks/types"
+import type { Client, ContentItem } from "@/lib/mocks/types"
 import { KanbanCard, KanbanColumn } from "./board-kanban-card"
 import type { BoardState } from "./board-state"
 import { KANBAN_COLUMNS, type KanbanColumnId, kanbanColumnOf } from "./board-types"
@@ -29,16 +30,12 @@ const TOUCH_DELAY_MS = 220
 const TOUCH_TOLERANCE_PX = 8
 const POINTER_DISTANCE_PX = 6
 
-const TO_REVIEW_FROM: ContentStatus[] = ["idea", "draft", "changes_requested", "approved"]
-const TO_DRAFT_FROM: ContentStatus[] = [
-  "idea",
-  "in_review",
-  "changes_requested",
-  "approved",
-  "failed",
-  "scheduled",
-]
-const TO_SCHEDULED_FROM: ContentStatus[] = ["idea", "draft", "approved", "failed"]
+// Les listes de statuts sources vivaient ici, codées en dur, et avaient dérivé
+// de la garde SQL 008 : `approved -> in_review` et `changes_requested ->
+// in_review` étaient proposés alors que la base les refuse (42501 au clic), et
+// `draft -> idea` était proposé alors qu'il n'existait pas en base. La matrice
+// est désormais partagée avec les Server Actions et miroir de 008/016.
+// Voir lib/domain/content-status.ts.
 
 export function BoardKanban({
   items,
@@ -66,7 +63,7 @@ export function BoardKanban({
         description: t("studio.kanban.cannotDropPublishedDesc"),
       })
     } else if (target === "approved") {
-      if (client.approvalMode === "auto") {
+      if (client.approvalMode === "auto" && canApplyIntent("approve", item.status)) {
         board.setStatusBatch([item.id], "approved")
         toast.success(t("studio.kanban.markedApproved"), {
           description: t("studio.kanban.markedApprovedDesc", { name: client.name }),
@@ -80,7 +77,7 @@ export function BoardKanban({
         })
       }
     } else if (target === "in_review") {
-      if (TO_REVIEW_FROM.includes(item.status)) {
+      if (canApplyIntent("send_to_review", item.status)) {
         board.setStatusBatch([item.id], "in_review")
         toast.success(t("studio.kanban.sentToReview"))
       } else {
@@ -89,21 +86,21 @@ export function BoardKanban({
         })
       }
     } else if (target === "draft") {
-      if (TO_DRAFT_FROM.includes(item.status)) {
+      if (canApplyIntent("back_to_draft", item.status)) {
         board.setStatusBatch([item.id], "draft")
         toast.success(t("studio.kanban.backToDraft"), {
           description: item.status === "approved" ? t("studio.kanban.backToDraftDesc") : undefined,
         })
       }
     } else if (target === "idea") {
-      if (item.status === "draft") {
+      if (canApplyIntent("back_to_idea", item.status)) {
         board.setStatusBatch([item.id], "idea")
         toast.success(t("studio.kanban.backToIdea"))
       } else {
         toast.info(t("studio.kanban.onlyDraftToIdea"))
       }
     } else if (target === "scheduled") {
-      if (!TO_SCHEDULED_FROM.includes(item.status)) {
+      if (!canApplyIntent("schedule", item.status)) {
         toast.info(t("studio.kanban.cannotSchedule"), {
           description: t("studio.kanban.cannotScheduleDesc"),
         })

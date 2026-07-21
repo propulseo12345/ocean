@@ -1781,6 +1781,19 @@ export type Database = {
         Args: { _content_item: string; _ordered_media_ids: string[] }
         Returns: undefined
       }
+      // Migration 016 — transitions (Phase 6).
+      mark_target_published_manually: {
+        Args: {
+          _target: string
+          _external_post_id?: string | null
+          _permalink?: string | null
+        }
+        Returns: string
+      }
+      request_target_retry: {
+        Args: { _target: string }
+        Returns: string
+      }
       submit_review_decision: {
         Args: { _content_item: string; _decision: string; _message?: string | null }
         Returns: undefined
