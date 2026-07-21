@@ -2,15 +2,25 @@
 
 import { PlatformIcons } from "@/components/shared/platform-badge"
 import { useT } from "@/lib/i18n"
-import { pillarMeta } from "@/lib/mocks/labels"
-import type { RecurringSlot } from "@/lib/mocks/types"
+import type { ContentPillar, RecurringSlot } from "@/lib/mocks/types"
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "./constants"
 
 // Aperçu hebdomadaire des créneaux récurrents : grille 7 jours, chaque créneau
 // positionné sous son jour, trié par heure. Donne à voir la cadence convenue.
+//
+// La couleur du pilier vient des piliers DÉJÀ chargés et scopés par la RLS (pas
+// d'une map globale tous-clients : celle-ci serait un lookup cross-tenant côté
+// client une fois les données réelles branchées).
 
-export function SlotsWeekPreview({ slots }: { slots: RecurringSlot[] }) {
+export function SlotsWeekPreview({
+  slots,
+  pillars,
+}: {
+  slots: RecurringSlot[]
+  pillars: ContentPillar[]
+}) {
   const t = useT()
+  const pillarColor = new Map(pillars.map((p) => [p.id, p.colorVar]))
   const byDay = new Map<number, RecurringSlot[]>()
   for (const slot of slots) {
     const list = byDay.get(slot.weekday) ?? []
@@ -32,12 +42,12 @@ export function SlotsWeekPreview({ slots }: { slots: RecurringSlot[] }) {
             </p>
             <div className="space-y-1">
               {daySlots.map((slot) => {
-                const pillar = slot.pillarId ? pillarMeta[slot.pillarId] : undefined
+                const colorVar = slot.pillarId ? pillarColor.get(slot.pillarId) : undefined
                 return (
                   <div
                     key={slot.id}
                     className="rounded-md border-l-2 bg-card px-1 py-1 text-[10px] leading-tight"
-                    style={{ borderLeftColor: pillar?.colorVar ?? "var(--border)" }}
+                    style={{ borderLeftColor: colorVar ?? "var(--border)" }}
                   >
                     <span className="block font-medium tabular-nums">{slot.time}</span>
                     <PlatformIcons platforms={slot.platforms} className="mt-0.5 gap-0.5" />

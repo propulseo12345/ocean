@@ -15,6 +15,7 @@ export const clientSettingsFr = {
       dirty: "Modifications non enregistrées.",
       clean: "Tout est à jour.",
       save: "Enregistrer (aperçu)",
+      error: "Échec de l'enregistrement. Réessayez.",
     },
     hues: {
       coffee: "Terre de café",

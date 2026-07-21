@@ -5,6 +5,7 @@ import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
+  getClientSettings,
   getPillars,
   getRecurringSlots,
   getReviewer,
@@ -38,6 +39,7 @@ export default async function ClientSettingsPage({
       slots={await getRecurringSlots(ctx.org.id, clientId)}
       pillars={await getPillars(ctx.org.id, clientId)}
       trashed={await getTrashedContent(ctx.org.id, clientId)}
+      settings={await getClientSettings(ctx.org.id, clientId)}
     />
   )
 }

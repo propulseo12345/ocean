@@ -1,12 +1,13 @@
 "use client"
 
 import { Bell, Clock, Mail, ShieldCheck, UserPlus } from "lucide-react"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { updateApprovalSettings } from "@/lib/actions/client-settings"
 import { type MessageKey, useFormat, useLabels, useT } from "@/lib/i18n"
 import type { ApprovalMode, Client, Reviewer } from "@/lib/mocks/types"
 import { REMINDER_DELAY_BOUNDS, REMINDER_DELAY_DEFAULT } from "./constants"
@@ -47,22 +48,34 @@ const MODES: ModeOption[] = [
 export function SectionApproval({
   client,
   reviewer,
+  reminderDays: initialReminderDays,
 }: {
   client: Client
   reviewer: Reviewer | undefined
+  reminderDays: number
 }) {
   const t = useT()
   const f = useFormat()
   const lbl = useLabels()
+  const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<ApprovalMode>(client.approvalMode)
-  const [reminderDays, setReminderDays] = useState(REMINDER_DELAY_DEFAULT)
+  const [reminderDays, setReminderDays] = useState(initialReminderDays)
   const reminderDisabled = mode === "auto"
 
-  const dirty = mode !== client.approvalMode
+  // Le délai de relance compte AUSSI dans dirty (bug corrigé : sans lui, modifier
+  // seul le délai laissait le bouton Enregistrer désactivé — valeur insauvable).
+  const dirty = mode !== client.approvalMode || reminderDays !== initialReminderDays
 
   function save() {
-    toast.success(t("clientSettings.approval.savedToast"), {
-      description: lbl.approvalMode(mode),
+    startTransition(async () => {
+      const res = await updateApprovalSettings({ clientId: client.id, mode, reminderDays })
+      if (res.ok) {
+        toast.success(t("clientSettings.approval.savedToast"), {
+          description: lbl.approvalMode(mode),
+        })
+      } else {
+        toast.error(t("clientSettings.saveBar.error"))
+      }
     })
   }
 
@@ -162,7 +175,7 @@ export function SectionApproval({
         {t("clientSettings.approval.lateNote")}
       </p>
 
-      <SaveBar dirty={dirty} onSave={save} />
+      <SaveBar dirty={dirty && !pending} onSave={save} />
     </SectionCard>
   )
 }

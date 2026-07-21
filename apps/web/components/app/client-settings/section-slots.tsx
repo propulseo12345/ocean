@@ -1,10 +1,15 @@
 "use client"
 
 import { CalendarClock, Info, Plus } from "lucide-react"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  addRecurringSlot,
+  deleteRecurringSlot,
+  updateRecurringSlot,
+} from "@/lib/actions/recurring-slots"
 import { useT } from "@/lib/i18n"
 import type { Client, ContentPillar, RecurringSlot } from "@/lib/mocks/types"
 import { SectionCard } from "./section-card"
@@ -12,6 +17,11 @@ import { SlotRow } from "./slot-row"
 import { SlotsWeekPreview } from "./slots-week-preview"
 
 let counter = 0
+
+// Un créneau non encore persisté porte un id temporaire non-uuid : ses éditions
+// ne déclenchent aucune écriture tant que l'insert n'a pas renvoyé son id réel.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isPersisted = (id: string) => UUID_RE.test(id)
 
 export function SectionSlots({
   client,
@@ -24,28 +34,73 @@ export function SectionSlots({
 }) {
   const t = useT()
   const [slots, setSlots] = useState<RecurringSlot[]>(initial)
+  const [, startTransition] = useTransition()
 
   function patch(id: string, patch: Partial<RecurringSlot>) {
-    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+    let updated: RecurringSlot | undefined
+    setSlots((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s
+        updated = { ...s, ...patch }
+        return updated
+      })
+    )
+    if (!updated || !isPersisted(id)) return
+    const next = updated
+    startTransition(async () => {
+      const res = await updateRecurringSlot({
+        clientId: client.id,
+        slotId: id,
+        weekday: next.weekday,
+        time: next.time,
+        platforms: next.platforms,
+        pillarId: next.pillarId ?? null,
+      })
+      if (!res.ok) toast.error(t("clientSettings.saveBar.error"))
+    })
   }
 
   function remove(id: string) {
     setSlots((prev) => prev.filter((s) => s.id !== id))
-    toast.info(t("clientSettings.slots.removedToast"))
+    if (!isPersisted(id)) {
+      toast.info(t("clientSettings.slots.removedToast"))
+      return
+    }
+    startTransition(async () => {
+      const res = await deleteRecurringSlot({ clientId: client.id, slotId: id })
+      if (res.ok) toast.info(t("clientSettings.slots.removedToast"))
+      else toast.error(t("clientSettings.saveBar.error"))
+    })
   }
 
   function add() {
     counter += 1
-    const slot: RecurringSlot = {
+    const optimistic: RecurringSlot = {
       id: `slot_new_${counter}`,
       clientId: client.id,
       weekday: 2,
       time: "11:30",
       platforms: ["instagram"],
     }
-    setSlots((prev) => [...prev, slot])
-    toast.info(t("clientSettings.slots.addedToast"), {
-      description: t("clientSettings.slots.addedToastDescription"),
+    setSlots((prev) => [...prev, optimistic])
+    startTransition(async () => {
+      const res = await addRecurringSlot({
+        clientId: client.id,
+        weekday: optimistic.weekday,
+        time: optimistic.time,
+        platforms: optimistic.platforms,
+        pillarId: null,
+      })
+      if (res.ok && res.data) {
+        const realId = res.data.id
+        setSlots((prev) => prev.map((s) => (s.id === optimistic.id ? { ...s, id: realId } : s)))
+        toast.info(t("clientSettings.slots.addedToast"), {
+          description: t("clientSettings.slots.addedToastDescription"),
+        })
+      } else {
+        setSlots((prev) => prev.filter((s) => s.id !== optimistic.id))
+        toast.error(t("clientSettings.saveBar.error"))
+      }
     })
   }
 
@@ -100,7 +155,7 @@ export function SectionSlots({
           <p className="text-xs font-medium text-muted-foreground">
             {t("clientSettings.slots.weekPreviewTitle")}
           </p>
-          <SlotsWeekPreview slots={slots} />
+          <SlotsWeekPreview slots={slots} pillars={pillars} />
         </div>
       ) : null}
     </SectionCard>

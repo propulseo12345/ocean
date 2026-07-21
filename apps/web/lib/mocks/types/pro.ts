@@ -68,6 +68,8 @@ export interface SavedView {
   clientId: string
   name: L<string>
   filters: SavedViewFilters
+  /** Vue par défaut du board (remplace le match sur le nom « À traiter »). */
+  isDefault?: boolean
 }
 
 /** Consommation d'un quota plateforme pour un compte social. */

@@ -18,6 +18,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       dirty: "Unsaved changes.",
       clean: "Everything is up to date.",
       save: "Save (preview)",
+      error: "Save failed. Please try again.",
     },
     hues: {
       coffee: "Coffee earth",

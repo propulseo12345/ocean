@@ -11,6 +11,7 @@ import {
   Waypoints,
 } from "lucide-react"
 import { useState } from "react"
+import type { ClientSettings } from "@/lib/data"
 import { type MessageKey, useT } from "@/lib/i18n"
 import type {
   BrandKit,
@@ -54,6 +55,7 @@ export function SettingsShell({
   slots,
   pillars,
   trashed,
+  settings,
 }: {
   client: Client
   accounts: SocialAccount[]
@@ -62,6 +64,7 @@ export function SettingsShell({
   slots: RecurringSlot[]
   pillars: ContentPillar[]
   trashed: ContentItem[]
+  settings: ClientSettings
 }) {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
@@ -77,13 +80,17 @@ export function SettingsShell({
           <SectionBrandKit clientId={client.id} brandKit={brandKit} />
         </Anchor>
         <Anchor id="validation">
-          <SectionApproval client={client} reviewer={reviewer} />
+          <SectionApproval
+            client={client}
+            reviewer={reviewer}
+            reminderDays={settings.reviewReminderDays}
+          />
         </Anchor>
         <Anchor id="creneaux">
           <SectionSlots client={client} slots={slots} pillars={pillars} />
         </Anchor>
         <Anchor id="cadence">
-          <SectionCadence />
+          <SectionCadence clientId={client.id} settings={settings} />
         </Anchor>
         <Anchor id="archivage">
           <SectionDanger client={client} trashed={trashed} />

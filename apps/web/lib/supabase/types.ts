@@ -2,13 +2,7 @@
 // Regenerer apres chaque migration : voir scripts/gen-types.py.
 // Ne pas editer a la main.
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   public: {
@@ -136,28 +130,40 @@ export type Database = {
           last_error: Json | null
           deleted_at: string | null
           archived_at: string | null
+          pillar_id: string | null
+          first_comment: string | null
+          pinned: boolean
+          exclude_from_grid: boolean
+          platform_options: Json
+          updated_by: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           client_id: string
           title?: string | null
           caption?: string | null
-          hashtags: string[]
-          format: string
-          status: string
+          hashtags?: string[]
+          format?: string
+          status?: string
           scheduled_at?: string | null
           newsletter_subject?: string | null
           internal_notes?: string | null
           created_by?: string | null
-          approval_stale: boolean
+          approval_stale?: boolean
           last_error?: Json | null
           deleted_at?: string | null
           archived_at?: string | null
-          created_at: string
-          updated_at: string
+          pillar_id?: string | null
+          first_comment?: string | null
+          pinned?: boolean
+          exclude_from_grid?: boolean
+          platform_options?: Json
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -176,6 +182,12 @@ export type Database = {
           last_error?: Json | null
           deleted_at?: string | null
           archived_at?: string | null
+          pillar_id?: string | null
+          first_comment?: string | null
+          pinned?: boolean
+          exclude_from_grid?: boolean
+          platform_options?: Json
+          updated_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -623,6 +635,270 @@ export type Database = {
           followers_count?: number | null
           external_url?: string | null
           metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      content_pillars: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          name: string
+          color_token: string
+          target_share: number
+          sort_order: number
+          archived_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          name: string
+          color_token?: string
+          target_share?: number
+          sort_order?: number
+          archived_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          name?: string
+          color_token?: string
+          target_share?: number
+          sort_order?: number
+          archived_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recurring_slots: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          weekday: number
+          time_of_day: string
+          platforms: string[]
+          pillar_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          weekday: number
+          time_of_day: string
+          platforms: string[]
+          pillar_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          weekday?: number
+          time_of_day?: string
+          platforms?: string[]
+          pillar_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hashtag_groups: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          name: string
+          tags: string[]
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          name: string
+          tags: string[]
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          name?: string
+          tags?: string[]
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      brand_kits: {
+        Row: {
+          client_id: string
+          org_id: string
+          palette: string[]
+          tone: string | null
+          do_list: string[]
+          dont_list: string[]
+          banned_words: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          org_id: string
+          palette?: string[]
+          tone?: string | null
+          do_list?: string[]
+          dont_list?: string[]
+          banned_words?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          org_id?: string
+          palette?: string[]
+          tone?: string | null
+          do_list?: string[]
+          dont_list?: string[]
+          banned_words?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      client_events: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          event_date: string
+          title: string
+          kind: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          event_date: string
+          title: string
+          kind?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          event_date?: string
+          title?: string
+          kind?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_views: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          owner_user_id: string
+          name: string
+          search: string | null
+          statuses: string[]
+          platforms: string[]
+          formats: string[]
+          pillar_ids: string[]
+          label_ids: string[]
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          owner_user_id: string
+          name: string
+          search?: string | null
+          statuses?: string[]
+          platforms?: string[]
+          formats?: string[]
+          pillar_ids?: string[]
+          label_ids?: string[]
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          owner_user_id?: string
+          name?: string
+          search?: string | null
+          statuses?: string[]
+          platforms?: string[]
+          formats?: string[]
+          pillar_ids?: string[]
+          label_ids?: string[]
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      client_settings: {
+        Row: {
+          client_id: string
+          org_id: string
+          review_reminder_days: number
+          cadence_gap_days: number
+          cadence_max_per_day: number
+          cadence_alerts: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          org_id: string
+          review_reminder_days?: number
+          cadence_gap_days?: number
+          cadence_max_per_day?: number
+          cadence_alerts?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          org_id?: string
+          review_reminder_days?: number
+          cadence_gap_days?: number
+          cadence_max_per_day?: number
+          cadence_alerts?: Json
           created_at?: string
           updated_at?: string
         }

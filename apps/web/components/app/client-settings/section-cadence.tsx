@@ -1,50 +1,73 @@
 "use client"
 
 import { Minus, Plus, TriangleAlert } from "lucide-react"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { updateCadence } from "@/lib/actions/client-settings"
+import type { ClientSettings } from "@/lib/data"
 import { type MessageKey, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
-import { CADENCE_DEFAULTS, DENSITY_BOUNDS, GAP_BOUNDS } from "./constants"
+import { DENSITY_BOUNDS, GAP_BOUNDS } from "./constants"
 import { SaveBar, SectionCard } from "./section-card"
 
 interface AlertToggle {
-  id: string
+  id: "empty_week" | "gap" | "collision"
   labelKey: MessageKey
   enabled: boolean
 }
 
-// État initial des alertes par id → résistant à un réordonnancement de la liste.
-const DEFAULT_ALERTS: Record<string, boolean> = {
-  empty_week: true,
-  gap: true,
-  collision: false,
-}
-
-export function SectionCadence() {
+export function SectionCadence({
+  clientId,
+  settings,
+}: {
+  clientId: string
+  settings: ClientSettings
+}) {
   const t = useT()
-  const [gapDays, setGapDays] = useState<number>(CADENCE_DEFAULTS.gapDays)
-  const [maxPerDay, setMaxPerDay] = useState<number>(CADENCE_DEFAULTS.maxPerDay)
+  const [pending, startTransition] = useTransition()
+  const base = settings.cadenceAlerts
+  const [gapDays, setGapDays] = useState<number>(settings.cadenceGapDays)
+  const [maxPerDay, setMaxPerDay] = useState<number>(settings.cadenceMaxPerDay)
   const [alerts, setAlerts] = useState<AlertToggle[]>([
-    { id: "empty_week", labelKey: "clientSettings.cadence.alertEmptyWeek", enabled: true },
-    { id: "gap", labelKey: "clientSettings.cadence.alertGap", enabled: true },
-    { id: "collision", labelKey: "clientSettings.cadence.alertCollision", enabled: false },
+    {
+      id: "empty_week",
+      labelKey: "clientSettings.cadence.alertEmptyWeek",
+      enabled: base.empty_week,
+    },
+    { id: "gap", labelKey: "clientSettings.cadence.alertGap", enabled: base.gap },
+    { id: "collision", labelKey: "clientSettings.cadence.alertCollision", enabled: base.collision },
   ])
 
   const dirty =
-    gapDays !== CADENCE_DEFAULTS.gapDays ||
-    maxPerDay !== CADENCE_DEFAULTS.maxPerDay ||
-    alerts.some((a) => a.enabled !== DEFAULT_ALERTS[a.id])
+    gapDays !== settings.cadenceGapDays ||
+    maxPerDay !== settings.cadenceMaxPerDay ||
+    alerts.some((a) => a.enabled !== base[a.id])
 
   function save() {
-    toast.success(t("clientSettings.cadence.savedToast"), {
-      description: t("clientSettings.cadence.savedToastDescription", {
-        gap: gapDays,
-        density: maxPerDay,
-      }),
+    startTransition(async () => {
+      const res = await updateCadence({
+        clientId,
+        cadenceGapDays: gapDays,
+        cadenceMaxPerDay: maxPerDay,
+        cadenceAlerts: {
+          empty_week: alerts.find((a) => a.id === "empty_week")?.enabled ?? true,
+          gap: alerts.find((a) => a.id === "gap")?.enabled ?? true,
+          collision: alerts.find((a) => a.id === "collision")?.enabled ?? false,
+        },
+      })
+      if (res.ok) {
+        toast.success(t("clientSettings.cadence.savedToast"), {
+          description: t("clientSettings.cadence.savedToastDescription", {
+            gap: gapDays,
+            density: maxPerDay,
+          }),
+        })
+      } else {
+        toast.error(t("clientSettings.saveBar.error"))
+      }
     })
   }
 
@@ -98,7 +121,7 @@ export function SectionCadence() {
         })}
       </ul>
 
-      <SaveBar dirty={dirty} onSave={save} />
+      <SaveBar dirty={dirty && !pending} onSave={save} />
     </SectionCard>
   )
 }

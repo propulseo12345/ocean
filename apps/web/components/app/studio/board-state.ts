@@ -50,8 +50,10 @@ function viewToFilters(view: SavedView | null): BoardFilters {
 
 export function useBoardState({ items, savedViews, reviewer, initialRequest }: BoardStateInput) {
   const { locale } = useLocale()
-  // Identité stable de la vue par défaut : valeur FR du nom (jamais affichée ici).
-  const defaultView = savedViews.find((v) => v.name.fr === "À traiter") ?? null
+  // Vue par défaut : la colonne is_default (données réelles) ; repli sur l'ancien
+  // match par nom pour les vues encore mockées, sans colonne is_default.
+  const defaultView =
+    savedViews.find((v) => v.isDefault) ?? savedViews.find((v) => v.name.fr === "À traiter") ?? null
 
   const [filters, setFilters] = useState<BoardFilters>(() => viewToFilters(defaultView))
   const [activeViewId, setActiveViewId] = useState<string | null>(defaultView?.id ?? null)

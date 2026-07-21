@@ -1,11 +1,12 @@
 "use client"
 
 import { Palette, ShieldAlert, ThumbsDown, ThumbsUp } from "lucide-react"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { updateBrandKit } from "@/lib/actions/brand-kit"
 import { type L, pick, useLocale, useT } from "@/lib/i18n"
 import type { BrandKit } from "@/lib/mocks/types"
 import { BannedWordsEditor } from "./banned-words-editor"
@@ -22,7 +23,7 @@ interface ResolvedKit {
 }
 
 export function SectionBrandKit({
-  clientId: _clientId,
+  clientId,
   brandKit,
 }: {
   clientId: string
@@ -30,6 +31,7 @@ export function SectionBrandKit({
 }) {
   const t = useT()
   const { locale } = useLocale()
+  const [pending, startTransition] = useTransition()
   const resolveList = (list: L<string>[] | undefined) =>
     (list ?? []).map((item) => pick(item, locale))
 
@@ -55,8 +57,22 @@ export function SectionBrandKit({
     !arraysEqual(bannedWords, base.bannedWords)
 
   function save() {
-    toast.success(t("clientSettings.brandKit.savedToast"), {
-      description: t("clientSettings.brandKit.savedToastDescription"),
+    startTransition(async () => {
+      const res = await updateBrandKit({
+        clientId,
+        palette,
+        tone,
+        doList,
+        dontList,
+        bannedWords,
+      })
+      if (res.ok) {
+        toast.success(t("clientSettings.brandKit.savedToast"), {
+          description: t("clientSettings.brandKit.savedToastDescription"),
+        })
+      } else {
+        toast.error(t("clientSettings.saveBar.error"))
+      }
     })
   }
 
@@ -125,7 +141,7 @@ export function SectionBrandKit({
         <p className="text-xs text-muted-foreground">{t("clientSettings.brandKit.bannedHint")}</p>
       </div>
 
-      <SaveBar dirty={dirty} onSave={save} />
+      <SaveBar dirty={dirty && !pending} onSave={save} />
     </SectionCard>
   )
 }
