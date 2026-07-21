@@ -1,20 +1,33 @@
 import "server-only"
 
-// Façade de données. Les lectures encore mockées viennent de `./mock` ; celles
-// déjà câblées sur Supabase sont ré-exportées depuis `./pro` APRÈS le `export *`
-// — un export nommé explicite prime sur l'export étoilé du même nom (règle ES).
-// On bascule domaine par domaine ; le contrat (async + cache() + orgId) est
-// identique, aucune page consommatrice n'a à changer.
-
-export * from "./mock"
+// Façade de données : le point d'entrée UNIQUE des lectures serveur.
+//
+// Toutes les lectures sont désormais câblées sur Supabase — `./mock` a été
+// supprimé. Chaque nom est exporté EXPLICITEMENT depuis son module, jamais par
+// `export *` : tant que les deux existaient, `getPortalContent` mocké et réel
+// avaient la même signature, et c'étaient les règles de shadowing ES qui
+// départageaient — un ordre d'export malencontreux aurait servi des données
+// mockées sans que le typecheck bronche. Un export explicite rend la chose
+// impossible.
+//
+// Contrat commun : `async` + `cache()` + `org_id` en premier argument (sauf le
+// portail, scopé par `client_ids` — un Reviewer n'a pas d'org active).
+export {
+  getClient,
+  getClients,
+  getCurrentUser,
+  getSocialAccounts,
+} from "./clients"
+export {
+  getContentItem,
+  getContentItems,
+  getPortalContent,
+  getPortalContentItem,
+  getTrashedContent,
+} from "./content"
+export { getDashboardTasks, getShellSnapshot, getUnifiedAgenda } from "./dashboard"
+export { getNotifications, getUnreadCount } from "./notifications"
 export type { ClientSettings } from "./pro"
-// Phase 1 — configuration éditoriale câblée sur Supabase (migration 011).
-// Phase 2 — médiathèque (getLibraryAssets, migration 012).
-// Phase 3 — collaboration (migration 013).
-// Phase 4 — feed importé & performance (migration 014).
-// Phase 5 — agenda (calendar_accounts / calendar_events, migration 015).
-// NB : getUnifiedAgenda reste mocké — sa branche « publication » exige le
-// ContentItem + Client complets, donc le câblage des lectures de contenu.
 export {
   getActivityEntries,
   getApprovals,
