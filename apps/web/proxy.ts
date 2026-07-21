@@ -1,44 +1,67 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-const PUBLIC_EXACT = new Set(["/", "/login", "/otp", "/api/health", "/manifest.webmanifest"])
-const PUBLIC_PREFIXES = ["/api/oauth", "/_next", "/favicon.ico"]
-const APP_PREFIXES = ["/dashboard", "/agenda", "/clients", "/settings", "/notifications"]
+import { updateSession } from "@/lib/supabase/middleware"
+
+// Next 16 : Middleware s'appelle desormais Proxy (node_modules/next/dist/docs).
+// La doc Next EXCLUT explicitement le proxy comme solution de session/autorisation
+// (Partial Rendering, prefetch). Ici : refresh de session + check OPTIMISTE de
+// presence d'un user. La vraie verification vit dans la DAL (lib/auth/dal.ts),
+// appelee par chaque fonction de donnees.
+
+// Routes accessibles sans session.
+const PUBLIC_EXACT = new Set([
+  "/",
+  "/login",
+  "/api/health",
+  "/manifest.webmanifest",
+])
+const PUBLIC_PREFIXES = ["/api/oauth", "/api/invitations", "/auth"]
 
 function isPublic(pathname: string): boolean {
   return (
     PUBLIC_EXACT.has(pathname) ||
-    PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico)$/.test(pathname)
   )
 }
 
-function hasSession(req: NextRequest): boolean {
-  return req.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-"))
-}
-
-function redirectToLogin(req: NextRequest): NextResponse {
-  const url = req.nextUrl.clone()
+function redirectToLogin(request: NextRequest): NextResponse {
+  const url = request.nextUrl.clone()
   url.pathname = "/login"
   url.search = ""
-  url.searchParams.set("next", `${req.nextUrl.pathname}${req.nextUrl.search}`)
+  url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`)
   return NextResponse.redirect(url)
 }
 
-export function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl
-  if (isPublic(pathname)) return NextResponse.next()
+export async function proxy(request: NextRequest) {
+  // Toujours rafraichir la session (meme sur les routes publiques : sinon un
+  // token expirant n'est jamais renouvele).
+  const { response, user } = await updateSession(request)
+  const { pathname } = request.nextUrl
 
-  if (pathname.startsWith("/portal")) {
-    return hasSession(req) ? NextResponse.next() : redirectToLogin(req)
+  // Un user connecte sur /login repart vers l'app.
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/dashboard"
+    url.search = ""
+    return NextResponse.redirect(url)
   }
 
-  if (APP_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-    return hasSession(req) ? NextResponse.next() : redirectToLogin(req)
+  if (isPublic(pathname)) {
+    return response
   }
 
-  return NextResponse.next()
+  // FAIL-CLOSED : toute route non publique exige une session. Contrairement a
+  // l'ancienne allowlist qui laissait passer tout chemin non liste.
+  if (!user) {
+    return redirectToLogin(request)
+  }
+
+  return response
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 }

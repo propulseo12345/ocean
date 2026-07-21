@@ -12,6 +12,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
+
+import { signOut } from "@/app/(auth)/actions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,10 +91,15 @@ export function NavUser({ user }: { user: User }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link href={routes.login} />} className="gap-2">
-              <LogOut className="size-4" />
-              {t("nav.user.logout")}
-            </DropdownMenuItem>
+            <form action={signOut}>
+              <DropdownMenuItem
+                render={<button type="submit" className="w-full" />}
+                className="gap-2"
+              >
+                <LogOut className="size-4" />
+                {t("nav.user.logout")}
+              </DropdownMenuItem>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

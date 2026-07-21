@@ -58,7 +58,7 @@ export default async function LandingPage() {
           {t("auth.landing.heroLead")}
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button size="lg" render={<Link href={routes.dashboard} />}>
+          <Button size="lg" render={<Link href={routes.login} />}>
             {t("auth.landing.enterDemo")}
             <ArrowRight />
           </Button>
