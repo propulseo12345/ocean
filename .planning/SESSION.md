@@ -96,8 +96,25 @@ comptes sociaux, 16 contenus couvrant les 5 types de tâches du dashboard).
 (écriture service_role exclusive, migration 014), NI calendriers (OAuth).
 
 ## Reste à faire, dans cet ordre suggéré
-1. **Phase 7** — aplatissement `L<string>` → `text` (~70 fichiers, stratégie 4
-   temps du plan §6 : shim `pick()` → types → cas système → nettoyage).
+1. **Phase 7** — aplatissement `L<string>` → `text`. Périmètre MESURÉ :
+   **71 fichiers / 147 `pick(`**, 24 fichiers avec `L<`, 23 avec `loc(`.
+
+   **Levier trouvé, à exploiter (évite 23 fichiers de réécriture)** : le corpus
+   mock produit du `L<string>` uniquement via `loc(fr, en)`. Faire renvoyer à
+   `loc()` **le seul `fr`** (une `string`) bascule TOUT le corpus en monolingue
+   FR d'un seul fichier — ce qui EST la décision D1. Vérifié : les dictionnaires
+   `lib/i18n/**` n'utilisent PAS `loc()` (aucun risque de les emporter), et
+   `loc()` n'est jamais appelé sur autre chose que des chaînes.
+
+   Ordre conseillé : T1 shim `pick()` tolérant (`L<T> | T`) + `loc()` renvoie
+   `fr` → build vert sans toucher aux 147 appels ; T2 bascule des types
+   (`L<string>` → `string`) ; T3 cas SYSTÈME (notifications type+payload,
+   content_activity kind+payload, last_error jsonb — gabarits i18n des 11
+   `activity_kind` à écrire, ils n'existent pas) ; T4 retrait des 147 `pick()`
+   puis de `L`/`loc`/`pick`.
+
+   ⚠️ NE PAS commencer sans pouvoir finir T1→T2 d'affilée : un aplatissement à
+   moitié appliqué laisse le build rouge sur des dizaines de fichiers.
 2. **Phase 8** — réduite à : **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
    5 composants), relocalisation `lib/mocks/types` → `lib/domain`, suppression
    du reste de `lib/mocks/**` (constantes encore lues par `use-library-assets`
