@@ -104,7 +104,7 @@ export type Database = {
           client_id: string
           content_item_id: string
           content_label_id: string
-          created_at: string
+          created_at?: string
         }
         Update: {
           org_id?: string
@@ -216,14 +216,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           client_id: string
           name: string
           color_token?: string | null
-          sort_order: number
-          created_at: string
-          updated_at: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
