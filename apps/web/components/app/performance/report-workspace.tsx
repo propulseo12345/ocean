@@ -4,7 +4,7 @@ import { Quote } from "lucide-react"
 import { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { useLocale, useT } from "@/lib/i18n"
-import { compactNumber, signedPercent } from "./perf-utils"
+import { compactNumber } from "./perf-utils"
 import { ReportActions } from "./report-actions"
 import type { ReportData } from "./report-data"
 import { ReportHeader } from "./report-header"
@@ -24,19 +24,12 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
     setSections((s) => ({ ...s, [key]: value }))
   }
 
-  // Synthèse en langage clair, dérivée des valeurs mockées et localisée.
+  // Synthèse en langage clair, dérivée des valeurs RÉELLES et localisée. Sans
+  // delta inventé : post_metrics est un instantané, pas de comparaison N-1 fiable.
   const { reach, engagement, count } = data.perf.kpis.current
-  const delta = data.perf.kpis.delta
   const summaryLines = [
-    t("report.summary.line1", {
-      count,
-      reach: compactNumber(reach, locale),
-      delta: signedPercent(delta.reach, locale),
-    }),
-    t("report.summary.line2", {
-      engagement: compactNumber(engagement, locale),
-      delta: signedPercent(delta.engagement, locale),
-    }),
+    t("report.summary.line1", { count, reach: compactNumber(reach, locale) }),
+    t("report.summary.line2", { engagement: compactNumber(engagement, locale) }),
     t("report.summary.line3"),
   ]
 

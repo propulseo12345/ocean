@@ -22,21 +22,24 @@ export function ReportKpis({ data }: { data: KpiWithDelta }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {STATS.map((s) => {
-        const delta = data.delta[s.key]
-        const positive = delta >= 0
+        const delta = data.delta ? data.delta[s.key] : null
         return (
           <div key={s.key} className="rounded-xl border bg-card p-4 text-center">
             <p className="font-heading text-2xl font-semibold leading-none tabular-nums">
               {s.format(data.current[s.key], locale)}
             </p>
             <p className="mt-1.5 text-xs text-muted-foreground">{t(s.labelKey)}</p>
-            <p
-              className={`mt-1 text-xs font-medium tabular-nums ${
-                positive ? "text-success" : "text-destructive"
-              }`}
-            >
-              {t("report.kpi.vsPreviousMonth", { delta: signedPercent(delta, locale) })}
-            </p>
+            {delta !== null ? (
+              <p
+                className={`mt-1 text-xs font-medium tabular-nums ${
+                  delta >= 0 ? "text-success" : "text-destructive"
+                }`}
+              >
+                {t("report.kpi.vsPreviousMonth", { delta: signedPercent(delta, locale) })}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground tabular-nums">—</p>
+            )}
           </div>
         )
       })}

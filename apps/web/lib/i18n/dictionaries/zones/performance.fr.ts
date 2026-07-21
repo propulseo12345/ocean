@@ -6,7 +6,7 @@ export const performanceFr = {
     periodAriaLabel: "Période d'analyse",
     generateReport: "Générer le rapport client",
     mockNotice:
-      "Données d'illustration. Les statistiques réelles (portée, engagement, créneaux) s'afficheront une fois les comptes connectés — certaines métriques dépendent d'un accès avancé Meta, et TikTok en mode brouillon ne fournit aucune statistique via l'API.",
+      "Statistiques issues des API des plateformes. Elles apparaissent une fois les comptes connectés et les publications mesurées — certaines métriques dépendent d'un accès avancé Meta, et TikTok en mode brouillon n'en fournit aucune via l'API.",
     // Périodes d'analyse.
     period: {
       "30d": "30 derniers jours",
@@ -26,6 +26,7 @@ export const performanceFr = {
       rate: "Taux d'engagement",
       count: "Publications",
       vsPrevious: "vs {previous}",
+      deltaUnavailable: "Comparaison avec la période précédente non disponible",
     },
     // Graphe de tendance.
     trend: {

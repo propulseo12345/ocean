@@ -10,14 +10,14 @@ import {
   getContentItems,
   getImportedPosts,
   getPillars,
-  getPostMetrics,
+  getPostMetricsBatch,
   getQuotaUsage,
   getReviewer,
   getSocialAccounts,
   getTopPosts,
 } from "@/lib/data"
-import type { Format, Locale, Translator } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import type { Format, Translator } from "@/lib/i18n"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type {
   ContentItem,
   EngagementStats,
@@ -80,7 +80,6 @@ function toContentTile(
   dateIso: string | null,
   tz: string,
   topId: string | undefined,
-  locale: Locale,
   metrics: Map<string, PostMetrics | undefined>
 ): GridTileData {
   const ig = c.targets.find((t) => t.platform === "instagram")
@@ -150,25 +149,24 @@ export default async function ClientGridPage({
 
   const t = await getT()
   const f = await getFormat()
-  const locale = await getLocale()
   const tz = client.timezone
   const topId = (await getTopPosts(ctx.org.id, clientId, 1))[0]?.refId
 
   const items = (await getContentItems(ctx.org.id, clientId)).filter(inFeed)
-  const metrics = new Map(
-    await Promise.all(
-      items.map(async (item) => [item.id, await getPostMetrics(ctx.org.id, item.id)] as const)
-    )
+  // Une seule requête pour toutes les tuiles (fin du N+1 : un getPostMetrics/tuile).
+  const metrics = await getPostMetricsBatch(
+    ctx.org.id,
+    items.map((item) => item.id)
   )
 
   const scheduled = items
     .filter((c) => PLANNED_STATUSES.includes(c.status) && c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, locale, metrics))
+    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, metrics))
     .sort(byDateDesc)
 
   const publishedAll = items
     .filter((c) => PUBLISHED_STATUSES.includes(c.status))
-    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId, locale, metrics))
+    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId, metrics))
     .sort(byDateDesc)
 
   const importedPosts = await getImportedPosts(ctx.org.id, clientId)
@@ -180,7 +178,7 @@ export default async function ClientGridPage({
 
   const shelf = items
     .filter((c) => SHELF_STATUSES.includes(c.status) && !c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", null, tz, topId, locale, metrics))
+    .map((c) => toContentTile(c, "scheduled", null, tz, topId, metrics))
 
   const igAccount =
     (await getSocialAccounts(ctx.org.id, clientId)).find((a) => a.platform === "instagram") ?? null

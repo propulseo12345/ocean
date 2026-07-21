@@ -1,11 +1,10 @@
-import { getBrandKit, getClient, getSocialAccounts } from "@/lib/mocks"
+import { getBrandKit, getClient, getSocialAccounts } from "@/lib/data"
 import type { Client } from "@/lib/mocks/types"
 import { getPerfPeriodData, type PerfPeriod, type PerfPeriodData } from "./perf-data"
 
-// Couche de données du rapport client : valeurs brutes + tops.
-// Réutilise getPerfPeriodData (mêmes mocks que la page Performance).
-// Toute la mise en mots (synthèse, libellé de période) est localisée à
-// l'affichage par ReportWorkspace via t() — rien n'est figé en FR ici.
+// Couche de données du rapport client : valeurs brutes + tops (métriques réelles,
+// mêmes sources que la page Performance). La mise en mots (synthèse, libellé de
+// période) est localisée à l'affichage par ReportWorkspace via t().
 
 export interface ReportData {
   client: Client
@@ -20,13 +19,16 @@ export interface ReportData {
 // Le rapport vise un livrable mensuel : période = mois en cours par défaut.
 const REPORT_PERIOD: PerfPeriod = "month"
 
-export function getReportData(clientId: string): ReportData | null {
-  const client = getClient(clientId)
+export async function getReportData(orgId: string, clientId: string): Promise<ReportData | null> {
+  const client = await getClient(orgId, clientId)
   if (!client) return null
 
-  const perf = getPerfPeriodData(clientId, REPORT_PERIOD, client.timezone)
-  const brand = getBrandKit(clientId)
-  const ig = getSocialAccounts(clientId).find((a) => a.platform === "instagram")
+  const [perf, brand, accounts] = await Promise.all([
+    getPerfPeriodData(orgId, clientId, REPORT_PERIOD, client.timezone),
+    getBrandKit(orgId, clientId),
+    getSocialAccounts(orgId, clientId),
+  ])
+  const ig = accounts.find((a) => a.platform === "instagram")
 
   return {
     client,

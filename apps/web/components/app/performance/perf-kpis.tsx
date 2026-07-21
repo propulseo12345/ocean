@@ -2,8 +2,8 @@ import { Eye, FileStack, Heart, type LucideIcon, TrendingDown, TrendingUp } from
 import type { Locale, MessageKey } from "@/lib/i18n"
 import { useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
+import { PERIOD_META } from "./perf-core"
 import type { KpiWithDelta, PerfPeriod } from "./perf-data"
-import { PERIOD_META } from "./perf-data"
 import { compactNumber, fullNumber, percent, signedPercent } from "./perf-utils"
 
 interface KpiDef {
@@ -63,6 +63,20 @@ function DeltaPill({ value, upIsGood }: { value: number; upIsGood: boolean }) {
   )
 }
 
+// Pas de comparaison N-1 fiable (post_metrics = instantané) : « — » neutre plutôt
+// qu'un delta fabriqué.
+function NoDeltaPill() {
+  const t = useT()
+  return (
+    <span
+      className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums"
+      title={t("performance.kpi.deltaUnavailable")}
+    >
+      —
+    </span>
+  )
+}
+
 export function PerfKpis({ data, period }: { data: KpiWithDelta; period: PerfPeriod }) {
   const t = useT()
   const { locale } = useLocale()
@@ -71,7 +85,7 @@ export function PerfKpis({ data, period }: { data: KpiWithDelta; period: PerfPer
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {KPIS.map((kpi) => {
         const value = data.current[kpi.key]
-        const delta = data.delta[kpi.key]
+        const delta = data.delta ? data.delta[kpi.key] : null
         return (
           <div
             key={kpi.key}
@@ -81,15 +95,21 @@ export function PerfKpis({ data, period }: { data: KpiWithDelta; period: PerfPer
               <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <kpi.icon className="size-4.5" />
               </span>
-              <DeltaPill value={delta} upIsGood={kpi.upIsGood} />
+              {delta === null ? (
+                <NoDeltaPill />
+              ) : (
+                <DeltaPill value={delta} upIsGood={kpi.upIsGood} />
+              )}
             </div>
             <p className="mt-3 font-heading text-2xl font-semibold leading-none tabular-nums">
               {kpi.format(value, locale)}
             </p>
             <p className="mt-1.5 text-xs text-muted-foreground">{t(kpi.labelKey)}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground/70">
-              {t("performance.kpi.vsPrevious", { previous: prev })}
-            </p>
+            {data.delta ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+                {t("performance.kpi.vsPrevious", { previous: prev })}
+              </p>
+            ) : null}
           </div>
         )
       })}

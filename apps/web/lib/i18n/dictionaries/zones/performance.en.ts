@@ -9,7 +9,7 @@ export const performanceEn: Widen<typeof performanceFr> = {
     periodAriaLabel: "Analysis period",
     generateReport: "Generate client report",
     mockNotice:
-      "Sample data. Real statistics (reach, engagement, time slots) will appear once accounts are connected — some metrics require Meta advanced access, and TikTok in draft mode provides no statistics via the API.",
+      "Statistics pulled from the platform APIs. They appear once accounts are connected and posts are measured — some metrics require Meta advanced access, and TikTok in draft mode provides none via the API.",
     period: {
       "30d": "Last 30 days",
       month: "Current month",
@@ -27,6 +27,7 @@ export const performanceEn: Widen<typeof performanceFr> = {
       rate: "Engagement rate",
       count: "Posts",
       vsPrevious: "vs {previous}",
+      deltaUnavailable: "Comparison with the previous period is unavailable",
     },
     trend: {
       title: "Trend over the period",

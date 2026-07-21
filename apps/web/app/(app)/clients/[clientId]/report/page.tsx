@@ -24,7 +24,7 @@ export default async function ClientReportPage({
   const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
-  const data = getReportData(clientId)
+  const data = await getReportData(ctx.org.id, clientId)
   if (!data) notFound()
 
   return <ReportWorkspace data={data} />

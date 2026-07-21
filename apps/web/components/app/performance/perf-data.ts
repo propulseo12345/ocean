@@ -1,13 +1,22 @@
 import { now } from "@/lib/clock"
+import {
+  getContentItems,
+  getImportedPosts,
+  getPillars,
+  getPostMetricsBatch,
+  getSocialAccounts,
+} from "@/lib/data"
 import { formatDayMonth } from "@/lib/format"
 import { createTranslator } from "@/lib/i18n"
-import { getContentItems, getImportedPosts, getPostMetrics } from "@/lib/mocks"
 import type {
   ContentFormat,
   ContentItem,
+  ContentPillar,
   EngagementStats,
   ImportedPost,
   Platform,
+  PostMetrics,
+  SocialAccount,
 } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import {
@@ -16,23 +25,17 @@ import {
   type PillarSlice,
   type PlatformRow,
 } from "./perf-breakdown"
-import {
-  engagementOf,
-  PERIOD_FACTOR,
-  PERIOD_META,
-  type PerfPeriod,
-  rateOf,
-  round1,
-  scaleStats,
-} from "./perf-core"
+import { engagementOf, type PerfPeriod, periodStartMs, rateOf } from "./perf-core"
 
-// Couche de données de la page Performance — déterministe, sans réseau.
-// Source : helpers mockés GELÉS (metrics, pillars, content, imported).
-// Honnêteté : tout est dérivé de métriques mockées « d'illustration ».
+// Couche de données de la page Performance — RÉELLE (post_metrics via Supabase).
+// Le seed ne pose pas de post_metrics (écriture service_role exclusive) : la page
+// est donc VIDE en ligne tant que le worker n'a pas collecté de métriques. C'est
+// attendu ; l'important est qu'elle ne CRASHE pas et n'affiche aucun chiffre inventé.
 
 export type { PillarSlice, PlatformRow } from "./perf-breakdown"
 export type { PerfPeriod } from "./perf-core"
-export { PERIOD_META } from "./perf-core"
+// PERIOD_META n'est PAS ré-exporté ici : les composants client doivent l'importer
+// depuis ./perf-core (perf-data importe @/lib/data, server-only via next/headers).
 
 export interface PostRow {
   refId: string
@@ -40,6 +43,8 @@ export interface PostRow {
   thumbUrl: string
   format: ContentFormat
   platforms: Platform[]
+  /** Pilier éditorial (contenus Ocean) ; null pour un post importé. */
+  pillarId: string | null
   permalink?: string
   href?: string
   publishedAt: string
@@ -56,6 +61,7 @@ function contentRow(c: ContentItem, m: EngagementStats): PostRow {
     thumbUrl: c.media[0]?.thumbUrl ?? "",
     format: c.format,
     platforms: c.targets.map((t) => t.platform),
+    pillarId: c.pillarId ?? null,
     permalink: ig?.permalink,
     href: routes.content(c.clientId, c.id),
     publishedAt: ig?.publishedAt ?? c.scheduledAt ?? c.createdAt,
@@ -65,20 +71,19 @@ function contentRow(c: ContentItem, m: EngagementStats): PostRow {
   }
 }
 
-// Traducteurs locale-figés : un post importé n'a pas de titre éditorial, on le
-// dérive de sa date dans les deux langues (pré-rendu côté serveur, puis pick()).
+// Un post importé n'a pas de titre éditorial : on le dérive de sa date (D1, FR).
 const tFr = createTranslator("fr")
 
 function importedRow(p: ImportedPost, m: EngagementStats, tz: string): PostRow {
   return {
     refId: p.id,
-    // Titre monolingue (D1).
     title: tFr("performance.posts.importedTitle", {
       date: formatDayMonth(p.publishedAt, tz, "fr"),
     }),
     thumbUrl: p.thumbUrl,
     format: p.mediaType === "video" ? "reel" : "post",
     platforms: ["instagram"],
+    pillarId: null,
     permalink: p.permalink,
     publishedAt: p.publishedAt,
     stats: m,
@@ -87,19 +92,29 @@ function importedRow(p: ImportedPost, m: EngagementStats, tz: string): PostRow {
   }
 }
 
-/** Toutes les publications mesurées d'un client, mises à l'échelle de la période. */
-export function getPerfPosts(clientId: string, period: PerfPeriod, tz: string): PostRow[] {
-  const factor = PERIOD_FACTOR[period].share
+/** Publications MESURÉES (métriques réelles présentes), toutes périodes confondues. */
+function buildAllRows(
+  content: ContentItem[],
+  imported: ImportedPost[],
+  metrics: Map<string, PostMetrics>,
+  tz: string
+): PostRow[] {
   const rows: PostRow[] = []
-  for (const c of getContentItems(clientId)) {
-    const m = getPostMetrics(c.id)
-    if (m) rows.push(contentRow(c, scaleStats(m, factor)))
+  for (const c of content) {
+    const m = metrics.get(c.id)
+    if (m) rows.push(contentRow(c, m))
   }
-  for (const p of getImportedPosts(clientId)) {
-    const m = getPostMetrics(p.id)
-    if (m) rows.push(importedRow(p, scaleStats(m, factor), tz))
+  for (const p of imported) {
+    const m = metrics.get(p.id)
+    if (m) rows.push(importedRow(p, m, tz))
   }
   return rows.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+}
+
+/** Posts publiés DANS la fenêtre de la période (dates réelles, sans mise à l'échelle). */
+function postsInPeriod(all: PostRow[], period: PerfPeriod): PostRow[] {
+  const start = periodStartMs(period, now().getTime())
+  return all.filter((p) => new Date(p.publishedAt).getTime() >= start)
 }
 
 export interface KpiValue {
@@ -109,33 +124,24 @@ export interface KpiValue {
   count: number
 }
 
+export type KpiDelta = { reach: number; engagement: number; rate: number; count: number }
+
 export interface KpiWithDelta {
   current: KpiValue
-  /** Variation en % vs période précédente (déterministe, peut être négative). */
-  delta: { reach: number; engagement: number; rate: number; count: number }
+  /**
+   * Variation vs période précédente. `null` = NON DISPONIBLE : post_metrics est
+   * un instantané, pas une série temporelle — aucune comparaison N-1 fiable. On
+   * affiche « — », jamais un delta fabriqué dans un rapport destiné au client.
+   */
+  delta: KpiDelta | null
 }
 
-// Variations déterministes par métrique (signe et amplitude figés par période).
-const DELTA_SHAPE = { reach: 1, engagement: 1.4, rate: 0.6, count: -0.5 }
-
-export function getKpis(posts: PostRow[], period: PerfPeriod): KpiWithDelta {
+export function getKpis(posts: PostRow[]): KpiWithDelta {
   const reach = posts.reduce((n, p) => n + p.stats.reach, 0)
   const engagement = posts.reduce((n, p) => n + p.engagement, 0)
-  // Le nombre de publications suit le facteur de période, comme les stats
-  // (scaleStats) : une fenêtre courte échantillonne moins de posts. Sans cela,
-  // « 90j » et « mois » afficheraient le même count, ce qui est trompeur.
-  const count = Math.round(posts.length * PERIOD_FACTOR[period].share)
+  const count = posts.length
   const rate = reach > 0 ? (engagement / reach) * 100 : 0
-  const base = PERIOD_FACTOR[period].prevDelta
-  return {
-    current: { reach, engagement, rate, count },
-    delta: {
-      reach: round1(base * 100 * DELTA_SHAPE.reach),
-      engagement: round1(base * 100 * DELTA_SHAPE.engagement),
-      rate: round1(base * 100 * DELTA_SHAPE.rate),
-      count: round1(base * 100 * DELTA_SHAPE.count),
-    },
-  }
+  return { current: { reach, engagement, rate, count }, delta: null }
 }
 
 export interface TrendBucket {
@@ -145,14 +151,12 @@ export interface TrendBucket {
   engagement: number
 }
 
-// Répartit les posts en N tranches égales régressives depuis MOCK_NOW. Les
-// libellés sont génériques (« P1..P4 ») : un bucket ne couvre pas forcément une
-// semaine (ex. « mois » = 11 j / 4 ≈ 2,75 j), donc on évite « S1..S4 ».
+// Répartit les posts en N tranches égales sur la fenêtre de la période (dates réelles).
 export function getTrend(posts: PostRow[], period: PerfPeriod): TrendBucket[] {
   const bucketCount = period === "90d" ? 6 : 4
-  const dayMs = 86_400_000
-  const span = PERIOD_META[period].days * dayMs
-  const start = now().getTime() - span
+  const nowMs = now().getTime()
+  const start = periodStartMs(period, nowMs)
+  const span = Math.max(nowMs - start, 1)
   const buckets: TrendBucket[] = Array.from({ length: bucketCount }, (_, i) => ({
     index: i + 1,
     reach: 0,
@@ -178,27 +182,56 @@ export interface PerfPeriodData {
   platforms: PlatformRow[]
 }
 
-/** Construit le jeu de données complet d'un client pour une période donnée. */
-export function getPerfPeriodData(
-  clientId: string,
+function periodData(
+  all: PostRow[],
   period: PerfPeriod,
-  tz: string
+  pillars: ContentPillar[],
+  accounts: SocialAccount[]
 ): PerfPeriodData {
-  const posts = getPerfPosts(clientId, period, tz)
+  const posts = postsInPeriod(all, period)
   return {
     posts,
-    kpis: getKpis(posts, period),
+    kpis: getKpis(posts),
     trend: getTrend(posts, period),
-    pillars: getPillarSplit(clientId, period),
-    platforms: getPlatformRows(clientId, posts),
+    pillars: getPillarSplit(pillars, posts),
+    platforms: getPlatformRows(accounts, posts),
   }
 }
 
-/** Jeu de données pour les trois périodes (pré-calculé côté serveur). */
-export function getAllPerfData(clientId: string, tz: string): Record<PerfPeriod, PerfPeriodData> {
+/** Charge les données réelles une fois puis calcule les trois périodes en mémoire. */
+async function loadRows(orgId: string, clientId: string, tz: string) {
+  const [content, imported, pillars, accounts] = await Promise.all([
+    getContentItems(orgId, clientId),
+    getImportedPosts(orgId, clientId),
+    getPillars(orgId, clientId),
+    getSocialAccounts(orgId, clientId),
+  ])
+  const refIds = [...content.map((c) => c.id), ...imported.map((p) => p.id)]
+  const metrics = await getPostMetricsBatch(orgId, refIds)
+  return { all: buildAllRows(content, imported, metrics, tz), pillars, accounts }
+}
+
+/** Jeu de données complet d'un client pour les trois périodes. */
+export async function getAllPerfData(
+  orgId: string,
+  clientId: string,
+  tz: string
+): Promise<Record<PerfPeriod, PerfPeriodData>> {
+  const { all, pillars, accounts } = await loadRows(orgId, clientId, tz)
   return {
-    "30d": getPerfPeriodData(clientId, "30d", tz),
-    month: getPerfPeriodData(clientId, "month", tz),
-    "90d": getPerfPeriodData(clientId, "90d", tz),
+    "30d": periodData(all, "30d", pillars, accounts),
+    month: periodData(all, "month", pillars, accounts),
+    "90d": periodData(all, "90d", pillars, accounts),
   }
+}
+
+/** Jeu de données d'une seule période (rapport client). */
+export async function getPerfPeriodData(
+  orgId: string,
+  clientId: string,
+  period: PerfPeriod,
+  tz: string
+): Promise<PerfPeriodData> {
+  const { all, pillars, accounts } = await loadRows(orgId, clientId, tz)
+  return periodData(all, period, pillars, accounts)
 }

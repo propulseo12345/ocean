@@ -43,6 +43,7 @@ export {
   getLibraryAssets,
   getPillars,
   getPostMetrics,
+  getPostMetricsBatch,
   getQuotaUsage,
   getRecurringSlots,
   getReviewer,

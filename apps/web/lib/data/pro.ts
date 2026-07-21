@@ -190,14 +190,36 @@ export const getSavedViews = cache(
       .eq("client_id", clientId)
       .order("created_at", { ascending: true })
 
-    return (data ?? []).map((row) => {
+    const rows = data ?? []
+    // Le board filtre les étiquettes par NOM (item.labels = noms depuis la Phase 7,
+    // comme collectLabels et le picker de filtres). saved_views stocke des
+    // label_ids (uuid, normalisé côté DB) : on les résout en noms ici pour que
+    // matchesFilters compare des noms à des noms (sinon le filtre était inopérant).
+    const allLabelIds = [...new Set(rows.flatMap((r) => r.label_ids))]
+    const nameById = new Map<string, string>()
+    if (allLabelIds.length > 0) {
+      const { data: labels } = await supabase
+        .from("content_labels")
+        .select("id, name")
+        .eq("org_id", orgId)
+        .eq("client_id", clientId)
+        .in("id", allLabelIds)
+      for (const l of labels ?? []) nameById.set(l.id, l.name)
+    }
+
+    return rows.map((row) => {
       const filters: SavedViewFilters = {}
       if (row.search) filters.search = row.search
       if (row.statuses.length) filters.statuses = row.statuses as SavedViewFilters["statuses"]
       if (row.platforms.length) filters.platforms = row.platforms as SavedViewFilters["platforms"]
       if (row.formats.length) filters.formats = row.formats as SavedViewFilters["formats"]
       if (row.pillar_ids.length) filters.pillarIds = row.pillar_ids
-      if (row.label_ids.length) filters.labels = row.label_ids
+      if (row.label_ids.length) {
+        const names = row.label_ids
+          .map((id) => nameById.get(id))
+          .filter((n): n is string => n !== undefined)
+        if (names.length) filters.labels = names
+      }
       return {
         id: row.id,
         clientId: row.client_id,
@@ -629,6 +651,64 @@ export const getTopPosts = cache(
       seen.add(refId)
       out.push({ refId, ...emptyStatsFrom([row]) })
       if (out.length >= limit) break
+    }
+    return out
+  }
+)
+
+type MetricRow = { likes: number; comments_count: number; saves: number; reach: number | null }
+
+/**
+ * Métriques de PLUSIEURS posts (app + importés) en une requête par table, au
+ * lieu d'un appel getPostMetrics par tuile (N+1 de la grille et de la page perf).
+ * Renvoie une Map refId -> PostMetrics ; les refs sans métrique sont absentes.
+ */
+export const getPostMetricsBatch = cache(
+  async (orgId: string, refIds: string[]): Promise<Map<string, PostMetrics>> => {
+    const out = new Map<string, PostMetrics>()
+    if (!orgId || refIds.length === 0) return out
+    const supabase = await createClient()
+
+    // 1) posts importés : imported_post_id direct.
+    const { data: importedRows } = await supabase
+      .from("post_metrics")
+      .select("imported_post_id, likes, comments_count, saves, reach")
+      .eq("org_id", orgId)
+      .in("imported_post_id", refIds)
+    const importedByRef = new Map<string, MetricRow[]>()
+    for (const r of importedRows ?? []) {
+      if (!r.imported_post_id) continue
+      const bucket = importedByRef.get(r.imported_post_id)
+      if (bucket) bucket.push(r)
+      else importedByRef.set(r.imported_post_id, [r])
+    }
+    for (const [refId, rows] of importedByRef) out.set(refId, { refId, ...emptyStatsFrom(rows) })
+
+    // 2) contenus Ocean : agréger les métriques de leurs cibles par content_item.
+    const { data: targets } = await supabase
+      .from("content_targets")
+      .select("id, content_item_id")
+      .eq("org_id", orgId)
+      .in("content_item_id", refIds)
+    const targetToItem = new Map<string, string>()
+    for (const tg of targets ?? []) targetToItem.set(tg.id, tg.content_item_id)
+    const targetIds = [...targetToItem.keys()]
+    if (targetIds.length > 0) {
+      const { data: rows } = await supabase
+        .from("post_metrics")
+        .select("content_target_id, likes, comments_count, saves, reach")
+        .eq("org_id", orgId)
+        .in("content_target_id", targetIds)
+      const byItem = new Map<string, MetricRow[]>()
+      for (const r of rows ?? []) {
+        if (!r.content_target_id) continue
+        const item = targetToItem.get(r.content_target_id)
+        if (!item) continue
+        const bucket = byItem.get(item)
+        if (bucket) bucket.push(r)
+        else byItem.set(item, [r])
+      }
+      for (const [refId, rws] of byItem) out.set(refId, { refId, ...emptyStatsFrom(rws) })
     }
     return out
   }

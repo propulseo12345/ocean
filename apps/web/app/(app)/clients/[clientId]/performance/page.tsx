@@ -25,7 +25,7 @@ export default async function ClientPerformancePage({
   const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
-  const byPeriod = getAllPerfData(clientId, client.timezone)
+  const byPeriod = await getAllPerfData(ctx.org.id, clientId, client.timezone)
 
   return <PerfWorkspace clientId={clientId} byPeriod={byPeriod} />
 }

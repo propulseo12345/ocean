@@ -1,11 +1,12 @@
 import type { MessageKey } from "@/lib/i18n"
-import { getContentItems, getPillars, getPostMetrics, getSocialAccounts } from "@/lib/mocks"
-import type { Platform, SocialAccount } from "@/lib/mocks/types"
-import { engagementOf, PERIOD_FACTOR, type PerfPeriod, round1, scaleStats } from "./perf-core"
+import type { ContentPillar, Platform, SocialAccount } from "@/lib/mocks/types"
+import { round1 } from "./perf-core"
 import type { PostRow } from "./perf-data"
 
 // Répartitions par pilier éditorial et comparatif par plateforme.
 // Séparé de perf-data.ts pour tenir la limite de taille de fichier.
+// Tout est dérivé des posts MESURÉS de la période (métriques réelles) — aucune
+// mise à l'échelle ni fraction inventée.
 
 export interface PillarSlice {
   id: string
@@ -18,17 +19,10 @@ export interface PillarSlice {
   engagementShare: number
 }
 
-export function getPillarSplit(clientId: string, period: PerfPeriod): PillarSlice[] {
-  const pillars = getPillars(clientId)
-  const factor = PERIOD_FACTOR[period].share
-  const measured = getContentItems(clientId)
-    .map((c) => {
-      const m = getPostMetrics(c.id)
-      return m && c.pillarId
-        ? { pillarId: c.pillarId, eng: engagementOf(scaleStats(m, factor)) }
-        : null
-    })
-    .filter((x): x is { pillarId: string; eng: number } => x !== null)
+export function getPillarSplit(pillars: ContentPillar[], posts: PostRow[]): PillarSlice[] {
+  const measured = posts
+    .filter((p) => p.pillarId !== null)
+    .map((p) => ({ pillarId: p.pillarId as string, eng: p.engagement }))
   const totalPosts = measured.length || 1
   const totalEng = measured.reduce((n, x) => n + x.eng, 0) || 1
   return pillars.map((p) => {
@@ -59,9 +53,10 @@ export interface PlatformRow {
   noteKey?: MessageKey
 }
 
-// Comparatif par plateforme. TikTok = brouillon → aucune statistique API.
-export function getPlatformRows(clientId: string, posts: PostRow[]): PlatformRow[] {
-  const accounts = getSocialAccounts(clientId)
+// Comparatif par plateforme. TikTok = brouillon → aucune statistique API. Les
+// métriques d'un post sont agrégées sur ses cibles : un post multi-plateformes
+// compte pour chacune (limite assumée), mais sans chiffre fabriqué.
+export function getPlatformRows(accounts: SocialAccount[], posts: PostRow[]): PlatformRow[] {
   const platforms: Platform[] = ["instagram", "facebook", "tiktok"]
   const present = platforms.filter((p) => accounts.some((a) => a.platform === p))
   return present.map((platform) => {
@@ -78,11 +73,9 @@ export function getPlatformRows(clientId: string, posts: PostRow[]): PlatformRow
         noteKey: "performance.platform.noteDraft",
       }
     }
-    // IG porte l'essentiel ; FB reçoit une fraction déterministe (≈ 35 %).
-    const share = platform === "instagram" ? 1 : 0.35
     const subset = posts.filter((p) => p.platforms.includes(platform))
-    const reach = Math.round(subset.reduce((n, p) => n + p.stats.reach, 0) * share)
-    const engagement = Math.round(subset.reduce((n, p) => n + p.engagement, 0) * share)
+    const reach = subset.reduce((n, p) => n + p.stats.reach, 0)
+    const engagement = subset.reduce((n, p) => n + p.engagement, 0)
     return {
       platform,
       account,

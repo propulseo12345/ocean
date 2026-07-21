@@ -30,10 +30,8 @@ export const reportEn: Widen<typeof reportFr> = {
     },
     summary: {
       title: "At a glance",
-      line1:
-        "This month, {count, plural, one {# post} other {# posts}} reached {reach} accounts, a {delta} change in reach compared with last month.",
-      line2:
-        "Your content generated {engagement} interactions (likes, comments and saves), a {delta} change.",
+      line1: "This month, {count, plural, one {# post} other {# posts}} reached {reach} accounts.",
+      line2: "Your content generated {engagement} interactions (likes, comments and saves).",
       line3:
         "Posting cadence is on track and the content mix stays true to the editorial line we defined together.",
     },

@@ -32,9 +32,9 @@ export const reportFr = {
     summary: {
       title: "En un coup d'œil",
       line1:
-        "Ce mois-ci, {count, plural, one {# publication a} other {# publications ont}} touché {reach} comptes, soit {delta} de portée par rapport au mois précédent.",
+        "Ce mois-ci, {count, plural, one {# publication a} other {# publications ont}} touché {reach} comptes.",
       line2:
-        "Vos contenus ont généré {engagement} interactions (j'aime, commentaires et enregistrements), en évolution de {delta}.",
+        "Vos contenus ont généré {engagement} interactions (j'aime, commentaires et enregistrements).",
       line3:
         "La régularité de publication est tenue et le mix éditorial reste fidèle à la ligne définie ensemble.",
     },
