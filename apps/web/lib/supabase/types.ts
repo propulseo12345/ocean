@@ -1543,9 +1543,226 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_accounts: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          provider: string
+          provider_account_id: string
+          email: string
+          label: string | null
+          status: string
+          scopes: string[]
+          needs_reauth_at: string | null
+          last_synced_at: string | null
+          last_sync_error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          provider: string
+          provider_account_id: string
+          email: string
+          label?: string | null
+          status?: string
+          scopes?: string[]
+          needs_reauth_at?: string | null
+          last_synced_at?: string | null
+          last_sync_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          provider?: string
+          provider_account_id?: string
+          email?: string
+          label?: string | null
+          status?: string
+          scopes?: string[]
+          needs_reauth_at?: string | null
+          last_synced_at?: string | null
+          last_sync_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calendar_calendars: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          calendar_account_id: string
+          external_calendar_id: string
+          name: string
+          color_slot: number | null
+          is_enabled: boolean
+          is_primary: boolean
+          time_zone: string | null
+          last_synced_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          calendar_account_id: string
+          external_calendar_id: string
+          name: string
+          color_slot?: number | null
+          is_enabled?: boolean
+          is_primary?: boolean
+          time_zone?: string | null
+          last_synced_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          calendar_account_id?: string
+          external_calendar_id?: string
+          name?: string
+          color_slot?: number | null
+          is_enabled?: boolean
+          is_primary?: boolean
+          time_zone?: string | null
+          last_synced_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calendar_events: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          calendar_id: string
+          external_id: string
+          series_master_id: string | null
+          title: string | null
+          location: string | null
+          all_day: boolean
+          starts_at: string | null
+          ends_at: string | null
+          start_date: string | null
+          end_date: string | null
+          last_sync_run_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          calendar_id: string
+          external_id: string
+          series_master_id?: string | null
+          title?: string | null
+          location?: string | null
+          all_day?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          last_sync_run_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          calendar_id?: string
+          external_id?: string
+          series_master_id?: string | null
+          title?: string | null
+          location?: string | null
+          all_day?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          last_sync_run_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calendar_account_secrets: {
+        Row: {
+          calendar_account_id: string
+          org_id: string
+          user_id: string
+          vault_access_token_secret_id: string | null
+          vault_refresh_token_secret_id: string | null
+          token_expires_at: string | null
+          refresh_token_expires_at: string | null
+          last_refresh_at: string | null
+          refresh_failure_count: number
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_account_id: string
+          org_id: string
+          user_id: string
+          vault_access_token_secret_id?: string | null
+          vault_refresh_token_secret_id?: string | null
+          token_expires_at?: string | null
+          refresh_token_expires_at?: string | null
+          last_refresh_at?: string | null
+          refresh_failure_count?: number
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_account_id?: string
+          org_id?: string
+          user_id?: string
+          vault_access_token_secret_id?: string | null
+          vault_refresh_token_secret_id?: string | null
+          token_expires_at?: string | null
+          refresh_token_expires_at?: string | null
+          last_refresh_at?: string | null
+          refresh_failure_count?: number
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      unified_agenda: {
+        Row: {
+          kind: string
+          source_id: string
+          org_id: string
+          owner_user_id: string | null
+          client_id: string | null
+          calendar_id: string | null
+          title: string | null
+          all_day: boolean
+          starts_at: string | null
+          ends_at: string | null
+          start_date: string | null
+          end_date: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       mark_notification_read: {

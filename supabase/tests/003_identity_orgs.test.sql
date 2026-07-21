@@ -53,10 +53,16 @@ select results_eq(
   'non-member cannot see another organization'
 );
 
+-- Depuis la migration 010 (policy profiles_select_shared), un utilisateur lit
+-- SON profil ET ceux des personnes qui partagent son périmètre (coéquipiers
+-- d'org, reviewers de ses clients) — sans quoi nom/email/initiales seraient
+-- vides partout dans l'UI. La propriété de sécurité à tester n'est donc plus
+-- « un seul profil » mais « exactement son org, jamais une autre ».
 select results_eq(
-  $$select count(*)::bigint from public.profiles$$,
-  $$values (1::bigint)$$,
-  'profiles policy exposes only the current user profile'
+  $$select id::text from public.profiles order by id$$,
+  $$values ('00000000-0000-4000-8000-000000000301'),
+           ('00000000-0000-4000-8000-000000000303')$$,
+  'profiles : l owner voit son profil et son coequipier d org, ni l org B ni l outsider'
 );
 
 -- ---------------------------------------------------------------------------

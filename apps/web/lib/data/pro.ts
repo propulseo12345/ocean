@@ -5,11 +5,15 @@ import { cache } from "react"
 import { loc } from "@/lib/i18n"
 import { PLATFORM_QUOTAS } from "@/lib/mocks/quotas"
 import type {
+  AccountStatus,
   ActivityEntry,
   ActivityKind,
   ApprovalDecision,
   Approval as ApprovalType,
   BrandKit,
+  CalendarAccount,
+  CalendarEvent,
+  CalendarProvider,
   ClientEvent,
   Comment as CommentType,
   ContentPillar,
@@ -664,6 +668,100 @@ export const getQuotaUsage = cache(
     }
   }
 )
+
+// --- Agenda unifié (migration 015) — scopé par UTILISATEUR ------------------
+// La RLS filtre déjà sur auth.uid() ; on ajoute .eq('user_id') en défense en
+// profondeur (règle 7). Un 2e admin de l'org ne voit jamais ces lignes.
+
+export const getCalendarAccounts = cache(async (orgId: string): Promise<CalendarAccount[]> => {
+  if (!orgId) return []
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data } = await supabase
+    .from("calendar_accounts")
+    .select("id, provider, label, email, status")
+    .eq("org_id", orgId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true })
+
+  return (data ?? []).map((row) => {
+    const label = row.label ?? row.email
+    return {
+      id: row.id,
+      provider: row.provider as CalendarProvider,
+      label: loc(label, label),
+      email: row.email,
+      status: row.status as AccountStatus,
+    }
+  })
+})
+
+export const getCalendarEvents = cache(async (orgId: string): Promise<CalendarEvent[]> => {
+  if (!orgId) return []
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data } = await supabase
+    .from("calendar_events")
+    .select("id, calendar_id, title, location, all_day, starts_at, ends_at, start_date, end_date")
+    .eq("org_id", orgId)
+    .eq("user_id", user.id)
+    .order("starts_at", { ascending: true, nullsFirst: true })
+
+  const rows = data ?? []
+  if (rows.length === 0) return []
+
+  // Le niveau « calendrier » porte le compte, la couleur et le toggle.
+  const { data: calendars } = await supabase
+    .from("calendar_calendars")
+    .select("id, calendar_account_id, name, color_slot, is_enabled")
+    .eq("org_id", orgId)
+    .eq("user_id", user.id)
+  const byCalendar = new Map(
+    (calendars ?? []).map((c) => [
+      c.id,
+      {
+        accountId: c.calendar_account_id,
+        name: c.name,
+        colorVar: `var(--chart-${c.color_slot ?? 1})`,
+        enabled: c.is_enabled,
+      },
+    ])
+  )
+
+  return rows.flatMap((row) => {
+    const cal = byCalendar.get(row.calendar_id)
+    if (!cal) return []
+    // all-day : DATE pure (jamais convertie en UTC) exposée à midi Z, comme les
+    // événements client — aucun glissement de jour à la lecture.
+    const startsAt = row.all_day ? `${row.start_date}T12:00:00.000Z` : (row.starts_at ?? "")
+    const endsAt = row.all_day
+      ? `${row.end_date ?? row.start_date}T12:00:00.000Z`
+      : (row.ends_at ?? "")
+    const title = row.title ?? ""
+    return [
+      {
+        id: row.id,
+        accountId: cal.accountId,
+        calendarName: loc(cal.name, cal.name),
+        colorVar: cal.colorVar,
+        title: loc(title, title),
+        startsAt,
+        endsAt,
+        allDay: row.all_day,
+        location: row.location ? loc(row.location, row.location) : undefined,
+        enabled: cal.enabled,
+      },
+    ]
+  })
+})
 
 export const getClientSettings = cache(
   async (orgId: string, clientId: string): Promise<ClientSettings> => {
