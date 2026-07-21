@@ -5,8 +5,8 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { nowIso } from "@/lib/clock"
 import { loc, useT } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Comment } from "@/lib/mocks/types"
 import { CommentRow, NoteRow, ThreadComposer } from "./detail-thread-items"
 
@@ -55,7 +55,7 @@ export function DetailThread({
         role: "owner",
         // Réponse locale (aperçu) saisie dans la locale active, dupliquée.
         body: loc(body, body),
-        createdAt: MOCK_NOW.toISOString(),
+        createdAt: nowIso(),
       },
     ])
     setClientDraft("")
@@ -67,10 +67,7 @@ export function DetailThread({
   function addNote() {
     const body = internalDraft.trim()
     if (body.length === 0) return
-    setNotes((prev) => [
-      ...prev,
-      { id: `note_local_${prev.length}`, body, createdAt: MOCK_NOW.toISOString() },
-    ])
+    setNotes((prev) => [...prev, { id: `note_local_${prev.length}`, body, createdAt: nowIso() }])
     setInternalDraft("")
     toast.success(t("studio.thread.noteAdded"), {
       description: t("studio.thread.noteAddedDesc"),

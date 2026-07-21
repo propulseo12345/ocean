@@ -1,5 +1,5 @@
+import { now } from "@/lib/clock"
 import { DEFAULT_LOCALE, INTL_LOCALE, type Locale } from "@/lib/i18n/config"
-import { MOCK_NOW } from "@/lib/mocks/time"
 
 export const DEFAULT_TZ = "Europe/Paris"
 
@@ -49,7 +49,7 @@ export function formatDateTime(
 
 export function formatRelative(iso: string, locale: Locale = DEFAULT_LOCALE): string {
   const rtf = new Intl.RelativeTimeFormat(intl(locale), { numeric: "auto" })
-  const diff = new Date(iso).getTime() - MOCK_NOW.getTime()
+  const diff = new Date(iso).getTime() - now().getTime()
   const abs = Math.abs(diff)
   const minute = 60_000
   const hour = 60 * minute
@@ -61,11 +61,11 @@ export function formatRelative(iso: string, locale: Locale = DEFAULT_LOCALE): st
 }
 
 export function isPast(iso: string): boolean {
-  return new Date(iso).getTime() < MOCK_NOW.getTime()
+  return new Date(iso).getTime() < now().getTime()
 }
 
 // fr-CA est utilisé comme CLÉ technique stable YYYY-MM-DD (jamais affiché) — ne pas localiser.
-export function isSameDay(iso: string, ref: Date = MOCK_NOW, tz = DEFAULT_TZ): boolean {
+export function isSameDay(iso: string, ref: Date = now(), tz = DEFAULT_TZ): boolean {
   const key = (d: Date) =>
     new Intl.DateTimeFormat("fr-CA", {
       timeZone: tz,

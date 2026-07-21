@@ -1,8 +1,9 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import { nowIso } from "@/lib/clock"
 import { type L, loc, useLocale } from "@/lib/i18n"
-import { hours, MOCK_NOW } from "@/lib/mocks/time"
+import { hours } from "@/lib/mocks/time"
 import type {
   ContentItem,
   ContentStatus,
@@ -160,7 +161,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
         reviewerIds: reviewer ? [reviewer.id] : [],
         // Message local (aperçu) saisi dans la locale active, dupliqué.
         message: trimmed ? loc(trimmed, trimmed) : undefined,
-        sentAt: MOCK_NOW.toISOString(),
+        sentAt: nowIso(),
         state: "pending",
       })
       setReminders(0)

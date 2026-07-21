@@ -7,10 +7,11 @@ import { TodayPanel } from "@/components/app/dashboard/today-panel"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { nowIso } from "@/lib/clock"
+import { getCurrentUser, getDashboardTasks, getNotifications, getUnifiedAgenda } from "@/lib/data"
 import { pick } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
-import { CURRENT_USER, getDashboardTasks, getNotifications } from "@/lib/mocks"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -23,11 +24,14 @@ export default async function DashboardPage() {
   const t = await getT()
   const f = await getFormat()
   const locale = await getLocale()
-  const tasks = getDashboardTasks(t, locale)
+  const ctx = await getActiveOrg()
+  const user = await getCurrentUser()
+  const tasks = await getDashboardTasks(ctx.org.id, t, locale)
   const count = (kind: DashboardTask["kind"]) => tasks.filter((task) => task.kind === kind).length
-  const firstName = CURRENT_USER.name.split(" ")[0]
-  const today = f.date(MOCK_NOW.toISOString(), CURRENT_USER.timezone)
-  const recent = getNotifications("owner").slice(0, 5)
+  const firstName = user.name.split(" ")[0]
+  const today = f.date(nowIso(), user.timezone)
+  const recent = (await getNotifications(ctx.org.id, "owner")).slice(0, 5)
+  const agenda = await getUnifiedAgenda(ctx.org.id)
 
   return (
     <div className="space-y-6">
@@ -98,7 +102,7 @@ export default async function DashboardPage() {
               </CardAction>
             </CardHeader>
             <CardContent>
-              <TodayPanel />
+              <TodayPanel items={agenda} timezone={user.timezone} />
             </CardContent>
           </Card>
 

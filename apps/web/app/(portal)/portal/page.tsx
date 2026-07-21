@@ -2,9 +2,10 @@ import { CheckCircle2, ClipboardCheck, History } from "lucide-react"
 import type { Metadata } from "next"
 import { PortalCard } from "@/components/portal/portal-card"
 import { EmptyState } from "@/components/shared/empty-state"
+import { getReviewerContext } from "@/lib/auth/org-context"
+import { getPortalContent } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
-import { DEMO_REVIEWER_CLIENT_ID, getClient, getPortalContent, getReviewer } from "@/lib/mocks"
 import type { Client, ContentStatus } from "@/lib/mocks/types"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,12 +17,13 @@ const TO_REVIEW: ContentStatus[] = ["in_review", "changes_requested"]
 
 export default async function PortalPage() {
   const t = await getT()
-  const client = getClient(DEMO_REVIEWER_CLIENT_ID) as Client
-  const reviewer = getReviewer(DEMO_REVIEWER_CLIENT_ID)
+  const ctx = await getReviewerContext()
+  const client = ctx.clients[0] as Client
+  const reviewer = ctx.reviewer
   const tz = client.timezone
   const firstName = reviewer?.name.split(" ")[0] ?? ""
 
-  const content = getPortalContent()
+  const content = await getPortalContent(ctx.clientIds)
   const toReview = content.filter((c) => TO_REVIEW.includes(c.status))
   const history = content
     .filter((c) => !TO_REVIEW.includes(c.status))

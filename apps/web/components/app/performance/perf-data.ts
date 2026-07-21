@@ -1,7 +1,7 @@
+import { now } from "@/lib/clock"
 import { formatDayMonth } from "@/lib/format"
 import { createTranslator, type L } from "@/lib/i18n"
 import { getContentItems, getImportedPosts, getPostMetrics } from "@/lib/mocks"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type {
   ContentFormat,
   ContentItem,
@@ -153,7 +153,7 @@ export function getTrend(posts: PostRow[], period: PerfPeriod): TrendBucket[] {
   const bucketCount = period === "90d" ? 6 : 4
   const dayMs = 86_400_000
   const span = PERIOD_META[period].days * dayMs
-  const start = MOCK_NOW.getTime() - span
+  const start = now().getTime() - span
   const buckets: TrendBucket[] = Array.from({ length: bucketCount }, (_, i) => ({
     index: i + 1,
     reach: 0,

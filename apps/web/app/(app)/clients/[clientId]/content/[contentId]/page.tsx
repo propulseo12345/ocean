@@ -14,8 +14,7 @@ import { DetailVersions } from "@/components/app/studio/detail-versions"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { pick } from "@/lib/i18n"
-import { getLocale, getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getActivityEntries,
   getApprovals,
@@ -27,7 +26,9 @@ import {
   getQuotaUsage,
   getReviewer,
   getSocialAccounts,
-} from "@/lib/mocks"
+} from "@/lib/data"
+import { pick } from "@/lib/i18n"
+import { getLocale, getT } from "@/lib/i18n/server"
 import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
 import type { ContentItem, ContentStatus, ContentTarget } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -54,23 +55,26 @@ export default async function ContentDetailPage({
   params: Promise<{ clientId: string; contentId: string }>
 }) {
   const { clientId, contentId } = await params
-  const client = getClient(clientId)
-  const content = getContentItem(contentId)
-  if (!client || !content || content.clientId !== clientId) notFound()
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
+  const content = await getContentItem(ctx.org.id, clientId, contentId)
+  if (!client || !content) notFound()
 
   const t = await getT()
   const locale = await getLocale()
   const title = pick(content.title, locale)
   const caption = pick(content.caption, locale)
 
-  const comments = getComments(contentId)
-  const approvals = getApprovals(contentId)
-  const versions = getContentVersions(contentId)
-  const activity = getActivityEntries(contentId)
-  const accounts = getSocialAccounts(clientId)
-  const reviewer = getReviewer(clientId)
-  const clients = getClients()
-  const quotas = Object.fromEntries(accounts.map((a) => [a.id, getQuotaUsage(a.id)]))
+  const comments = await getComments(ctx.org.id, clientId, contentId)
+  const approvals = await getApprovals(ctx.org.id, clientId, contentId)
+  const versions = await getContentVersions(ctx.org.id, clientId, contentId)
+  const activity = await getActivityEntries(ctx.org.id, clientId, contentId)
+  const accounts = await getSocialAccounts(ctx.org.id, clientId)
+  const reviewer = await getReviewer(ctx.org.id, clientId)
+  const clients = await getClients(ctx.org.id)
+  const quotas = Object.fromEntries(
+    await Promise.all(accounts.map(async (a) => [a.id, await getQuotaUsage(ctx.org.id, a.id)]))
+  )
 
   const canEdit = !READ_ONLY.includes(content.status) && content.status !== "in_review"
   const manualItems: ManualItem[] = content.targets
@@ -162,7 +166,7 @@ export default async function ContentDetailPage({
                 approvalStale={Boolean(content.approvalStale)}
                 approvals={approvals}
                 approvalMode={client.approvalMode}
-                reviewer={reviewer}
+                reviewer={reviewer ?? undefined}
                 hasVersions={versions.length > 0}
               />
             </CardContent>

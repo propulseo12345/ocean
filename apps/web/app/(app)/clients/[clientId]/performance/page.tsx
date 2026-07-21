@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getAllPerfData } from "@/components/app/performance/perf-data"
 import { PerfWorkspace } from "@/components/app/performance/perf-workspace"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClient } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClient } from "@/lib/mocks"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -20,7 +21,8 @@ export default async function ClientPerformancePage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
   const byPeriod = getAllPerfData(clientId, client.timezone)

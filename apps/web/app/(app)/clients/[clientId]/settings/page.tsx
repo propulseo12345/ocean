@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { SettingsShell } from "@/components/app/client-settings/settings-shell"
-import { getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
@@ -10,16 +10,13 @@ import {
   getReviewer,
   getSocialAccounts,
   getTrashedContent,
-} from "@/lib/mocks"
+} from "@/lib/data"
+import { getT } from "@/lib/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
   return { title: t("clients.metaSettings") }
 }
-
-// Réglages du client (audit §4/§5, P1) : profil, comptes, brand kit, niveau de
-// validation, créneaux récurrents, cadence et archivage. Preview UI-only :
-// toutes les écritures sont locales (useState) + toasts « (aperçu) ».
 
 export default async function ClientSettingsPage({
   params,
@@ -27,18 +24,20 @@ export default async function ClientSettingsPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
+  const reviewer = await getReviewer(ctx.org.id, clientId)
 
   return (
     <SettingsShell
       client={client}
-      accounts={getSocialAccounts(clientId)}
-      brandKit={getBrandKit(clientId)}
-      reviewer={getReviewer(clientId)}
-      slots={getRecurringSlots(clientId)}
-      pillars={getPillars(clientId)}
-      trashed={getTrashedContent(clientId)}
+      accounts={await getSocialAccounts(ctx.org.id, clientId)}
+      brandKit={await getBrandKit(ctx.org.id, clientId)}
+      reviewer={reviewer ?? undefined}
+      slots={await getRecurringSlots(ctx.org.id, clientId)}
+      pillars={await getPillars(ctx.org.id, clientId)}
+      trashed={await getTrashedContent(ctx.org.id, clientId)}
     />
   )
 }

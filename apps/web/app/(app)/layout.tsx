@@ -12,10 +12,14 @@ import { ShortcutsDialog } from "@/components/app/shell/shortcuts-dialog"
 import { ThemeToggle } from "@/components/app/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getShellSnapshot } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const t = await getT()
+  const ctx = await getActiveOrg()
+  const shell = await getShellSnapshot(ctx.org.id)
   return (
     <ShellProvider>
       <a
@@ -25,7 +29,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {t("common.skipToContent")}
       </a>
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar
+          clients={shell.clients}
+          currentUser={shell.currentUser}
+          socialAccounts={shell.socialAccounts}
+        />
         <SidebarInset>
           <DemoBanner />
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md sm:px-4">
@@ -33,7 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
             <div className="ml-auto flex items-center gap-1">
               <HeaderSearchButton />
-              <NotificationsButton />
+              <NotificationsButton items={shell.notifications} unread={shell.unreadCount} />
               <LocaleToggle />
               <ThemeToggle />
             </div>
@@ -43,8 +51,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
         </SidebarInset>
-        <CommandPalette />
-        <QuickCapture />
+        <CommandPalette
+          clients={shell.clients}
+          contentItems={shell.contentItems}
+          socialAccounts={shell.socialAccounts}
+        />
+        <QuickCapture clients={shell.clients} />
         <ShortcutsDialog />
       </SidebarProvider>
     </ShellProvider>

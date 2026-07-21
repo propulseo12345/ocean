@@ -3,13 +3,14 @@ import type { ReactNode } from "react"
 import { LocaleToggle } from "@/components/app/locale-toggle"
 import { ThemeToggle } from "@/components/app/theme-toggle"
 import { ClientAvatar } from "@/components/shared/client-avatar"
+import { getReviewerContext } from "@/lib/auth/org-context"
 import { getT } from "@/lib/i18n/server"
-import { DEMO_REVIEWER_CLIENT_ID, getClient, getReviewer } from "@/lib/mocks"
 
 export default async function PortalLayout({ children }: { children: ReactNode }) {
   const t = await getT()
-  const client = getClient(DEMO_REVIEWER_CLIENT_ID)
-  const reviewer = getReviewer(DEMO_REVIEWER_CLIENT_ID)
+  const ctx = await getReviewerContext()
+  const client = ctx.clients[0] ?? null
+  const reviewer = ctx.reviewer
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">

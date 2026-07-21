@@ -1,5 +1,6 @@
+import { now } from "@/lib/clock"
 import { type Locale, pick } from "@/lib/i18n"
-import { days, MOCK_NOW } from "@/lib/mocks/time"
+import { days } from "@/lib/mocks/time"
 import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/mocks/types"
 import { type BoardFilters, type SortKey, STATUS_ORDER } from "./board-types"
 
@@ -66,7 +67,7 @@ export function isLateDraft(item: ContentItem): boolean {
   return (
     item.status === "draft" &&
     item.scheduledAt === null &&
-    new Date(item.createdAt).getTime() < MOCK_NOW.getTime() - days(LATE_DRAFT_AFTER_DAYS)
+    new Date(item.createdAt).getTime() < now().getTime() - days(LATE_DRAFT_AFTER_DAYS)
   )
 }
 
@@ -74,7 +75,7 @@ export function isLateDraft(item: ContentItem): boolean {
 export function isOverdue(item: ContentItem): boolean {
   return (
     item.scheduledAt !== null &&
-    new Date(item.scheduledAt).getTime() < MOCK_NOW.getTime() &&
+    new Date(item.scheduledAt).getTime() < now().getTime() &&
     (item.status === "scheduled" || item.status === "approved" || item.status === "draft")
   )
 }
@@ -155,10 +156,7 @@ export function cardReviewMeta(
 ): CardReviewMeta {
   if (item.status !== "in_review") return { waitDays: null, canRemind: false }
   const sentAt = request?.contentIds.includes(item.id) ? request.sentAt : item.createdAt
-  const waitDays = Math.max(
-    0,
-    Math.floor((MOCK_NOW.getTime() - new Date(sentAt).getTime()) / days(1))
-  )
+  const waitDays = Math.max(0, Math.floor((now().getTime() - new Date(sentAt).getTime()) / days(1)))
   const reviewerSilent =
     reviewer !== null && (reviewer.lastActiveAt === null || reviewer.lastActiveAt < sentAt)
   return {

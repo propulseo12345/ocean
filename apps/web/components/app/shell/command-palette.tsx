@@ -17,8 +17,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
-import { getClients, getContentItems } from "@/lib/mocks"
-import type { Client } from "@/lib/mocks/types"
+import type { Client, ContentItem, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { clientAccountIssues, clientSwitchHref } from "./client-nav"
 import { useShell } from "./shell-provider"
@@ -42,7 +41,15 @@ function HealthDot({ label }: { label: string }) {
   )
 }
 
-export function CommandPalette() {
+export function CommandPalette({
+  clients: allClients,
+  contentItems,
+  socialAccounts,
+}: {
+  clients: Client[]
+  contentItems: ContentItem[]
+  socialAccounts: SocialAccount[]
+}) {
   const t = useT()
   const lbl = useLabels()
   const { locale } = useLocale()
@@ -52,15 +59,14 @@ export function CommandPalette() {
 
   // Récents en tête, ordre stable pour le reste.
   const clients = useMemo(() => {
-    const all = getClients()
     const rank = (c: Client) => {
       const i = recentClientIds.indexOf(c.id)
       return i === -1 ? recentClientIds.length : i
     }
-    return [...all].sort((a, b) => rank(a) - rank(b))
-  }, [recentClientIds])
+    return [...allClients].sort((a, b) => rank(a) - rank(b))
+  }, [allClients, recentClientIds])
 
-  const contents = useMemo(() => getContentItems(), [])
+  const contents = contentItems
   const clientNames = useMemo(() => new Map(clients.map((c) => [c.id, c.name])), [clients])
 
   function run(action: () => void) {
@@ -83,7 +89,7 @@ export function CommandPalette() {
 
           <CommandGroup heading={t("nav.palette.groupClients")}>
             {clients.map((c) => {
-              const issues = clientAccountIssues(c.id)
+              const issues = clientAccountIssues(socialAccounts, c.id)
               return (
                 <CommandItem
                   key={c.id}

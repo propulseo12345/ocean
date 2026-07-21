@@ -1,8 +1,8 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import { nowIso } from "@/lib/clock"
 import { loc } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { ClientEvent } from "@/lib/mocks/types"
 import {
   type CalendarData,
@@ -34,7 +34,7 @@ function firstDayKey(cursor: CalendarCursor): DayKey {
 
 export function useCalendarState(data: CalendarData) {
   const tz = data.client.timezone
-  const todayKey = useMemo(() => dayKeyOf(MOCK_NOW.toISOString(), tz), [tz])
+  const todayKey = useMemo(() => dayKeyOf(nowIso(), tz), [tz])
 
   // Période UNIFIÉE : l'ancre survit à la bascule mois ⇄ semaine.
   const [view, setView] = useState<CalendarView>("month")

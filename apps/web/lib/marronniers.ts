@@ -1,5 +1,5 @@
+import { nowIso } from "@/lib/clock"
 import { type L, loc } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 
 // Marronniers FR 2026 : jours fériés, fêtes, soldes et temps forts marketing.
 // Overlay du calendrier éditorial + suggestions d'idées de contenu.
@@ -118,6 +118,6 @@ export function getMarronniersOn(dayIso: string): Marronnier[] {
 
 /** Prochains marronniers à partir d'« aujourd'hui » mocké (11/06/2026). */
 export function getUpcomingMarronniers(limit = 6): Marronnier[] {
-  const today = dateKey(MOCK_NOW.toISOString())
+  const today = dateKey(nowIso())
   return MARRONNIERS.filter((m) => m.date >= today).slice(0, limit)
 }

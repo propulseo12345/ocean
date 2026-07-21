@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { useT } from "@/lib/i18n"
-import { getClients } from "@/lib/mocks"
-import type { Client } from "@/lib/mocks/types"
+import type { Client, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { activeClientIdFromPath, clientAccountIssues, clientSwitchHref } from "./shell/client-nav"
 import { useShell } from "./shell/shell-provider"
@@ -42,13 +41,15 @@ function SwitcherItem({
   pathname,
   activeId,
   reconnectLabel,
+  socialAccounts,
 }: {
   client: Client
   pathname: string
   activeId: string | undefined
   reconnectLabel: string
+  socialAccounts: SocialAccount[]
 }) {
-  const hasIssue = clientAccountIssues(client.id).length > 0
+  const hasIssue = clientAccountIssues(socialAccounts, client.id).length > 0
   return (
     <DropdownMenuItem
       render={<Link href={clientSwitchHref(pathname, client.id)} />}
@@ -64,15 +65,20 @@ function SwitcherItem({
   )
 }
 
-export function ClientSwitcher() {
+export function ClientSwitcher({
+  clients,
+  socialAccounts,
+}: {
+  clients: Client[]
+  socialAccounts: SocialAccount[]
+}) {
   const t = useT()
   const pathname = usePathname()
   const { recentClientIds } = useShell()
-  const clients = getClients()
   const reconnectLabel = t("nav.accountReconnect")
   const activeId = activeClientIdFromPath(pathname)
   const active = clients.find((c) => c.id === activeId)
-  const activeHasIssue = active ? clientAccountIssues(active.id).length > 0 : false
+  const activeHasIssue = active ? clientAccountIssues(socialAccounts, active.id).length > 0 : false
 
   const recents = recentClientIds
     .map((id) => clients.find((c) => c.id === id))
@@ -124,6 +130,7 @@ export function ClientSwitcher() {
                     pathname={pathname}
                     activeId={activeId}
                     reconnectLabel={reconnectLabel}
+                    socialAccounts={socialAccounts}
                   />
                 ))}
                 {others.length > 0 ? <DropdownMenuSeparator /> : null}
@@ -143,6 +150,7 @@ export function ClientSwitcher() {
                 pathname={pathname}
                 activeId={activeId}
                 reconnectLabel={reconnectLabel}
+                socialAccounts={socialAccounts}
               />
             ))}
             <DropdownMenuSeparator />

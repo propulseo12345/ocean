@@ -5,8 +5,9 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PageHeader } from "@/components/shared/page-header"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Button } from "@/components/ui/button"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClients, getContentItems, getSocialAccounts } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClients, getContentItems, getSocialAccounts } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,8 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.listTitle") }
 }
 
-function clientStats(clientId: string) {
-  const items = getContentItems(clientId)
+async function clientStats(orgId: string, clientId: string) {
+  const items = await getContentItems(orgId, clientId)
   return {
     scheduled: items.filter((c) => c.status === "scheduled").length,
     review: items.filter((c) => c.status === "in_review" || c.status === "changes_requested")
@@ -27,8 +28,21 @@ function clientStats(clientId: string) {
 
 export default async function ClientsPage() {
   const t = await getT()
-  const clients = getClients()
-  const archived = getClients(true).filter((c) => c.archivedAt)
+  const ctx = await getActiveOrg()
+  const clients = await getClients(ctx.org.id)
+  const archived = (await getClients(ctx.org.id, true)).filter((c) => c.archivedAt)
+  const statsByClient = new Map(
+    await Promise.all(
+      clients.map(async (client) => [client.id, await clientStats(ctx.org.id, client.id)] as const)
+    )
+  )
+  const accountsByClient = new Map(
+    await Promise.all(
+      clients.map(
+        async (client) => [client.id, await getSocialAccounts(ctx.org.id, client.id)] as const
+      )
+    )
+  )
 
   return (
     <div className="space-y-6">
@@ -45,8 +59,8 @@ export default async function ClientsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {clients.map((c) => {
-          const s = clientStats(c.id)
-          const accounts = getSocialAccounts(c.id)
+          const s = statsByClient.get(c.id) ?? { scheduled: 0, review: 0, published: 0 }
+          const accounts = accountsByClient.get(c.id) ?? []
           const needsReauth = accounts.some((a) => a.status !== "connected")
           return (
             <Link

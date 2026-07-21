@@ -6,19 +6,17 @@ import { PlatformIcons } from "@/components/shared/platform-badge"
 import { isSameDay } from "@/lib/format"
 import { type Format, type Locale, pick } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
-import { CURRENT_USER, getUnifiedAgenda } from "@/lib/mocks"
 import type { AgendaItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
-export async function TodayPanel() {
+export async function TodayPanel({ items, timezone }: { items: AgendaItem[]; timezone: string }) {
   const t = await getT()
   const f = await getFormat()
   const locale = await getLocale()
-  const tz = CURRENT_USER.timezone
-  const items = getUnifiedAgenda().filter((it) =>
-    isSameDay(it.kind === "event" ? it.event.startsAt : it.startsAt, undefined, tz)
+  const todayItems = items.filter((it) =>
+    isSameDay(it.kind === "event" ? it.event.startsAt : it.startsAt, undefined, timezone)
   )
-  if (items.length === 0) {
+  if (todayItems.length === 0) {
     return (
       <EmptyState
         icon={CalendarOff}
@@ -30,11 +28,11 @@ export async function TodayPanel() {
   }
   return (
     <ul className="space-y-0.5">
-      {items.map((it) => (
+      {todayItems.map((it) => (
         <AgendaRow
           key={it.id}
           item={it}
-          tz={tz}
+          tz={timezone}
           f={f}
           locale={locale}
           allDayLabel={t("dashboard.allDay")}

@@ -5,8 +5,7 @@ import { notFound } from "next/navigation"
 import { type ComposerData, ComposerScreen } from "@/components/app/studio/composer/composer-screen"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { pick } from "@/lib/i18n"
-import { getLocale, getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
@@ -17,7 +16,9 @@ import {
   getQuotaUsage,
   getRecurringSlots,
   getSocialAccounts,
-} from "@/lib/mocks"
+} from "@/lib/data"
+import { pick } from "@/lib/i18n"
+import { getLocale, getT } from "@/lib/i18n/server"
 import type { ContentStatus, QuotaUsage } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -26,7 +27,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.metaContentEdit") }
 }
 
-// Lecture seule à partir de la publication (règle d'éditabilité PRD §5.B).
 const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
 
 export default async function EditContentPage({
@@ -35,9 +35,10 @@ export default async function EditContentPage({
   params: Promise<{ clientId: string; contentId: string }>
 }) {
   const { clientId, contentId } = await params
-  const client = getClient(clientId)
-  const content = getContentItem(contentId)
-  if (!client || !content || content.clientId !== clientId) notFound()
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
+  const content = await getContentItem(ctx.org.id, clientId, contentId)
+  if (!client || !content) notFound()
 
   if (READ_ONLY.includes(content.status)) {
     const t = await getT()
@@ -64,19 +65,19 @@ export default async function EditContentPage({
     )
   }
 
-  const accounts = getSocialAccounts(clientId)
+  const accounts = await getSocialAccounts(ctx.org.id, clientId)
   const quotas: Record<string, QuotaUsage | null> = Object.fromEntries(
-    accounts.map((a) => [a.id, getQuotaUsage(a.id)])
+    await Promise.all(accounts.map(async (a) => [a.id, await getQuotaUsage(ctx.org.id, a.id)]))
   )
 
   const data: ComposerData = {
     client,
     accounts,
-    pillars: getPillars(clientId),
-    hashtagGroups: getHashtagGroups(clientId),
-    libraryAssets: getLibraryAssets(clientId),
-    brandKit: getBrandKit(clientId) ?? null,
-    recurringSlots: getRecurringSlots(clientId),
+    pillars: await getPillars(ctx.org.id, clientId),
+    hashtagGroups: await getHashtagGroups(ctx.org.id, clientId),
+    libraryAssets: await getLibraryAssets(ctx.org.id, clientId),
+    brandKit: (await getBrandKit(ctx.org.id, clientId)) ?? null,
+    recurringSlots: await getRecurringSlots(ctx.org.id, clientId),
     quotas,
   }
 

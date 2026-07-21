@@ -1,4 +1,4 @@
-import { MOCK_NOW } from "@/lib/mocks/time"
+import { now } from "@/lib/clock"
 
 // Attribution de dates mockée pour la grille (PRD §5.C) : interpolation entre
 // voisins, heure pleine, fenêtre 9 h – 21 h dans le fuseau du client,
@@ -34,7 +34,7 @@ export function clampToWindow(iso: string, tz: string): string {
 
 function ensureFuture(iso: string): string {
   let time = new Date(iso).getTime()
-  const min = MOCK_NOW.getTime() + MIN_LEAD_MS
+  const min = now().getTime() + MIN_LEAD_MS
   while (time < min) time += DAY_MS
   return new Date(time).toISOString()
 }
@@ -57,7 +57,7 @@ export function interpolateDate(
   } else if (beforeIso) {
     candidate = new Date(beforeIso).getTime() - DAY_MS
   } else {
-    candidate = MOCK_NOW.getTime() + DAY_MS
+    candidate = now().getTime() + DAY_MS
   }
   return ensureFuture(clampToWindow(new Date(candidate).toISOString(), tz))
 }
@@ -69,5 +69,5 @@ export function shiftDays(iso: string, daysCount: number): string {
 
 /** Date de reprogrammation par défaut après un échec : demain, fenêtre 9–21 h. */
 export function retryDate(tz: string): string {
-  return ensureFuture(clampToWindow(shiftDays(MOCK_NOW.toISOString(), 1), tz))
+  return ensureFuture(clampToWindow(shiftDays(now().toISOString(), 1), tz))
 }

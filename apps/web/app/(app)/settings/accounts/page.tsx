@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import type { ClientAccountsGroup } from "@/components/app/settings/accounts-tab"
 import { SettingsTabs } from "@/components/app/settings/settings-tabs"
 import { PageHeader } from "@/components/shared/page-header"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getCalendarAccounts, getClients, getCurrentUser, getSocialAccounts } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { CALENDAR_ACCOUNTS, CURRENT_USER, getClients, getSocialAccounts } from "@/lib/mocks"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -12,9 +13,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SettingsAccountsPage() {
   const t = await getT()
-  const groups: ClientAccountsGroup[] = getClients()
-    .map((client) => ({ client, accounts: getSocialAccounts(client.id) }))
-    .filter((g) => g.accounts.length > 0)
+  const ctx = await getActiveOrg()
+  const clients = await getClients(ctx.org.id)
+  const groups: ClientAccountsGroup[] = (
+    await Promise.all(
+      clients.map(async (client) => ({
+        client,
+        accounts: await getSocialAccounts(ctx.org.id, client.id),
+      }))
+    )
+  ).filter((g) => g.accounts.length > 0)
+  const calendars = await getCalendarAccounts(ctx.org.id)
+  const user = await getCurrentUser()
 
   const needsAttentionCount = groups
     .flatMap((g) => g.accounts)
@@ -30,8 +40,8 @@ export default async function SettingsAccountsPage() {
       <SettingsTabs
         groups={groups}
         needsAttentionCount={needsAttentionCount}
-        calendars={CALENDAR_ACCOUNTS}
-        user={CURRENT_USER}
+        calendars={calendars}
+        user={user}
       />
     </div>
   )

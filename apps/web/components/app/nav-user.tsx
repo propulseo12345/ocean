@@ -23,11 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { useT } from "@/lib/i18n"
-import { CURRENT_USER } from "@/lib/mocks"
+import type { User } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell/shell-provider"
 
-export function NavUser() {
+export function NavUser({ user }: { user: User }) {
   const t = useT()
   const { setTheme } = useTheme()
   const { setPwaGuideOpen } = useShell()
@@ -42,13 +42,11 @@ export function NavUser() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <span className="flex size-7 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-xs font-semibold text-sidebar-primary-foreground">
-                  {CURRENT_USER.initials}
+                  {user.initials}
                 </span>
                 <span className="grid flex-1 text-left leading-tight">
-                  <span className="truncate font-medium">{CURRENT_USER.name}</span>
-                  <span className="truncate text-xs text-sidebar-foreground/60">
-                    {CURRENT_USER.email}
-                  </span>
+                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate text-xs text-sidebar-foreground/60">{user.email}</span>
                 </span>
                 <ChevronsUpDown className="ml-auto size-4 opacity-70" />
               </SidebarMenuButton>
@@ -56,7 +54,7 @@ export function NavUser() {
           />
           <DropdownMenuContent align="end" side="top" className="min-w-60">
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {CURRENT_USER.email}
+              {user.email}
             </DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem render={<Link href={routes.settings} />} className="gap-2">

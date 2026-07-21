@@ -1,5 +1,5 @@
+import { now } from "@/lib/clock"
 import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { ContentItem, ContentPillar, ContentStatus, SocialAccount } from "@/lib/mocks/types"
 import { GAP_THRESHOLD_DAYS } from "./calendar-types"
 import { type DayKey, dayKeyOf } from "./calendar-utils"
@@ -100,7 +100,7 @@ export function waitingDaysByContent(
   for (const it of items) {
     if (it.status !== "in_review" && it.status !== "changes_requested") continue
     const since = reviewSentAt ?? it.createdAt
-    const days = Math.max(0, Math.floor((MOCK_NOW.getTime() - Date.parse(since)) / DAY_MS))
+    const days = Math.max(0, Math.floor((now().getTime() - Date.parse(since)) / DAY_MS))
     out.set(it.id, days)
   }
   return out
@@ -137,8 +137,9 @@ const NEXT_WEEK_DAYS = 7
 
 /** Vrai si rien n'est planifié sur les 7 prochains jours (filet anti-trou). */
 export function nextWeekIsEmpty(dated: ContentItem[], tz: string): boolean {
-  const today = dayKeyOf(MOCK_NOW.toISOString(), tz)
-  const horizon = new Date(MOCK_NOW.getTime() + NEXT_WEEK_DAYS * DAY_MS)
+  const current = now()
+  const today = dayKeyOf(current.toISOString(), tz)
+  const horizon = new Date(current.getTime() + NEXT_WEEK_DAYS * DAY_MS)
   const horizonKey = dayKeyOf(horizon.toISOString(), tz)
   return !dated.some((it) => {
     if (!CADENCE_STATUSES.includes(it.status) || !it.scheduledAt) return false

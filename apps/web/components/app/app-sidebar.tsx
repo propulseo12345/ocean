@@ -18,7 +18,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { useT } from "@/lib/i18n"
-import { getClients } from "@/lib/mocks"
+import type { Client, SocialAccount, User } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { ClientSwitcher } from "./client-switcher"
 import { NavUser } from "./nav-user"
@@ -32,11 +32,18 @@ const NAV = [
   { titleKey: "nav.item.clients", href: routes.clients, icon: Users },
 ] as const
 
-export function AppSidebar() {
+export function AppSidebar({
+  clients,
+  currentUser,
+  socialAccounts,
+}: {
+  clients: Client[]
+  currentUser: User
+  socialAccounts: SocialAccount[]
+}) {
   const t = useT()
   const pathname = usePathname()
   const { setPaletteOpen } = useShell()
-  const clients = getClients()
   const isActive = (href: string) =>
     href === routes.dashboard
       ? pathname === href
@@ -51,7 +58,7 @@ export function AppSidebar() {
           </span>
           <span className="font-heading text-lg font-bold tracking-tight">Ocean</span>
         </div>
-        <ClientSwitcher />
+        <ClientSwitcher clients={clients} socialAccounts={socialAccounts} />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={t("nav.searchAria")} onClick={() => setPaletteOpen(true)}>
@@ -97,7 +104,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {clients.map((c) => {
                 const active = pathname.startsWith(routes.client(c.id))
-                const hasIssue = clientAccountIssues(c.id).length > 0
+                const hasIssue = clientAccountIssues(socialAccounts, c.id).length > 0
                 return (
                   <SidebarMenuItem key={c.id}>
                     <SidebarMenuButton
@@ -150,7 +157,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <NavUser />
+        <NavUser user={currentUser} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

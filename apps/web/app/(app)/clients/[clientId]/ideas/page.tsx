@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BoardIdeaBank } from "@/components/app/studio/board-idea-bank"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClient, getContentItems, getPillars } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClient, getContentItems, getPillars } from "@/lib/mocks"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -15,10 +16,13 @@ export default async function ClientIdeasPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client) notFound()
 
-  const ideas = getContentItems(clientId).filter((it) => it.status === "idea")
+  const ideas = (await getContentItems(ctx.org.id, clientId)).filter((it) => it.status === "idea")
 
-  return <BoardIdeaBank client={client} ideas={ideas} pillars={getPillars(clientId)} />
+  return (
+    <BoardIdeaBank client={client} ideas={ideas} pillars={await getPillars(ctx.org.id, clientId)} />
+  )
 }

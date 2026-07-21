@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getReportData } from "@/components/app/performance/report-data"
 import { ReportWorkspace } from "@/components/app/performance/report-workspace"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClient } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClient } from "@/lib/mocks"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -19,7 +20,8 @@ export default async function ClientReportPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
   const data = getReportData(clientId)

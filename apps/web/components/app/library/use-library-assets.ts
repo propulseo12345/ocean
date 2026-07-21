@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react"
 import { toast } from "sonner"
+import { nowIso } from "@/lib/clock"
 import { useT } from "@/lib/i18n"
 import { IMAGES } from "@/lib/mocks/images"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, LibraryAsset } from "@/lib/mocks/types"
 
 // État local des assets (preview) : ajout simulé, alt text, suppression.
@@ -40,7 +40,7 @@ export function useLibraryAssets(client: Client, initial: LibraryAsset[]): UseLi
         fullUrl: url,
         width: shape.width,
         height: shape.height,
-        uploadedAt: MOCK_NOW.toISOString(),
+        uploadedAt: nowIso(),
         source: "upload",
         usedInContentIds: [],
         fileSizeMb: shape.fileSizeMb,

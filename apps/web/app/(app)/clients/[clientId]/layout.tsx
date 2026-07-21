@@ -7,8 +7,9 @@ import { ClientHealthBanner } from "@/components/app/shell/client-health-banner"
 import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Button } from "@/components/ui/button"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClient, getContentItems, getSocialAccounts } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClient, getSocialAccounts } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 
 export default async function ClientLayout({
@@ -20,9 +21,11 @@ export default async function ClientLayout({
 }) {
   const { clientId } = await params
   const t = await getT()
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client) notFound()
-  const accounts = getSocialAccounts(clientId)
+  const accounts = await getSocialAccounts(ctx.org.id, clientId)
+  const contentItems = await getContentItems(ctx.org.id, clientId)
 
   return (
     <div className="space-y-5">
@@ -61,7 +64,11 @@ export default async function ClientLayout({
         </Button>
       </div>
 
-      <ClientHealthBanner clientId={client.id} />
+      <ClientHealthBanner
+        clientId={client.id}
+        contentItems={contentItems}
+        socialAccounts={accounts}
+      />
 
       <ClientTabs clientId={client.id} />
       <div>{children}</div>

@@ -9,17 +9,12 @@ import { FormatLabel } from "@/components/shared/format-icon"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { getReviewerContext } from "@/lib/auth/org-context"
+import { getApprovals, getClient, getComments, getPortalContentItem } from "@/lib/data"
 import type { Format, Locale } from "@/lib/i18n"
 import { pick } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
-import {
-  DEMO_REVIEWER_CLIENT_ID,
-  getApprovals,
-  getClient,
-  getComments,
-  getContentItem,
-} from "@/lib/mocks"
 import type { Approval, Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -34,18 +29,19 @@ export default async function PortalContentPage({
   params: Promise<{ contentId: string }>
 }) {
   const { contentId } = await params
-  const content = getContentItem(contentId)
+  const reviewerCtx = await getReviewerContext()
+  const content = await getPortalContentItem(reviewerCtx.clientIds, contentId)
 
   // Le reviewer ne voit que SON client (cl_brulerie en démo) — défense UI.
-  if (!content || content.clientId !== DEMO_REVIEWER_CLIENT_ID) notFound()
+  if (!content) notFound()
 
   const t = await getT()
   const f = await getFormat()
   const locale = await getLocale()
-  const client = getClient(content.clientId) as Client
+  const client = (await getClient(reviewerCtx.orgId, content.clientId)) as Client
   const tz = client.timezone
-  const comments = getComments(contentId)
-  const approvals = getApprovals(contentId)
+  const comments = await getComments(reviewerCtx.orgId, content.clientId, contentId)
+  const approvals = await getApprovals(reviewerCtx.orgId, content.clientId, contentId)
   const status = clientFacingStatus(content.status)
   const isToReview = content.status === "in_review" || content.status === "changes_requested"
   const title = pick(content.title, locale)

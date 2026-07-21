@@ -5,8 +5,8 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { nowIso } from "@/lib/clock"
 import { useFormat, useT } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { ConfirmDialog } from "./confirm-dialog"
 import { DeleteClientDialog } from "./delete-client-dialog"
@@ -22,7 +22,7 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
   const isArchived = archivedAt !== null
 
   function archive() {
-    setArchivedAt(MOCK_NOW.toISOString())
+    setArchivedAt(nowIso())
     setConfirmArchive(false)
     toast.success(t("clientSettings.danger.archivedToast"), {
       description: t("clientSettings.danger.archivedToastDescription"),

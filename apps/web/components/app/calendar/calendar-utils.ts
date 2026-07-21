@@ -1,18 +1,9 @@
-import {
-  addDays,
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns"
 import { DEFAULT_LOCALE, INTL_LOCALE, type Locale } from "@/lib/i18n/config"
 import type { ContentItem } from "@/lib/mocks/types"
 
-// Vue calendrier. Tout est raisonné en "clé jour" (YYYY-MM-DD) dans le fuseau
-// du client : on ne se fie JAMAIS aux getters locaux d'un Date pour décider
-// du jour d'affichage (sinon décalage selon le fuseau du navigateur).
+// Vue calendrier. Tout est raisonne en "cle jour" (YYYY-MM-DD) dans le fuseau
+// du client : on ne se fie jamais au fuseau runtime du navigateur/serveur pour
+// construire la grille.
 
 export type DayKey = string // "YYYY-MM-DD"
 
@@ -32,72 +23,109 @@ function keyFormatter(tz: string): Intl.DateTimeFormat {
   return f
 }
 
-/** Clé jour d'un instant ISO, exprimée dans le fuseau du client. */
+/** Cle jour d'un instant ISO, exprimee dans le fuseau du client. */
 export function dayKeyOf(iso: string, tz: string): DayKey {
   return keyFormatter(tz).format(new Date(iso))
 }
 
-/** Date "calendaire" stable : midi UTC évite tout glissement de jour (DST/offset). */
+/** Date calendaire stable : midi UTC evite tout glissement de jour. */
 function dateFromKey(key: DayKey): Date {
   return new Date(`${key}T12:00:00.000Z`)
 }
 
-function keyFromDate(d: Date): DayKey {
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0")
-  const day = String(d.getUTCDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
+function keyFromParts(year: number, month: number, day: number): DayKey {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
 }
 
-/** Numéro de jour du mois (1–31) à partir de la clé. */
+function keyFromUtcDate(d: Date): DayKey {
+  return keyFromParts(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+}
+
+function addDaysKey(key: DayKey, days: number): DayKey {
+  const d = dateFromKey(key)
+  d.setUTCDate(d.getUTCDate() + days)
+  return keyFromUtcDate(d)
+}
+
+function dayOfWeek(key: DayKey): number {
+  return dateFromKey(key).getUTCDay()
+}
+
+function startOfWeekKey(key: DayKey): DayKey {
+  const dow = dayOfWeek(key)
+  return addDaysKey(key, dow === 0 ? -6 : 1 - dow)
+}
+
+function endOfWeekKey(key: DayKey): DayKey {
+  return addDaysKey(startOfWeekKey(key), 6)
+}
+
+function daysBetweenInclusive(start: DayKey, end: DayKey): DayKey[] {
+  const days: DayKey[] = []
+  let cursor = start
+  while (cursor <= end) {
+    days.push(cursor)
+    cursor = addDaysKey(cursor, 1)
+  }
+  return days
+}
+
+function normalizeMonth(year: number, month: number): CalendarCursor {
+  const d = new Date(Date.UTC(year, month, 1, 12))
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() }
+}
+
+function firstDayKey(cursor: CalendarCursor): DayKey {
+  return keyFromParts(cursor.year, cursor.month, 1)
+}
+
+function lastDayKey(cursor: CalendarCursor): DayKey {
+  const last = new Date(Date.UTC(cursor.year, cursor.month + 1, 0, 12)).getUTCDate()
+  return keyFromParts(cursor.year, cursor.month, last)
+}
+
+/** Numero de jour du mois (1-31) a partir de la cle. */
 export function dayNumber(key: DayKey): number {
   return Number(key.slice(8, 10))
 }
 
-/** Le mois (0–11) porté par la clé. */
+/** Le mois (0-11) porte par la cle. */
 export function monthOf(key: DayKey): number {
   return Number(key.slice(5, 7)) - 1
 }
 
 export interface CalendarCursor {
-  /** Année du mois affiché. */
+  /** Annee du mois affiche. */
   year: number
-  /** Mois affiché (0–11). */
+  /** Mois affiche (0-11). */
   month: number
 }
 
-/** Curseur initial (mois de MOCK_NOW dans le fuseau du client). */
+/** Curseur initial (mois de now dans le fuseau du client). */
 export function cursorFromKey(key: DayKey): CalendarCursor {
   return { year: Number(key.slice(0, 4)), month: monthOf(key) }
 }
 
 export function shiftMonth(cursor: CalendarCursor, delta: number): CalendarCursor {
-  const next = addMonths(new Date(Date.UTC(cursor.year, cursor.month, 1)), delta)
-  return { year: next.getUTCFullYear(), month: next.getUTCMonth() }
+  return normalizeMonth(cursor.year, cursor.month + delta)
 }
 
-const WEEK_OPTS = { weekStartsOn: 1 } as const // lundi
-
-/** Grille mensuelle complète (lundi→dimanche), bordée des jours débordants. */
+/** Grille mensuelle complete (lundi->dimanche), bordee des jours debordants. */
 export function monthGridKeys(cursor: CalendarCursor): DayKey[] {
-  const firstOfMonth = new Date(Date.UTC(cursor.year, cursor.month, 1, 12))
-  const gridStart = startOfWeek(startOfMonth(firstOfMonth), WEEK_OPTS)
-  const gridEnd = endOfWeek(endOfMonth(firstOfMonth), WEEK_OPTS)
-  return eachDayOfInterval({ start: gridStart, end: gridEnd }).map(keyFromDate)
+  return daysBetweenInclusive(startOfWeekKey(firstDayKey(cursor)), endOfWeekKey(lastDayKey(cursor)))
 }
 
-/** Les 7 jours (lundi→dimanche) de la semaine contenant `anchorKey`. */
+/** Les 7 jours (lundi->dimanche) de la semaine contenant `anchorKey`. */
 export function weekGridKeys(anchorKey: DayKey): DayKey[] {
-  const anchor = dateFromKey(anchorKey)
-  const start = startOfWeek(anchor, WEEK_OPTS)
-  return eachDayOfInterval({ start, end: endOfWeek(anchor, WEEK_OPTS) }).map(keyFromDate)
+  const start = startOfWeekKey(anchorKey)
+  return daysBetweenInclusive(start, addDaysKey(start, 6))
 }
 
 export function shiftWeek(anchorKey: DayKey, deltaDays: number): DayKey {
-  return keyFromDate(addDays(dateFromKey(anchorKey), deltaDays))
+  return addDaysKey(anchorKey, deltaDays)
 }
 
-/** Libellé "lundi 9 juin" / "Monday, June 9" d'une clé jour. */
+/** Libelle "lundi 9 juin" / "Monday, June 9" d'une cle jour. */
 export function weekdayDayMonth(key: DayKey, tz: string, locale: Locale = DEFAULT_LOCALE): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     timeZone: tz,
@@ -107,7 +135,7 @@ export function weekdayDayMonth(key: DayKey, tz: string, locale: Locale = DEFAUL
   }).format(dateFromKey(key))
 }
 
-/** Libellé "juin 2026" / "June 2026" du mois affiché. */
+/** Libelle "juin 2026" / "June 2026" du mois affiche. */
 export function monthYearLabel(cursor: CalendarCursor, locale: Locale = DEFAULT_LOCALE): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     month: "long",
@@ -115,7 +143,7 @@ export function monthYearLabel(cursor: CalendarCursor, locale: Locale = DEFAULT_
   }).format(new Date(Date.UTC(cursor.year, cursor.month, 1, 12)))
 }
 
-/** Indexe les contenus datés par clé jour (fuseau du client). */
+/** Indexe les contenus dates par cle jour (fuseau du client). */
 export function groupByDay(items: ContentItem[], tz: string): Map<DayKey, ContentItem[]> {
   const map = new Map<DayKey, ContentItem[]>()
   for (const item of items) {

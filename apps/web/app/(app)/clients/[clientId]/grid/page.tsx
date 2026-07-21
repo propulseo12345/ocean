@@ -3,9 +3,7 @@ import { notFound } from "next/navigation"
 import { FeedGrid } from "@/components/app/grid/feed-grid"
 import type { GridTileData, PillarOption } from "@/components/app/grid/grid-types"
 import type { InstagramProfileData } from "@/components/app/grid/instagram-profile-header"
-import type { Format, Locale, Translator } from "@/lib/i18n"
-import { pick } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
@@ -17,8 +15,17 @@ import {
   getReviewer,
   getSocialAccounts,
   getTopPosts,
-} from "@/lib/mocks"
-import type { ContentItem, EngagementStats, ImportedPost, MediaAsset } from "@/lib/mocks/types"
+} from "@/lib/data"
+import type { Format, Locale, Translator } from "@/lib/i18n"
+import { pick } from "@/lib/i18n"
+import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import type {
+  ContentItem,
+  EngagementStats,
+  ImportedPost,
+  MediaAsset,
+  PostMetrics,
+} from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,8 +33,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.metaGrid") }
 }
 
-// Les échecs, publications en cours et annulations restent VISIBLES dans la
-// grille (audit §1, P0) — seuls les contenus du portail disparaissaient avant.
 const PLANNED_STATUSES: ContentItem["status"][] = [
   "scheduled",
   "approved",
@@ -40,14 +45,11 @@ const PLANNED_STATUSES: ContentItem["status"][] = [
 const PUBLISHED_STATUSES: ContentItem["status"][] = ["published", "partially_published"]
 const SHELF_STATUSES: ContentItem["status"][] = ["idea", "draft"]
 
-// Un contenu appartient au feed s'il vise Instagram et n'est pas une story.
-// (Les idées sans média gardent leur place sur l'étagère — vignette de repli.)
 function inFeed(c: ContentItem): boolean {
   if (c.format === "story") return false
   return c.targets.some((t) => t.platform === "instagram")
 }
 
-// Date affichée d'un publié = publication réelle de la cible IG, sinon scheduledAt.
 function publishedDate(c: ContentItem): string | null {
   const ig = c.targets.find((t) => t.platform === "instagram")
   return ig?.publishedAt ?? c.scheduledAt
@@ -65,8 +67,11 @@ function placeholderMedia(post: ImportedPost): MediaAsset {
   }
 }
 
-function metricsOf(refId: string): EngagementStats | undefined {
-  const m = getPostMetrics(refId)
+function metricsOf(
+  metrics: Map<string, PostMetrics | undefined>,
+  refId: string
+): EngagementStats | undefined {
+  const m = metrics.get(refId)
   return m ? { likes: m.likes, comments: m.comments, reach: m.reach, saves: m.saves } : undefined
 }
 
@@ -76,7 +81,8 @@ function toContentTile(
   dateIso: string | null,
   tz: string,
   topId: string | undefined,
-  locale: Locale
+  locale: Locale,
+  metrics: Map<string, PostMetrics | undefined>
 ): GridTileData {
   const ig = c.targets.find((t) => t.platform === "instagram")
   return {
@@ -100,7 +106,7 @@ function toContentTile(
     commentsCount: c.commentsCount,
     approvalStale: c.approvalStale,
     lastError: c.lastError ? pick(c.lastError, locale) : undefined,
-    metrics: metricsOf(c.id),
+    metrics: metricsOf(metrics, c.id),
     isTopPost: topId === c.id,
   }
 }
@@ -139,45 +145,48 @@ export default async function ClientGridPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client) notFound()
+
   const t = await getT()
   const f = await getFormat()
   const locale = await getLocale()
   const tz = client.timezone
-  const topId = getTopPosts(clientId, 1)[0]?.refId
+  const topId = (await getTopPosts(ctx.org.id, clientId, 1))[0]?.refId
 
-  const items = getContentItems(clientId).filter(inFeed)
+  const items = (await getContentItems(ctx.org.id, clientId)).filter(inFeed)
+  const metrics = new Map(
+    await Promise.all(
+      items.map(async (item) => [item.id, await getPostMetrics(ctx.org.id, item.id)] as const)
+    )
+  )
 
-  // Zone planifiée (datée) : déplaçables + échecs/en cours/annulés visibles.
   const scheduled = items
     .filter((c) => PLANNED_STATUSES.includes(c.status) && c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, locale))
+    .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, locale, metrics))
     .sort(byDateDesc)
 
-  // Publiés via l'app — verrouillés, après le séparateur « Aujourd'hui ».
   const publishedAll = items
     .filter((c) => PUBLISHED_STATUSES.includes(c.status))
-    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId, locale))
+    .map((c) => toContentTile(c, "published", publishedDate(c), tz, topId, locale, metrics))
     .sort(byDateDesc)
 
-  // Feed réel importé — verrouillé, en queue.
-  const importedPosts = getImportedPosts(clientId)
+  const importedPosts = await getImportedPosts(ctx.org.id, clientId)
   const importedAll = importedPosts.map((p) => toImportedTile(p, tz, topId, t, f)).sort(byDateDesc)
 
-  // Épinglés (simulation) : remontés en tête de grille, comme sur le vrai profil.
-  const pinned = [...publishedAll, ...importedAll].filter((t) => t.pinned).sort(byDateDesc)
-  const published = publishedAll.filter((t) => !t.pinned)
-  const imported = importedAll.filter((t) => !t.pinned)
+  const pinned = [...publishedAll, ...importedAll].filter((tile) => tile.pinned).sort(byDateDesc)
+  const published = publishedAll.filter((tile) => !tile.pinned)
+  const imported = importedAll.filter((tile) => !tile.pinned)
 
-  // Étagère — idées / brouillons sans date (y compris sans média).
   const shelf = items
     .filter((c) => SHELF_STATUSES.includes(c.status) && !c.scheduledAt)
-    .map((c) => toContentTile(c, "scheduled", null, tz, topId, locale))
+    .map((c) => toContentTile(c, "scheduled", null, tz, topId, locale, metrics))
 
-  const igAccount = getSocialAccounts(clientId).find((a) => a.platform === "instagram") ?? null
-  const quota = igAccount ? getQuotaUsage(igAccount.id) : null
-  const pillars: PillarOption[] = getPillars(clientId).map((p) => ({
+  const igAccount =
+    (await getSocialAccounts(ctx.org.id, clientId)).find((a) => a.platform === "instagram") ?? null
+  const quota = igAccount ? await getQuotaUsage(ctx.org.id, igAccount.id) : null
+  const pillars: PillarOption[] = (await getPillars(ctx.org.id, clientId)).map((p) => ({
     id: p.id,
     label: pick(p.name, locale),
     colorVar: p.colorVar,
@@ -215,8 +224,8 @@ export default async function ClientGridPage({
       igAccount={igAccount}
       quota={quota}
       pillars={pillars}
-      palette={getBrandKit(clientId)?.palette ?? []}
-      reviewerName={getReviewer(clientId)?.name ?? null}
+      palette={(await getBrandKit(ctx.org.id, clientId))?.palette ?? []}
+      reviewerName={(await getReviewer(ctx.org.id, clientId))?.name ?? null}
       clientId={clientId}
       tz={tz}
     />

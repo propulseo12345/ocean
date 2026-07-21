@@ -24,17 +24,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useT } from "@/lib/i18n"
-import { getClients } from "@/lib/mocks"
+import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell-provider"
 
 // Capture rapide : FAB mobile (au-dessus de la safe-area iOS) → sheet
 // « Noter une idée » (client cible + note) ou « Créer un contenu » (composer).
 
-export function QuickCapture() {
+export function QuickCapture({ clients }: { clients: Client[] }) {
   const t = useT()
   const { captureOpen, setCaptureOpen } = useShell()
-  const clients = getClients()
   const [clientId, setClientId] = useState(clients[0]?.id ?? "")
   const [note, setNote] = useState("")
 

@@ -1,8 +1,14 @@
 import type { Metadata } from "next"
 import { UnifiedAgenda } from "@/components/app/agenda/unified-agenda"
 import { PageHeader } from "@/components/shared/page-header"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import {
+  getCalendarAccounts,
+  getCalendarEvents,
+  getCurrentUser,
+  getUnifiedAgenda,
+} from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { CALENDAR_ACCOUNTS, CURRENT_USER, getCalendarEvents, getUnifiedAgenda } from "@/lib/mocks"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -11,10 +17,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AgendaPage() {
   const t = await getT()
-  const agenda = getUnifiedAgenda()
-  const accounts = CALENDAR_ACCOUNTS
-  const events = getCalendarEvents()
-  const tz = CURRENT_USER.timezone
+  const ctx = await getActiveOrg()
+  const agenda = await getUnifiedAgenda(ctx.org.id)
+  const accounts = await getCalendarAccounts(ctx.org.id)
+  const events = await getCalendarEvents(ctx.org.id)
+  const user = await getCurrentUser()
+  const tz = user.timezone
 
   return (
     <div className="space-y-6">

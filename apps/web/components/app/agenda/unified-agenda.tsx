@@ -16,8 +16,8 @@ import {
 import { WeekGrid } from "@/components/app/agenda/week-grid"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { now as clockNow } from "@/lib/clock"
 import { useFormat, useT } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { AgendaItem, CalendarAccount, CalendarEvent } from "@/lib/mocks/types"
 
 function buildCalendars(events: CalendarEvent[]): CalendarFilter[] {
@@ -49,7 +49,7 @@ export function UnifiedAgenda({
 }) {
   const t = useT()
   const f = useFormat()
-  const now = useMemo(() => new Date(MOCK_NOW), [])
+  const now = useMemo(() => clockNow(), [])
   const baseMonday = useMemo(() => startOfWeekMonday(now), [now])
   const calendars = useMemo(() => buildCalendars(events), [events])
 

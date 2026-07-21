@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import type { ContentRefMap } from "@/components/app/library/library-types"
 import { LibraryWorkspace } from "@/components/app/library/library-workspace"
+import { getActiveOrg } from "@/lib/auth/org-context"
+import { getClient, getContentItems, getLibraryAssets } from "@/lib/data"
 import { getT } from "@/lib/i18n/server"
-import { getClient, getContentItems, getLibraryAssets } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,16 +21,18 @@ export default async function ClientLibraryPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
-  const assets = getLibraryAssets(clientId)
+  const assets = await getLibraryAssets(ctx.org.id, clientId)
 
   // Références des contenus utilisant au moins un asset → liens vers le studio.
   // title reste L<string> : la médiathèque le résout à l'affichage via pick().
   const referenced = new Set(assets.flatMap((a) => a.usedInContentIds))
+  const contentItems = await getContentItems(ctx.org.id, clientId)
   const contentRefs: ContentRefMap = Object.fromEntries(
-    getContentItems(clientId)
+    contentItems
       .filter((c) => referenced.has(c.id))
       .map((c) => [
         c.id,

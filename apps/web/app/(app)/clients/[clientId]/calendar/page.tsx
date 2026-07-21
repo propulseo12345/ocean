@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { EditorialCalendar } from "@/components/app/calendar/editorial-calendar"
-import { getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getClient,
   getClientEvents,
@@ -12,7 +12,8 @@ import {
   getReviewer,
   getReviewRequest,
   getSocialAccounts,
-} from "@/lib/mocks"
+} from "@/lib/data"
+import { getT } from "@/lib/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()
@@ -25,25 +26,27 @@ export default async function ClientCalendarPage({
   params: Promise<{ clientId: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client) notFound()
 
-  // Tous les contenus actifs : les non datés alimentent l'étagère « À planifier ».
-  const items = getContentItems(clientId)
-  const accounts = getSocialAccounts(clientId)
+  const items = await getContentItems(ctx.org.id, clientId)
+  const accounts = await getSocialAccounts(ctx.org.id, clientId)
   const igAccount = accounts.find((a) => a.platform === "instagram")
+  const reviewer = await getReviewer(ctx.org.id, clientId)
+  const reviewRequest = await getReviewRequest(ctx.org.id, clientId)
 
   return (
     <EditorialCalendar
       client={client}
-      clients={getClients()}
+      clients={await getClients(ctx.org.id)}
       items={items}
       accounts={accounts}
-      pillars={getPillars(clientId)}
-      events={getClientEvents(clientId)}
-      reviewerName={getReviewer(clientId)?.name ?? null}
-      reviewSentAt={getReviewRequest(clientId)?.sentAt ?? null}
-      igQuota={igAccount ? getQuotaUsage(igAccount.id) : null}
+      pillars={await getPillars(ctx.org.id, clientId)}
+      events={await getClientEvents(ctx.org.id, clientId)}
+      reviewerName={reviewer?.name ?? null}
+      reviewSentAt={reviewRequest?.sentAt ?? null}
+      igQuota={igAccount ? await getQuotaUsage(ctx.org.id, igAccount.id) : null}
     />
   )
 }

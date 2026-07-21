@@ -6,7 +6,7 @@ import {
   ComposerScreen,
 } from "@/components/app/studio/composer/composer-screen"
 import { zonedToUtcIso } from "@/components/app/studio/composer/composer-utils"
-import { getT } from "@/lib/i18n/server"
+import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
@@ -16,7 +16,8 @@ import {
   getQuotaUsage,
   getRecurringSlots,
   getSocialAccounts,
-} from "@/lib/mocks"
+} from "@/lib/data"
+import { getT } from "@/lib/i18n/server"
 import type { QuotaUsage } from "@/lib/mocks/types"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,8 +25,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.metaContentNew") }
 }
 
-// Préremplissage depuis une case de calendrier (?date=AAAA-MM-JJ&time=HH:mm,
-// heure murale du client) ou la médiathèque (?media=asset_id).
 function buildPrefill(
   search: { date?: string; time?: string; media?: string },
   timeZone: string
@@ -37,8 +36,6 @@ function buildPrefill(
     const [year, month, day] = dateMatch.slice(1).map(Number)
     const hour = timeMatch ? Number(timeMatch[1]) : 9
     const minute = timeMatch ? Number(timeMatch[2]) : 0
-    // Date.UTC normalise les débordements (2026-13-45 → date valide décalée) :
-    // on borne explicitement pour ignorer un créneau silencieusement faux.
     const inBounds =
       month >= 1 &&
       month <= 12 &&
@@ -64,22 +61,23 @@ export default async function NewContentPage({
   searchParams: Promise<{ date?: string; time?: string; media?: string }>
 }) {
   const { clientId } = await params
-  const client = getClient(clientId)
+  const ctx = await getActiveOrg()
+  const client = await getClient(ctx.org.id, clientId)
   if (!client || client.archivedAt) notFound()
 
-  const accounts = getSocialAccounts(clientId)
+  const accounts = await getSocialAccounts(ctx.org.id, clientId)
   const quotas: Record<string, QuotaUsage | null> = Object.fromEntries(
-    accounts.map((a) => [a.id, getQuotaUsage(a.id)])
+    await Promise.all(accounts.map(async (a) => [a.id, await getQuotaUsage(ctx.org.id, a.id)]))
   )
 
   const data: ComposerData = {
     client,
     accounts,
-    pillars: getPillars(clientId),
-    hashtagGroups: getHashtagGroups(clientId),
-    libraryAssets: getLibraryAssets(clientId),
-    brandKit: getBrandKit(clientId) ?? null,
-    recurringSlots: getRecurringSlots(clientId),
+    pillars: await getPillars(ctx.org.id, clientId),
+    hashtagGroups: await getHashtagGroups(ctx.org.id, clientId),
+    libraryAssets: await getLibraryAssets(ctx.org.id, clientId),
+    brandKit: (await getBrandKit(ctx.org.id, clientId)) ?? null,
+    recurringSlots: await getRecurringSlots(ctx.org.id, clientId),
     quotas,
   }
 

@@ -1,4 +1,3 @@
-import { getSocialAccounts } from "@/lib/mocks"
 import type { SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -31,6 +30,6 @@ export function clientSwitchHref(pathname: string, clientId: string): string {
 }
 
 /** Comptes sociaux du client nécessitant une reconnexion (needs_reauth / expired). */
-export function clientAccountIssues(clientId: string): SocialAccount[] {
-  return getSocialAccounts(clientId).filter((a) => a.status !== "connected")
+export function clientAccountIssues(accounts: SocialAccount[], clientId: string): SocialAccount[] {
+  return accounts.filter((a) => a.clientId === clientId && a.status !== "connected")
 }

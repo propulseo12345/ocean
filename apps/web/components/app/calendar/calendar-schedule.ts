@@ -1,5 +1,5 @@
+import { nowIso } from "@/lib/clock"
 import type { MessageKey } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { zonedWallToUtcIso } from "@/lib/tz"
@@ -63,7 +63,7 @@ const CREATE_WINDOW_END_H = 21
 
 /** Heure par défaut d'un nouveau contenu (prochaine heure pleine, 9 h–21 h). */
 export function defaultCreationTime(tz: string): string {
-  const nowWall = wallTimeOf(MOCK_NOW.toISOString(), tz)
+  const nowWall = wallTimeOf(nowIso(), tz)
   const nextHour = Number(nowWall.slice(0, 2)) + 1
   const clamped = Math.min(Math.max(nextHour, CREATE_WINDOW_START_H), CREATE_WINDOW_END_H)
   return `${String(clamped).padStart(2, "0")}:00`

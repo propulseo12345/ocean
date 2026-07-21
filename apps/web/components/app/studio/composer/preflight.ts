@@ -1,7 +1,7 @@
 import { findBannedWords, getCaptionStats, getHashtagStats, IG_TRUNCATE_AT } from "@/lib/caption"
+import { now } from "@/lib/clock"
 import { formatDateTime } from "@/lib/format"
 import { type Labels, type Locale, makeLabels, type Translator } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, Platform, SocialAccount } from "@/lib/mocks/types"
 import { type SpecIssue, validateCarousel, validateMedia } from "@/lib/specs"
 import type { ComposerDraft } from "./composer-types"
@@ -240,7 +240,7 @@ function dateItem(
     }
   }
   const time = new Date(draft.scheduledAt).getTime()
-  if (time < MOCK_NOW.getTime() + MIN_LEAD_MS) {
+  if (time < now().getTime() + MIN_LEAD_MS) {
     return {
       id: "date",
       severity: "error",

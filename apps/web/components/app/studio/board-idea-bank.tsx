@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { nowIso } from "@/lib/clock"
 import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, ContentItem, ContentPillar } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -110,7 +110,7 @@ export function BoardIdeaBank({
         title,
         caption: "",
         pillarId: pillarId === NO_PILLAR ? undefined : pillarId,
-        createdAt: MOCK_NOW.toISOString(),
+        createdAt: nowIso(),
       },
       ...prev,
     ])

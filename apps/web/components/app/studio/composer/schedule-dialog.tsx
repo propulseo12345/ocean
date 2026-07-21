@@ -17,9 +17,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { now as clockNow } from "@/lib/clock"
 import { useFormat, useLocale, useT } from "@/lib/i18n"
-import { CURRENT_USER } from "@/lib/mocks/clients"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, RecurringSlot } from "@/lib/mocks/types"
 import {
   ASAP_DELAY_MS,
@@ -37,6 +36,7 @@ import {
 type LateChoice = "asap" | "repick"
 
 const pad = (n: number) => String(n).padStart(2, "0")
+const PREVIEW_OWNER_TIMEZONE = "Europe/Paris"
 
 export function ScheduleDialog({
   open,
@@ -60,6 +60,7 @@ export function ScheduleDialog({
   const f = useFormat()
   const { locale } = useLocale()
   const tz = client.timezone
+  const current = useMemo(() => clockNow(), [])
   const shortcuts = useMemo(() => scheduleShortcuts(client, slots), [client, slots])
 
   const [day, setDay] = useState<Date | undefined>(undefined)
@@ -82,7 +83,7 @@ export function ScheduleDialog({
     day && Number.isFinite(hour) && Number.isFinite(minute)
       ? zonedToUtcIso(day.getFullYear(), day.getMonth() + 1, day.getDate(), hour, minute, tz)
       : null
-  const isLate = iso !== null && new Date(iso).getTime() < MOCK_NOW.getTime() + MIN_LEAD_MS
+  const isLate = iso !== null && new Date(iso).getTime() < current.getTime() + MIN_LEAD_MS
   const blocked = blockingCount > 0
   const confirmDisabled = blocked || iso === null || (isLate && lateChoice === "repick")
 
@@ -94,7 +95,7 @@ export function ScheduleDialog({
 
   function confirm() {
     if (iso === null) return
-    const finalIso = isLate ? new Date(MOCK_NOW.getTime() + ASAP_DELAY_MS).toISOString() : iso
+    const finalIso = isLate ? new Date(current.getTime() + ASAP_DELAY_MS).toISOString() : iso
     onConfirm(finalIso)
     onOpenChange(false)
     toast.success(
@@ -116,7 +117,7 @@ export function ScheduleDialog({
     })
   }
 
-  const nowWc = wallClockIn(MOCK_NOW, tz)
+  const nowWc = wallClockIn(current, tz)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,11 +166,11 @@ export function ScheduleDialog({
                   {t("composer.schedule.tzClient")}
                 </span>
               </p>
-              {CURRENT_USER.timezone !== tz ? (
+              {PREVIEW_OWNER_TIMEZONE !== tz ? (
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {t("composer.schedule.inYourTz", {
-                    date: f.dateTime(iso, CURRENT_USER.timezone),
-                    tz: CURRENT_USER.timezone,
+                    date: f.dateTime(iso, PREVIEW_OWNER_TIMEZONE),
+                    tz: PREVIEW_OWNER_TIMEZONE,
                   })}
                 </p>
               ) : null}

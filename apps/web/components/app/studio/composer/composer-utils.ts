@@ -1,5 +1,5 @@
+import { now as clockNow } from "@/lib/clock"
 import type { MessageKey, MessageParams } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { Client, Platform, RecurringSlot, SocialAccount } from "@/lib/mocks/types"
 import { zonedWallToUtcIso } from "@/lib/tz"
 import type { ComposerDraft } from "./composer-types"
@@ -89,12 +89,13 @@ export interface ScheduleShortcut {
 
 /** Prochaine occurrence d'un créneau récurrent (heure murale du client). */
 function nextSlotIso(slot: RecurringSlot, timeZone: string): string {
-  const now = wallClockIn(MOCK_NOW, timeZone)
+  const current = clockNow()
+  const now = wallClockIn(current, timeZone)
   const [hour, minute] = slot.time.split(":").map(Number)
   let delta = (slot.weekday - now.isoWeekday + 7) % 7
   if (delta === 0) {
     const candidate = zonedToUtcIso(now.year, now.month, now.day, hour, minute, timeZone)
-    if (new Date(candidate).getTime() < MOCK_NOW.getTime() + MIN_LEAD_MS) delta = 7
+    if (new Date(candidate).getTime() < current.getTime() + MIN_LEAD_MS) delta = 7
   }
   const target = shiftDay(now, delta)
   return zonedToUtcIso(target.year, target.month, target.day, hour, minute, timeZone)
@@ -102,7 +103,7 @@ function nextSlotIso(slot: RecurringSlot, timeZone: string): string {
 
 export function scheduleShortcuts(client: Client, slots: RecurringSlot[]): ScheduleShortcut[] {
   const tz = client.timezone
-  const now = wallClockIn(MOCK_NOW, tz)
+  const now = wallClockIn(clockNow(), tz)
 
   const tomorrow = shiftDay(now, 1)
   const out: ScheduleShortcut[] = [

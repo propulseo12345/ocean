@@ -6,16 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
-import { getNotifications, getUnreadCount } from "@/lib/mocks"
+import type { AppNotification } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 
-export function NotificationsButton() {
+export function NotificationsButton({
+  items,
+  unread,
+}: {
+  items: AppNotification[]
+  unread: number
+}) {
   const t = useT()
   const f = useFormat()
   const { locale } = useLocale()
-  const items = getNotifications("owner").slice(0, 6)
-  const unread = getUnreadCount("owner")
+  const visibleItems = items.slice(0, 6)
   return (
     <Popover>
       <PopoverTrigger
@@ -46,7 +51,7 @@ export function NotificationsButton() {
         </div>
         <ScrollArea className="max-h-80">
           <ul className="divide-y">
-            {items.map((n) => (
+            {visibleItems.map((n) => (
               <li key={n.id}>
                 <Link
                   href={n.href}

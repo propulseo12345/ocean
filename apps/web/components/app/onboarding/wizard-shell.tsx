@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useT } from "@/lib/i18n"
-import { DEMO_REVIEWER_CLIENT_ID } from "@/lib/mocks"
 import { routes } from "@/lib/routes"
 import { StepAccounts } from "./step-accounts"
 import { StepBrand } from "./step-brand"
@@ -25,6 +24,7 @@ import {
 } from "./wizard-types"
 
 const STEP_IDS: WizardStepId[] = ["identity", "accounts", "brand", "strategy", "review"]
+const PREVIEW_CREATED_CLIENT_ID = "cl_brulerie"
 
 // Étapes 3 et 4 sont facultatives : on peut les passer (« Passer cette étape »).
 const SKIPPABLE: WizardStepId[] = ["brand", "strategy"]
@@ -100,7 +100,7 @@ export function WizardShell() {
         ? t("onboarding.shell.clientCreatedWithReviewer")
         : t("onboarding.shell.clientCreatedNoReviewer"),
     })
-    router.push(routes.clientGrid(DEMO_REVIEWER_CLIENT_ID))
+    router.push(routes.clientGrid(PREVIEW_CREATED_CLIENT_ID))
   }
 
   return (

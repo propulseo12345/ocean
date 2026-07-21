@@ -5,8 +5,8 @@ import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable"
 import { LockedGridTile } from "@/components/app/grid/locked-grid-tile"
 import { SortableGridTile, type TileSelection } from "@/components/app/grid/sortable-grid-tile"
 import { Skeleton } from "@/components/ui/skeleton"
+import { nowIso } from "@/lib/clock"
 import { useFormat, useT } from "@/lib/i18n"
-import { MOCK_NOW } from "@/lib/mocks/time"
 import type { GridRatio, GridTileData } from "./grid-types"
 import { GRID_DROP_ID, isSortableTile, RATIO_CLASS } from "./grid-types"
 import type { QuickViewCtx } from "./tile-quick-view"
@@ -21,7 +21,7 @@ function TodaySeparator({ tz }: { tz: string }) {
     <div className="col-span-3 flex items-center gap-2 py-0.5">
       <span className="h-px flex-1 bg-primary/40" />
       <span className="text-[11px] font-medium text-primary">
-        {t("grid.board.today", { date: f.dayMonth(MOCK_NOW.toISOString(), tz) })}
+        {t("grid.board.today", { date: f.dayMonth(nowIso(), tz) })}
       </span>
       <span className="h-px flex-1 bg-primary/40" />
     </div>
