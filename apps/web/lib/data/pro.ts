@@ -3,6 +3,7 @@ import "server-only"
 import { cache } from "react"
 
 import { loc } from "@/lib/i18n"
+import { PLATFORM_QUOTAS } from "@/lib/mocks/quotas"
 import type {
   ActivityEntry,
   ActivityKind,
@@ -13,12 +14,16 @@ import type {
   Comment as CommentType,
   ContentPillar,
   ContentVersion,
+  EngagementStats,
   HashtagGroup,
+  ImportedPost,
   LibraryAsset,
   LibraryAssetSource,
   MediaType,
   MemberRole,
   Platform,
+  PostMetrics,
+  QuotaUsage,
   RecurringSlot,
   Reviewer,
   ReviewRequest,
@@ -27,6 +32,15 @@ import type {
   SavedViewFilters,
 } from "@/lib/mocks/types"
 import { createClient } from "@/lib/supabase/server"
+
+// Quota « principal » affiché par plateforme (une jauge). IG = publications,
+// FB = Reels, TikTok = brouillons. Les autres compteurs (ig_container, fb_buc)
+// vivent en base mais ne sont pas la jauge de l'UI.
+const PRIMARY_QUOTA_KIND: Partial<Record<Platform, string>> = {
+  instagram: "ig_publish",
+  facebook: "fb_reels",
+  tiktok: "tt_draft",
+}
 
 const ORIGINALS_BUCKET = "media-originals"
 const THUMBS_BUCKET = "media-thumbs"
@@ -479,6 +493,174 @@ export const getReviewRequest = cache(
       message: data.message ? loc(data.message, data.message) : undefined,
       sentAt: data.sent_at,
       state,
+    }
+  }
+)
+
+// --- Feed importé & performance (migration 014) -----------------------------
+
+function emptyStatsFrom(
+  rows: { likes: number; comments_count: number; saves: number; reach: number | null }[]
+): EngagementStats {
+  return rows.reduce<EngagementStats>(
+    (acc, r) => ({
+      likes: acc.likes + r.likes,
+      comments: acc.comments + r.comments_count,
+      reach: acc.reach + (r.reach ?? 0),
+      saves: acc.saves + r.saves,
+    }),
+    { likes: 0, comments: 0, reach: 0, saves: 0 }
+  )
+}
+
+export const getImportedPosts = cache(
+  async (orgId: string, clientId: string): Promise<ImportedPost[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("imported_posts")
+      .select(
+        "id, client_id, permalink, media_product_type, thumb_path, thumb_url, is_pinned, published_at"
+      )
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .is("deleted_on_platform_at", null)
+      .order("published_at", { ascending: false })
+
+    const rows = data ?? []
+    if (rows.length === 0) return []
+
+    const { data: metrics } = await supabase
+      .from("post_metrics")
+      .select("imported_post_id, likes, comments_count, saves, reach")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .not("imported_post_id", "is", null)
+    const byPost = new Map<string, EngagementStats>()
+    for (const m of metrics ?? []) {
+      if (m.imported_post_id) byPost.set(m.imported_post_id, emptyStatsFrom([m]))
+    }
+
+    const publicThumb = (path: string | null, fallback: string | null) =>
+      path
+        ? supabase.storage.from(THUMBS_BUCKET).getPublicUrl(path).data.publicUrl
+        : (fallback ?? "")
+
+    return rows.map((row) => ({
+      id: row.id,
+      clientId: row.client_id,
+      thumbUrl: publicThumb(row.thumb_path, row.thumb_url),
+      permalink: row.permalink ?? "",
+      publishedAt: row.published_at,
+      mediaType: (row.media_product_type === "REELS" ? "video" : "image") as MediaType,
+      metrics: byPost.get(row.id),
+      pinned: row.is_pinned,
+    }))
+  }
+)
+
+export const getPostMetrics = cache(
+  async (orgId: string, refId: string): Promise<PostMetrics | undefined> => {
+    if (!orgId) return undefined
+    const supabase = await createClient()
+
+    // 1) post importé : référence directe.
+    const { data: imported } = await supabase
+      .from("post_metrics")
+      .select("likes, comments_count, saves, reach")
+      .eq("org_id", orgId)
+      .eq("imported_post_id", refId)
+      .maybeSingle()
+    if (imported) return { refId, ...emptyStatsFrom([imported]) }
+
+    // 2) contenu Ocean : agréger les métriques de ses cibles (par plateforme).
+    const { data: targets } = await supabase
+      .from("content_targets")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("content_item_id", refId)
+    const targetIds = (targets ?? []).map((t) => t.id)
+    if (targetIds.length === 0) return undefined
+
+    const { data: rows } = await supabase
+      .from("post_metrics")
+      .select("likes, comments_count, saves, reach")
+      .eq("org_id", orgId)
+      .in("content_target_id", targetIds)
+    if (!rows || rows.length === 0) return undefined
+    return { refId, ...emptyStatsFrom(rows) }
+  }
+)
+
+export const getTopPosts = cache(
+  async (orgId: string, clientId: string, limit = 3): Promise<PostMetrics[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("post_metrics")
+      .select("content_target_id, imported_post_id, likes, comments_count, saves, reach")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .order("engagement_total", { ascending: false })
+      .limit(limit * 2)
+
+    const rows = data ?? []
+    // Résoudre content_target_id -> content_item_id (refId côté app).
+    const targetIds = rows.map((r) => r.content_target_id).filter((id): id is string => id !== null)
+    const targetToItem = new Map<string, string>()
+    if (targetIds.length > 0) {
+      const { data: targets } = await supabase
+        .from("content_targets")
+        .select("id, content_item_id")
+        .in("id", targetIds)
+      for (const t of targets ?? []) targetToItem.set(t.id, t.content_item_id)
+    }
+
+    const seen = new Set<string>()
+    const out: PostMetrics[] = []
+    for (const row of rows) {
+      const refId =
+        row.imported_post_id ??
+        (row.content_target_id ? targetToItem.get(row.content_target_id) : undefined)
+      if (!refId || seen.has(refId)) continue
+      seen.add(refId)
+      out.push({ refId, ...emptyStatsFrom([row]) })
+      if (out.length >= limit) break
+    }
+    return out
+  }
+)
+
+export const getQuotaUsage = cache(
+  async (orgId: string, accountId: string): Promise<QuotaUsage | null> => {
+    if (!orgId) return null
+    const supabase = await createClient()
+    const { data: account } = await supabase
+      .from("social_accounts")
+      .select("platform")
+      .eq("org_id", orgId)
+      .eq("id", accountId)
+      .maybeSingle()
+    if (!account) return null
+
+    const platform = account.platform as Platform
+    const quota = PLATFORM_QUOTAS[platform]
+    const kind = PRIMARY_QUOTA_KIND[platform]
+    if (!quota || !kind) return null // newsletter / custom : pas de quota
+
+    const { data: usage } = await supabase
+      .from("social_account_quota_usage")
+      .select("used, quota_limit")
+      .eq("org_id", orgId)
+      .eq("social_account_id", accountId)
+      .eq("quota_kind", kind)
+      .maybeSingle()
+
+    // La limite fait foi côté code (packages/shared) ; used = cache DB.
+    return {
+      used: usage?.used ?? 0,
+      limit: usage?.quota_limit ?? quota.limit,
+      windowKey: quota.windowKey,
     }
   }
 )

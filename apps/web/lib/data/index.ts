@@ -11,6 +11,7 @@ export type { ClientSettings } from "./pro"
 // Phase 1 — configuration éditoriale câblée sur Supabase (migration 011).
 // Phase 2 — médiathèque (getLibraryAssets, migration 012).
 // Phase 3 — collaboration (migration 013).
+// Phase 4 — feed importé & performance (migration 014).
 export {
   getActivityEntries,
   getApprovals,
@@ -20,10 +21,14 @@ export {
   getComments,
   getContentVersions,
   getHashtagGroups,
+  getImportedPosts,
   getLibraryAssets,
   getPillars,
+  getPostMetrics,
+  getQuotaUsage,
   getRecurringSlots,
   getReviewer,
   getReviewRequest,
   getSavedViews,
+  getTopPosts,
 } from "./pro"

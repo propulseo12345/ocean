@@ -629,6 +629,10 @@ export type Database = {
           followers_count: number | null
           external_url: string | null
           metadata: Json
+          avatar_url: string | null
+          following_count: number | null
+          feed_synced_at: string | null
+          feed_sync_error: string | null
           created_at: string
           updated_at: string
         }
@@ -645,6 +649,10 @@ export type Database = {
           followers_count?: number | null
           external_url?: string | null
           metadata: Json
+          avatar_url?: string | null
+          following_count?: number | null
+          feed_synced_at?: string | null
+          feed_sync_error?: string | null
           created_at: string
           updated_at: string
         }
@@ -661,6 +669,10 @@ export type Database = {
           followers_count?: number | null
           external_url?: string | null
           metadata?: Json
+          avatar_url?: string | null
+          following_count?: number | null
+          feed_synced_at?: string | null
+          feed_sync_error?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1360,6 +1372,172 @@ export type Database = {
           accepted_user_id?: string | null
           revoked_at?: string | null
           invited_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      imported_posts: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          social_account_id: string
+          external_post_id: string
+          permalink: string | null
+          media_product_type: string
+          thumb_path: string | null
+          thumb_url: string | null
+          is_pinned: boolean
+          published_at: string
+          deleted_on_platform_at: string | null
+          imported_at: string
+          raw: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          social_account_id: string
+          external_post_id: string
+          permalink?: string | null
+          media_product_type?: string
+          thumb_path?: string | null
+          thumb_url?: string | null
+          is_pinned?: boolean
+          published_at: string
+          deleted_on_platform_at?: string | null
+          imported_at?: string
+          raw?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          social_account_id?: string
+          external_post_id?: string
+          permalink?: string | null
+          media_product_type?: string
+          thumb_path?: string | null
+          thumb_url?: string | null
+          is_pinned?: boolean
+          published_at?: string
+          deleted_on_platform_at?: string | null
+          imported_at?: string
+          raw?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      post_metrics: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          social_account_id: string
+          platform: string
+          content_target_id: string | null
+          imported_post_id: string | null
+          external_post_id: string | null
+          likes: number
+          comments_count: number
+          saves: number
+          reach: number | null
+          engagement_total: number
+          raw: Json
+          measured_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          social_account_id: string
+          platform: string
+          content_target_id?: string | null
+          imported_post_id?: string | null
+          external_post_id?: string | null
+          likes?: number
+          comments_count?: number
+          saves?: number
+          reach?: number | null
+          raw?: Json
+          measured_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          social_account_id?: string
+          platform?: string
+          content_target_id?: string | null
+          imported_post_id?: string | null
+          external_post_id?: string | null
+          likes?: number
+          comments_count?: number
+          saves?: number
+          reach?: number | null
+          raw?: Json
+          measured_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      social_account_quota_usage: {
+        Row: {
+          social_account_id: string
+          quota_kind: string
+          org_id: string
+          client_id: string
+          platform: string
+          used: number
+          quota_limit: number | null
+          window_seconds: number
+          window_resets_at: string | null
+          source: string
+          raw: Json
+          fetched_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          social_account_id: string
+          quota_kind: string
+          org_id: string
+          client_id: string
+          platform: string
+          used?: number
+          quota_limit?: number | null
+          window_seconds?: number
+          window_resets_at?: string | null
+          source?: string
+          raw?: Json
+          fetched_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          social_account_id?: string
+          quota_kind?: string
+          org_id?: string
+          client_id?: string
+          platform?: string
+          used?: number
+          quota_limit?: number | null
+          window_seconds?: number
+          window_resets_at?: string | null
+          source?: string
+          raw?: Json
+          fetched_at?: string
           created_at?: string
           updated_at?: string
         }
