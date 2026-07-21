@@ -142,3 +142,19 @@ grant select, insert, update, delete on public.platform_connections to service_r
 grant select, insert, update, delete on public.platform_connection_secrets to service_role;
 grant select, insert, update, delete on public.social_accounts to service_role;
 grant select, insert, update, delete on public.social_account_secrets to service_role;
+
+-- DENY-ALL sur les *_secrets (regle 11), au sens strict : zero grant a
+-- authenticated / anon, pas seulement zero policy.
+--
+-- Supabase applique des ALTER DEFAULT PRIVILEGES qui accordent TRUNCATE /
+-- REFERENCES / TRIGGER a authenticated sur TOUTE table creee dans public --
+-- y compris ces deux-la. La RLS deny-all bloque SELECT/INSERT/UPDATE/DELETE,
+-- mais TRUNCATE N'EST PAS soumis a la RLS : sans ce revoke, n'importe quel
+-- utilisateur authentifie (n'importe quel tenant) pourrait TRUNCATE la table
+-- et detruire les references de tokens OAuth de TOUS les clients. TRIGGER
+-- permettrait d'attacher un trigger aux ecritures service_role.
+--
+-- Invisible sur un Postgres nu (pas de default privileges) ; c'est la CI
+-- Supabase reelle (GUARD-05) qui l'a leve. Le revoke est le seul filet.
+revoke all on public.platform_connection_secrets from anon, authenticated;
+revoke all on public.social_account_secrets from anon, authenticated;
