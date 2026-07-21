@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { ContentItem, Reviewer } from "@/lib/mocks/types"
 
 // Dialog « Demander une validation » : lot de contenus prêts (brouillons et
@@ -40,7 +40,6 @@ export function BoardReviewDialog({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const [checkedIds, setCheckedIds] = useState<string[]>([])
   const [message, setMessage] = useState("")
 
@@ -124,7 +123,7 @@ export function BoardReviewDialog({
                       <span className="size-9 shrink-0 rounded-md bg-muted" />
                     )}
                     <span className="min-w-0 flex-1 truncate text-sm">
-                      {pick(item.title, locale)}
+                      {item.title}
                     </span>
                     <ContentStatusBadge status={item.status} />
                   </Label>

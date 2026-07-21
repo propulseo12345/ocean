@@ -17,7 +17,7 @@ import { ContentStatusBadge, TargetStatusBadge } from "@/components/shared/statu
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatDateTime } from "@/lib/format"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { manualKindOf } from "./calendar-insights"
@@ -32,9 +32,8 @@ const CAPTION_PREVIEW_LENGTH = 140
 export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
   const tr = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
-  const title = pick(item.title, locale)
-  const rawCaption = pick(item.caption, locale)
+  const title = item.title
+  const rawCaption = item.caption
   const caption =
     rawCaption.length > CAPTION_PREVIEW_LENGTH
       ? `${rawCaption.slice(0, CAPTION_PREVIEW_LENGTH).trimEnd()}…`
@@ -72,7 +71,7 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
               style={{ backgroundColor: pillar.colorVar }}
               aria-hidden
             />
-            {pick(pillar.name, locale)}
+            {pillar.name}
           </p>
         ) : null}
       </div>
@@ -93,7 +92,7 @@ export function ContentQuickView({ item, ctx }: { item: ContentItem; ctx: DayCon
 
       {item.lastError ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
-          {pick(item.lastError, locale)}
+          {item.lastError}
         </p>
       ) : null}
 

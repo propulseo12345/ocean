@@ -8,7 +8,7 @@ import { ContentCard } from "@/components/app/studio/content-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { useMultiSelect } from "@/hooks/use-multi-select"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import type {
   Client,
   ContentItem,
@@ -80,7 +80,7 @@ export function ContentBoard({
 
   function remindFor(item: ContentItem) {
     board.remind()
-    toast.success(t("studio.board.remindSent", { title: pick(item.title, locale) }), {
+    toast.success(t("studio.board.remindSent", { title: item.title }), {
       description: reviewer
         ? t("studio.board.remindDescReviewer", { name: reviewer.name })
         : t("studio.board.remindDescNoReviewer"),

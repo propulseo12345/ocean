@@ -4,7 +4,7 @@ import { CalendarRange, Send } from "lucide-react"
 import { GoogleIcon, MicrosoftIcon } from "@/components/app/agenda/provider-icons"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Switch } from "@/components/ui/switch"
-import { type L, pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { CalendarAccount, CalendarProvider } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -37,7 +37,6 @@ export function AgendaSidebar({
   onToggle: (key: string) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   return (
     <div className="space-y-6">
       <section className="space-y-3">
@@ -50,7 +49,7 @@ export function AgendaSidebar({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">
-                  {pick(acc.label, locale)}
+                  {acc.label}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">{acc.email}</span>
               </span>
@@ -65,7 +64,7 @@ export function AgendaSidebar({
         <ul className="space-y-1">
           {calendars.map((cal) => {
             const enabled = !disabled.has(cal.key)
-            const calName = pick(cal.name, locale)
+            const calName = cal.name
             return (
               <li key={cal.key}>
                 <div className="-mx-1 flex items-center gap-2.5 rounded-md px-1 py-1.5 hover:bg-muted/50">

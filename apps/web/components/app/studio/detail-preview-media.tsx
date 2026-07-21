@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -21,7 +21,6 @@ export function DetailPreviewMedia({
   onSlide: (next: number) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const media = content.media
   const index = Math.min(slide, Math.max(media.length - 1, 0))
   const current = media[index]
@@ -32,7 +31,7 @@ export function DetailPreviewMedia({
         <>
           <Image
             src={current.fullUrl}
-            alt={current.altText ? pick(current.altText, locale) : pick(content.title, locale)}
+            alt={current.altText ? current.altText : content.title}
             fill
             sizes="320px"
             className="object-cover"

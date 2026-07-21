@@ -10,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useLocale, useT } from "@/lib/i18n"
-import { pick } from "@/lib/i18n/localized"
+import { useT } from "@/lib/i18n"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import type { UsageRef } from "./library-types"
 import { assetFileName } from "./library-utils"
@@ -33,7 +32,6 @@ export function DeleteAssetDialog({
   onConfirm: (asset: LibraryAsset) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const extra = usages.length - MAX_LISTED
 
   return (
@@ -52,7 +50,7 @@ export function DeleteAssetDialog({
         <ul className="list-disc space-y-0.5 pl-5 text-sm">
           {usages.slice(0, MAX_LISTED).map((u) => (
             <li key={u.id} className="truncate">
-              {pick(u.title, locale)}
+              {u.title}
             </li>
           ))}
           {extra > 0 ? (

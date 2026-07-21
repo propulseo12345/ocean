@@ -4,7 +4,7 @@ import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { StatusDot } from "@/components/shared/status-dot"
 import { formatTime } from "@/lib/format"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { manualKindOf } from "./calendar-insights"
@@ -17,11 +17,10 @@ import { EntryShell } from "./entry-shell"
 
 export function DayEntry({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
   const t = useT()
-  const { locale } = useLocale()
   const time = item.scheduledAt ? formatTime(item.scheduledAt, ctx.tz) : ""
-  const title = pick(item.title, locale)
+  const title = item.title
   const tooltip = item.lastError
-    ? pick(item.lastError, locale)
+    ? item.lastError
     : t("calendar.dayEntry.tooltip", { time, title })
   const hasPillar = Boolean(item.pillarId && ctx.pillarById.get(item.pillarId))
 

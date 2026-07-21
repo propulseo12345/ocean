@@ -4,7 +4,7 @@ import Link from "next/link"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { PostRow } from "./perf-data"
 import { compactNumber, percent } from "./perf-utils"
@@ -12,7 +12,7 @@ import { compactNumber, percent } from "./perf-utils"
 function PostLine({ post, rank }: { post: PostRow; rank: number }) {
   const t = useT()
   const { locale } = useLocale()
-  const title = pick(post.title, locale)
+  const title = post.title
   return (
     <li className="flex items-center gap-3 rounded-lg border bg-card p-2.5">
       <span className="w-4 shrink-0 text-center font-heading text-sm font-semibold text-muted-foreground tabular-nums">

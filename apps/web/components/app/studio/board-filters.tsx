@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import type { BoardState } from "./board-state"
 import { labelColorVar, STATUS_ORDER } from "./board-types"
@@ -61,7 +61,6 @@ export function BoardFiltersPopover({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const f = board.filters
   const count = countActiveFilters(f)
 
@@ -136,7 +135,7 @@ export function BoardFiltersPopover({
                   className="size-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: p.colorVar }}
                 />
-                {pick(p.name, locale)}
+                {p.name}
               </FilterOption>
             ))}
           </FilterGroup>

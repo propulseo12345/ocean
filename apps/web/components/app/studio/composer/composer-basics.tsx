@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import type { ContentFormat, ContentPillar } from "@/lib/mocks/types"
 import type { ComposerDraft, DraftState } from "./composer-types"
 
@@ -39,7 +39,6 @@ export function ComposerBasics({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const [labelInput, setLabelInput] = useState("")
 
   function addLabel() {
@@ -125,7 +124,7 @@ export function ComposerBasics({
                     style={{ backgroundColor: p.colorVar }}
                     aria-hidden
                   />
-                  {pick(p.name, locale)}
+                  {p.name}
                 </SelectItem>
               ))}
             </SelectContent>

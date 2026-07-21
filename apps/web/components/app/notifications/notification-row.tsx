@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import type { MessageKey } from "@/lib/i18n"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { AppNotification, NotificationChannel } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -66,7 +66,6 @@ function ChannelBadge({ channel }: { channel: NotificationChannel }) {
 export function NotificationRow({ notification }: { notification: AppNotification }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const Icon = TYPE_ICON[notification.type] ?? Bell
   const tone = TYPE_TONE[notification.type] ?? "text-muted-foreground"
   return (
@@ -86,7 +85,7 @@ export function NotificationRow({ notification }: { notification: AppNotificatio
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start gap-2">
           <p className="min-w-0 flex-1 truncate text-sm font-medium group-hover:underline">
-            {pick(notification.title, locale)}
+            {notification.title}
           </p>
           {!notification.read ? (
             <span
@@ -98,7 +97,7 @@ export function NotificationRow({ notification }: { notification: AppNotificatio
         </div>
 
         <p className="line-clamp-2 text-xs text-muted-foreground">
-          {pick(notification.body, locale)}
+          {notification.body}
         </p>
 
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">

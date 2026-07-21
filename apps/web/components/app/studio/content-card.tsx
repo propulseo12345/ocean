@@ -16,7 +16,7 @@ import { PlatformIcons } from "@/components/shared/platform-badge"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -70,11 +70,10 @@ export function ContentCard({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const cover = content.media[0]
   const platforms = content.targets.map((tg) => tg.platform)
   const labels = content.labels ?? []
-  const title = pick(content.title, locale)
+  const title = content.title
   const late = isOverdue(content)
 
   return (
@@ -167,7 +166,7 @@ export function ContentCard({
         {labels.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1">
             {labels.map((label) => {
-              const text = pick(label, locale)
+              const text = label
               return (
                 <span
                   key={text}
@@ -219,7 +218,7 @@ export function ContentCard({
             </span>
             <CardLabelPopover
               title={title}
-              labels={labels.map((l) => pick(l, locale))}
+              labels={labels}
               allLabels={allLabels}
               onApply={onLabelsChange}
             />

@@ -1,4 +1,4 @@
-import { type Locale, pick } from "@/lib/i18n"
+import { type Locale } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentItem,
@@ -82,7 +82,7 @@ export function mediaFromLibrary(
     durationSec: asset.durationSec,
     fileSizeMb: asset.fileSizeMb,
     mimeType: asset.mimeType,
-    altText: asset.altText ? pick(asset.altText, locale) : "",
+    altText: asset.altText ? asset.altText : "",
     libraryAssetId: asset.id,
   }
 }
@@ -129,7 +129,7 @@ export function draftFromContent(content: ContentItem, locale: Locale): Composer
   const accountIds: string[] = []
   const manualPlatforms: Platform[] = []
   for (const target of content.targets) {
-    if (target.captionOverride) overrides[target.platform] = pick(target.captionOverride, locale)
+    if (target.captionOverride) overrides[target.platform] = target.captionOverride
     if (target.socialAccountId) accountIds.push(target.socialAccountId)
     else manualPlatforms.push(target.platform)
   }
@@ -137,17 +137,17 @@ export function draftFromContent(content: ContentItem, locale: Locale): Composer
   // Les hashtags du modèle vivent à part : on les réinjecte dans la légende
   // (le composer travaille en « hashtags inline », cf. lib/caption.ts).
   const tags = content.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
-  const captionText = pick(content.caption, locale)
+  const captionText = content.caption
   const caption = tags ? `${captionText}\n\n${tags}` : captionText
 
   return {
-    title: pick(content.title, locale),
+    title: content.title,
     format: content.format,
     state: content.status === "idea" ? "idea" : "draft",
     pillarId: content.pillarId ?? null,
     caption,
     captionOverrides: overrides,
-    firstComment: content.firstComment ? pick(content.firstComment, locale) : "",
+    firstComment: content.firstComment ? content.firstComment : "",
     media: [...content.media]
       .sort((a, b) => a.position - b.position)
       .map((m) => ({
@@ -160,13 +160,13 @@ export function draftFromContent(content: ContentItem, locale: Locale): Composer
         durationSec: m.durationSec,
         fileSizeMb: m.fileSizeMb,
         mimeType: m.mimeType,
-        altText: m.altText ? pick(m.altText, locale) : "",
+        altText: m.altText ? m.altText : "",
       })),
     accountIds,
     manualPlatforms,
-    newsletterSubject: content.newsletterSubject ? pick(content.newsletterSubject, locale) : "",
-    internalNotes: content.internalNotes ? pick(content.internalNotes, locale) : "",
-    labels: content.labels ? content.labels.map((l) => pick(l, locale)) : [],
+    newsletterSubject: content.newsletterSubject ? content.newsletterSubject : "",
+    internalNotes: content.internalNotes ? content.internalNotes : "",
+    labels: content.labels ? content.labels : [],
     scheduledAt: content.scheduledAt,
     igLocation: "",
     fbLink: "",

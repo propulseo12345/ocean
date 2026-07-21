@@ -1,4 +1,4 @@
-import { type L, loc } from "@/lib/i18n"
+import { loc } from "@/lib/i18n"
 import type { Client } from "./types"
 
 export interface Copy {

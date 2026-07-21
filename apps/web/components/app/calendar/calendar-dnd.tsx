@@ -14,7 +14,6 @@ import {
 import { createContext, type ReactNode, useContext, useState } from "react"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { formatTime } from "@/lib/format"
-import { pick, useLocale } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import type { DayKey } from "./calendar-utils"
 
@@ -91,7 +90,6 @@ export function CalendarDnd({
 }
 
 function DragGhost({ item, tz }: { item: ContentItem; tz: string }) {
-  const { locale } = useLocale()
   return (
     <div className="flex w-44 items-center gap-1.5 rounded-md border bg-card px-2 py-1.5 text-xs shadow-lg">
       <FormatIcon format={item.format} className="size-3 shrink-0 text-muted-foreground" />
@@ -100,7 +98,7 @@ function DragGhost({ item, tz }: { item: ContentItem; tz: string }) {
           {formatTime(item.scheduledAt, tz)}
         </span>
       ) : null}
-      <span className="min-w-0 flex-1 truncate font-medium">{pick(item.title, locale)}</span>
+      <span className="min-w-0 flex-1 truncate font-medium">{item.title}</span>
     </div>
   )
 }

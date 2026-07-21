@@ -3,7 +3,7 @@
 import { BellRing, Hand, Hourglass, Lock, MessageSquare, TriangleAlert } from "lucide-react"
 import type { CSSProperties } from "react"
 import { PlatformDot } from "@/components/shared/platform-badge"
-import { type Labels, type Locale, pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { type Labels, type Locale, useLabels, useT } from "@/lib/i18n"
 import type { ContentItem, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { manualKindOf } from "./calendar-insights"
@@ -23,7 +23,6 @@ export function EntryMarkers({
   className?: string
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const manual = manualKindOf(item)
   const waiting = ctx.waitingDays.get(item.id)
   const locked = !isMovable(item)
@@ -41,7 +40,7 @@ export function EntryMarkers({
         <TriangleAlert
           className="size-3 text-warning"
           aria-label={
-            item.lastError ? pick(item.lastError, locale) : t("calendar.markers.partiallyPublished")
+            item.lastError ? item.lastError : t("calendar.markers.partiallyPublished")
           }
         />
       ) : null}
@@ -137,7 +136,7 @@ export function entryAriaLabel(
   t: ReturnType<typeof useT>
 ): string {
   return t("calendar.markers.ariaLabel", {
-    title: pick(item.title, locale),
+    title: item.title,
     status: lbl.contentStatus(item.status),
   })
 }

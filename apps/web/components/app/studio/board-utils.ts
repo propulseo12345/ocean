@@ -1,5 +1,5 @@
 import { now } from "@/lib/clock"
-import { type Locale, pick } from "@/lib/i18n"
+import { type Locale } from "@/lib/i18n"
 import { days } from "@/lib/mocks/time"
 import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/mocks/types"
 import { type BoardFilters, type SortKey, STATUS_ORDER } from "./board-types"
@@ -23,9 +23,9 @@ export function matchesSearch(item: ContentItem, query: string, locale: Locale):
   if (query.trim().length === 0) return true
   const haystack = normalize(
     [
-      pick(item.title, locale),
-      pick(item.caption, locale),
-      ...(item.labels ?? []).map((l) => pick(l, locale)),
+      item.title,
+      item.caption,
+      ...(item.labels ?? []),
       ...item.hashtags,
     ].join(" ")
   )
@@ -42,7 +42,7 @@ export function matchesFilters(item: ContentItem, f: BoardFilters, locale: Local
     return false
   }
   if (f.pillarIds.length > 0 && !f.pillarIds.includes(item.pillarId ?? "")) return false
-  if (f.labels.length > 0 && !(item.labels ?? []).some((l) => f.labels.includes(pick(l, locale)))) {
+  if (f.labels.length > 0 && !(item.labels ?? []).some((l) => f.labels.includes(l))) {
     return false
   }
   return true
@@ -180,6 +180,6 @@ export const canCancel = (item: ContentItem) =>
 /** Étiquettes disponibles (résolues dans la locale) : posées chez ce client + canoniques. */
 export function collectLabels(items: ContentItem[], canonical: string[], locale: Locale): string[] {
   const set = new Set<string>(canonical)
-  for (const item of items) for (const label of item.labels ?? []) set.add(pick(label, locale))
+  for (const item of items) for (const label of item.labels ?? []) set.add(label)
   return [...set].sort((a, b) => a.localeCompare(b, locale))
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 import { nowIso } from "@/lib/clock"
-import { type L, loc, useLocale } from "@/lib/i18n"
+import { loc, useLocale } from "@/lib/i18n"
 import { hours } from "@/lib/mocks/time"
 import type {
   ContentItem,

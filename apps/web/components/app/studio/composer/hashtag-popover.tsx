@@ -10,7 +10,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { HashtagGroup } from "@/lib/mocks/types"
 
 // Popover « Groupes de hashtags » du client : insertion d'un groupe en un clic
@@ -27,7 +27,6 @@ export function HashtagPopover({
   destinationLabel: string
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [open, setOpen] = useState(false)
 
   if (groups.length === 0) return null
@@ -57,7 +56,7 @@ export function HashtagPopover({
                 className="w-full rounded-md border border-transparent p-2 text-left transition-colors hover:border-border hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex items-center justify-between gap-2 text-sm font-medium">
-                  {pick(group.name, locale)}
+                  {group.name}
                   <span className="text-xs font-normal text-muted-foreground tabular-nums">
                     {t("composer.hashtags.tagCount", { count: group.tags.length })}
                   </span>

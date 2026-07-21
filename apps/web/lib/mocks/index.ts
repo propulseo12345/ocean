@@ -1,6 +1,6 @@
 import { isPast, isSameDay } from "@/lib/format"
 import type { Locale } from "@/lib/i18n"
-import { type Labels, makeLabels, pick, type Translator } from "@/lib/i18n"
+import { type Labels, makeLabels, type Translator } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { CALENDAR_EVENTS } from "./agenda"
 import {
@@ -157,7 +157,7 @@ export function getDashboardTasks(t: Translator, locale: Locale): DashboardTask[
   const tasks: DashboardTask[] = []
   const labels = makeLabels(t)
   const name = (id: string) => getClient(id)?.name ?? ""
-  const title = (c: ContentItem) => pick(c.title, locale)
+  const title = (c: ContentItem) => c.title
 
   for (const c of CONTENT_ITEMS) {
     if (c.deletedAt) continue
@@ -177,7 +177,7 @@ export function getDashboardTasks(t: Translator, locale: Locale): DashboardTask[
   for (const c of CONTENT_ITEMS) {
     if (c.deletedAt) continue
     if (c.status === "failed" || c.status === "partially_published") {
-      const err = c.lastError ? pick(c.lastError, locale) : t("dashboard.task.publishFailed")
+      const err = c.lastError ? c.lastError : t("dashboard.task.publishFailed")
       tasks.push({
         id: `t_fail_${c.id}`,
         kind: "failed",

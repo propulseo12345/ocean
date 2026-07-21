@@ -8,7 +8,7 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { formatTime } from "@/lib/format"
-import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
+import { type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn } from "@/lib/marronniers"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -134,7 +134,7 @@ function WeekDayColumn({
 
       <div className={cn("flex flex-1 flex-col gap-1.5 p-2", isPast && !isToday && "opacity-80")}>
         {marronniers.map((m) => {
-          const label = pick(m.label, locale)
+          const label = m.label
           return (
             <span
               key={`${m.date}_${label}`}
@@ -148,7 +148,7 @@ function WeekDayColumn({
         {events.map((ev) => (
           <span
             key={ev.id}
-            title={pick(ev.title, locale)}
+            title={ev.title}
             className="flex items-center gap-1 truncate rounded-md border border-dashed px-1.5 py-0.5 text-[10px] text-muted-foreground"
           >
             {ev.kind === "note" ? (
@@ -156,7 +156,7 @@ function WeekDayColumn({
             ) : (
               <Flag className="size-2.5 shrink-0" aria-label={t("calendar.week.event")} />
             )}
-            <span className="truncate">{pick(ev.title, locale)}</span>
+            <span className="truncate">{ev.title}</span>
           </span>
         ))}
 
@@ -217,7 +217,7 @@ function WeekCard({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
             item.status === "canceled" && "line-through"
           )}
         >
-          {pick(item.title, locale)}
+          {item.title}
         </span>
         <span className="flex items-center justify-between gap-1">
           <ContentStatusBadge status={item.status} className="text-[10px]" />

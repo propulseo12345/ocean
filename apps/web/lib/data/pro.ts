@@ -2,7 +2,6 @@ import "server-only"
 
 import { cache } from "react"
 
-import { loc } from "@/lib/i18n"
 import { PLATFORM_QUOTAS } from "@/lib/mocks/quotas"
 import type {
   AccountStatus,
@@ -52,7 +51,7 @@ const SIGNED_URL_TTL = 3600 // 1 h
 
 // Câblage Supabase de la configuration éditoriale (Phase 1). Les lectures
 // filtrent explicitement org_id + client_id (défense en profondeur, règle 7) en
-// plus de la RLS. Le mapping enveloppe `text -> loc(x, x)` : les types front
+// plus de la RLS. Le mapping enveloppe `text -> x` : les types front
 // portent encore `string` jusqu'à l'aplatissement de la Phase 7 ; l'UI reste
 // monolingue (D1), le toggle EN ne traduit pas le contenu client.
 
@@ -81,7 +80,7 @@ export const getPillars = cache(
     return (data ?? []).map((row) => ({
       id: row.id,
       clientId: row.client_id,
-      name: loc(row.name, row.name),
+      name: row.name,
       colorVar: `var(--${row.color_token})`,
       targetShare: row.target_share,
     }))
@@ -103,9 +102,9 @@ export const getBrandKit = cache(
     return {
       clientId: data.client_id,
       palette: data.palette,
-      tone: loc(data.tone ?? "", data.tone ?? ""),
-      doList: data.do_list.map((item) => loc(item, item)),
-      dontList: data.dont_list.map((item) => loc(item, item)),
+      tone: data.tone ?? "",
+      doList: data.do_list,
+      dontList: data.dont_list,
       bannedWords: data.banned_words,
     }
   }
@@ -125,7 +124,7 @@ export const getHashtagGroups = cache(
     return (data ?? []).map((row) => ({
       id: row.id,
       clientId: row.client_id,
-      name: loc(row.name, row.name),
+      name: row.name,
       tags: row.tags,
     }))
   }
@@ -148,7 +147,7 @@ export const getClientEvents = cache(
       // event_date est un DATE (jour, fuseau client). Rendu à T12:00:00Z : sûr
       // pour tous les fuseaux clients, aucun glissement de jour (audit §2).
       date: `${row.event_date}T12:00:00.000Z`,
-      title: loc(row.title, row.title),
+      title: row.title,
       kind: row.kind as ClientEvent["kind"],
     }))
   }
@@ -202,7 +201,7 @@ export const getSavedViews = cache(
       return {
         id: row.id,
         clientId: row.client_id,
-        name: loc(row.name, row.name),
+        name: row.name,
         filters,
         isDefault: row.is_default,
       }
@@ -272,7 +271,7 @@ export const getLibraryAssets = cache(
         uploadedAt: row.created_at,
         source: row.source as LibraryAssetSource,
         usedInContentIds: usedBy.get(row.id) ?? [],
-        altText: row.alt_text ? loc(row.alt_text, row.alt_text) : undefined,
+        altText: row.alt_text ? row.alt_text : undefined,
         fileSizeMb:
           row.byte_size != null ? Math.round((row.byte_size / (1024 * 1024)) * 10) / 10 : undefined,
         mimeType: row.mime_type ?? undefined,
@@ -355,7 +354,7 @@ export const getComments = cache(
         contentId: row.content_item_id,
         authorName: row.author_name ?? "",
         role: row.author_role as MemberRole,
-        body: loc(row.body, row.body),
+        body: row.body,
         createdAt: row.created_at,
         annotation:
           anchor && row.annotation_x !== null && row.annotation_y !== null
@@ -388,7 +387,7 @@ export const getApprovals = cache(
       contentId: row.content_item_id,
       reviewerId: row.decided_by ?? "",
       decision: row.decision as ApprovalDecision,
-      message: row.message ? loc(row.message, row.message) : undefined,
+      message: row.message ? row.message : undefined,
       versionLabel: row.version_label ?? "",
       createdAt: row.created_at,
     }))
@@ -411,8 +410,8 @@ export const getContentVersions = cache(
       id: row.id,
       contentId: row.content_item_id,
       label: `v${row.version_number}`,
-      caption: loc(row.caption ?? "", row.caption ?? ""),
-      note: loc(row.note ?? "", row.note ?? ""),
+      caption: row.caption ?? "",
+      note: row.note ?? "",
       createdAt: row.created_at,
     }))
   }
@@ -437,7 +436,7 @@ export const getActivityEntries = cache(
       actorName: row.actor_name ?? "Ocean",
       kind: row.kind as ActivityKind,
       // La phrase est composée à l'affichage (kind + payload) ; detail = surcharge.
-      detail: loc(row.detail ?? "", row.detail ?? ""),
+      detail: row.detail ?? "",
     }))
   }
 )
@@ -494,7 +493,7 @@ export const getReviewRequest = cache(
       clientId: data.client_id,
       contentIds,
       reviewerIds: (recipients ?? []).map((r) => r.recipient_user_id),
-      message: data.message ? loc(data.message, data.message) : undefined,
+      message: data.message ? data.message : undefined,
       sentAt: data.sent_at,
       state,
     }
@@ -693,7 +692,7 @@ export const getCalendarAccounts = cache(async (orgId: string): Promise<Calendar
     return {
       id: row.id,
       provider: row.provider as CalendarProvider,
-      label: loc(label, label),
+      label: label,
       email: row.email,
       status: row.status as AccountStatus,
     }
@@ -750,13 +749,13 @@ export const getCalendarEvents = cache(async (orgId: string): Promise<CalendarEv
       {
         id: row.id,
         accountId: cal.accountId,
-        calendarName: loc(cal.name, cal.name),
+        calendarName: cal.name,
         colorVar: cal.colorVar,
-        title: loc(title, title),
+        title: title,
         startsAt,
         endsAt,
         allDay: row.all_day,
-        location: row.location ? loc(row.location, row.location) : undefined,
+        location: row.location ? row.location : undefined,
         enabled: cal.enabled,
       },
     ]

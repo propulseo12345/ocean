@@ -22,15 +22,7 @@ import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import {
-  INTL_LOCALE,
-  type Labels,
-  type Translator,
-  useFormat,
-  useLabels,
-  useLocale,
-  useT,
-} from "@/lib/i18n"
+import { INTL_LOCALE, type Labels, type Translator, useFormat, useLabels, useLocale, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { GridTileData } from "./grid-types"
 import { isSortableTile } from "./grid-types"

@@ -4,7 +4,7 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PlatformIcons } from "@/components/shared/platform-badge"
 import { isSameDay } from "@/lib/format"
-import { type Format, type Locale, pick } from "@/lib/i18n"
+import { type Format, type Locale } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import type { AgendaItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -64,9 +64,9 @@ function AgendaRow({
         </span>
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: e.colorVar }} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm">{pick(e.title, locale)}</span>
+          <span className="block truncate text-sm">{e.title}</span>
           <span className="block truncate text-xs text-muted-foreground">
-            {pick(e.calendarName, locale)}
+            {e.calendarName}
           </span>
         </span>
       </li>
@@ -84,7 +84,7 @@ function AgendaRow({
         </span>
         <ClientAvatar client={client} size={26} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{pick(content.title, locale)}</span>
+          <span className="block truncate text-sm font-medium">{content.title}</span>
           <span className="block truncate text-xs text-muted-foreground">{client.name}</span>
         </span>
         <PlatformIcons platforms={content.targets.map((target) => target.platform)} />

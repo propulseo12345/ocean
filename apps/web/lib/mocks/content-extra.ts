@@ -1,5 +1,4 @@
 import { loc } from "@/lib/i18n"
-import type { L } from "@/lib/i18n/localized"
 import { IMAGES } from "./images"
 import { getPillars } from "./pillars"
 import { dayAt } from "./time"

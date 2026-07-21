@@ -13,7 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
+import { type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
 import type { ClientEvent, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -81,7 +81,7 @@ export function DaySheet({
           {marronniers.length > 0 ? (
             <ul className="space-y-1">
               {marronniers.map((m) => {
-                const label = pick(m.label, locale)
+                const label = m.label
                 return (
                   <li
                     key={`${m.date}_${label}`}
@@ -145,7 +145,7 @@ export function DaySheet({
                         aria-label={t("calendar.daySheet.event")}
                       />
                     )}
-                    <span className="min-w-0 flex-1 truncate">{pick(ev.title, locale)}</span>
+                    <span className="min-w-0 flex-1 truncate">{ev.title}</span>
                   </li>
                 ))}
               </ul>

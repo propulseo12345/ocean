@@ -5,7 +5,7 @@ import Link from "next/link"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { StatusDot } from "@/components/shared/status-dot"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -24,7 +24,6 @@ export function KanbanCard({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const cover = item.media[0]
   return (
     <div
@@ -44,7 +43,7 @@ export function KanbanCard({
             draggable={false}
             className="line-clamp-2 text-xs leading-snug font-medium hover:underline"
           >
-            {pick(item.title, locale)}
+            {item.title}
           </Link>
           <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground tabular-nums">
             <StatusDot status={item.status} />
@@ -63,7 +62,7 @@ export function KanbanCard({
       {item.labels && item.labels.length > 0 ? (
         <p className="flex flex-wrap items-center gap-1">
           {item.labels.map((label) => {
-            const text = pick(label, locale)
+            const text = label
             return (
               <span
                 key={text}

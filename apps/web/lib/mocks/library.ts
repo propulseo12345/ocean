@@ -1,5 +1,4 @@
 import { loc } from "@/lib/i18n"
-import type { L } from "@/lib/i18n/localized"
 import { CLIENTS } from "./clients"
 import { CONTENT_ITEMS } from "./content"
 import { IMAGES } from "./images"

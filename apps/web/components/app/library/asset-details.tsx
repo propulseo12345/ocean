@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useFormat, useLocale, useT } from "@/lib/i18n"
-import { pick } from "@/lib/i18n/localized"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel } from "@/lib/specs"
 import type { UsageRef } from "./library-types"
@@ -40,9 +39,9 @@ export function AssetDetails({
   const t = useT()
   const f = useFormat()
   const { locale } = useLocale()
-  const initialAlt = asset.altText ? pick(asset.altText, locale) : ""
+  const initialAlt = asset.altText ? asset.altText : ""
   const [draft, setDraft] = useState(initialAlt)
-  useEffect(() => setDraft(asset.altText ? pick(asset.altText, locale) : ""), [asset, locale])
+  useEffect(() => setDraft(asset.altText ? asset.altText : ""), [asset, locale])
   const dirty = draft !== initialAlt
 
   const publishedUse = usages.some(
@@ -111,7 +110,7 @@ export function AssetDetails({
                   href={u.href}
                   className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-muted/50"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm">{pick(u.title, locale)}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{u.title}</span>
                   <ContentStatusBadge status={u.status} />
                   <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </Link>

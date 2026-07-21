@@ -1,6 +1,5 @@
 import "server-only"
 
-import { loc } from "@/lib/i18n"
 import type { MediaAsset, MediaType } from "@/lib/mocks/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -124,7 +123,7 @@ export async function loadContentMedia(
       height: row.height ?? 0,
       durationSec: row.duration_ms != null ? Math.round(row.duration_ms / 1000) : undefined,
       position: link.position,
-      altText: alt ? loc(alt, alt) : undefined,
+      altText: alt ? alt : undefined,
       fileSizeMb:
         row.byte_size != null ? Math.round((row.byte_size / (1024 * 1024)) * 10) / 10 : undefined,
       mimeType: row.mime_type ?? undefined,

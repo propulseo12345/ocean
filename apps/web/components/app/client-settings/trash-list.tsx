@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { Button } from "@/components/ui/button"
-import { pick, useFormat, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useLabels, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { ConfirmDialog } from "./confirm-dialog"
 import { TRASH_GRACE_DAYS } from "./constants"
@@ -16,14 +16,13 @@ export function TrashList({ items: initial }: { items: ContentItem[] }) {
   const t = useT()
   const f = useFormat()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const [items, setItems] = useState(initial)
   const [toPurge, setToPurge] = useState<ContentItem | null>(null)
 
   function restore(item: ContentItem) {
     setItems((prev) => prev.filter((c) => c.id !== item.id))
     toast.success(t("clientSettings.trash.restoredToast"), {
-      description: pick(item.title, locale),
+      description: item.title,
     })
   }
 
@@ -31,7 +30,7 @@ export function TrashList({ items: initial }: { items: ContentItem[] }) {
     if (!toPurge) return
     setItems((prev) => prev.filter((c) => c.id !== toPurge.id))
     toast.warning(t("clientSettings.trash.purgedToast"), {
-      description: pick(toPurge.title, locale),
+      description: toPurge.title,
     })
     setToPurge(null)
   }
@@ -53,7 +52,7 @@ export function TrashList({ items: initial }: { items: ContentItem[] }) {
       </p>
       <ul className="divide-y rounded-lg border">
         {items.map((item) => {
-          const title = pick(item.title, locale)
+          const title = item.title
           return (
             <li key={item.id} className="flex items-center gap-3 px-3 py-2.5">
               {item.media[0] ? (
@@ -108,7 +107,7 @@ export function TrashList({ items: initial }: { items: ContentItem[] }) {
         onOpenChange={(open) => !open && setToPurge(null)}
         title={t("clientSettings.trash.purgeDialogTitle")}
         description={t("clientSettings.trash.purgeDialogDescription", {
-          title: toPurge ? pick(toPurge.title, locale) : "",
+          title: toPurge ? toPurge.title : "",
         })}
         confirmLabel={t("clientSettings.trash.purgeConfirm")}
         onConfirm={purge}

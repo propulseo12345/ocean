@@ -1,6 +1,5 @@
 import { toast } from "sonner"
 import type { Locale, Translator } from "@/lib/i18n"
-import { pick } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { isMovable, movedIso, zonedToUtcIso } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek, weekdayDayMonth } from "./calendar-utils"
@@ -135,7 +134,7 @@ export function performSendToReview(count: number, t: Translator): void {
 }
 
 export function performRetry(item: ContentItem, t: Translator, locale: Locale): void {
-  toast.info(t("calendar.actions.retry", { title: pick(item.title, locale) }), {
+  toast.info(t("calendar.actions.retry", { title: item.title }), {
     description: t("calendar.actions.retryDesc"),
   })
 }
@@ -159,7 +158,7 @@ export function performDuplicate(
   t: Translator,
   locale: Locale
 ): void {
-  toast.success(t("calendar.actions.duplicated", { title: pick(item.title, locale) }), {
+  toast.success(t("calendar.actions.duplicated", { title: item.title }), {
     description: t("calendar.actions.duplicatedDesc", {
       date: weekdayDayMonth(dayKey, tz, locale),
       client: targetClientName ?? "none",

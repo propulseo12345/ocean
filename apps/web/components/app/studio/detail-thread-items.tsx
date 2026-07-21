@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { initials } from "@/lib/format"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Comment } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -26,7 +26,6 @@ export function CommentRow({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const isOwner = comment.role === "owner"
   return (
     <li className={cn("flex gap-2.5", isResolved && "opacity-60")}>
@@ -58,7 +57,7 @@ export function CommentRow({
             </Badge>
           ) : null}
         </div>
-        <p className="mt-0.5 text-sm text-foreground/90">{pick(comment.body, locale)}</p>
+        <p className="mt-0.5 text-sm text-foreground/90">{comment.body}</p>
         <div className="mt-0.5 flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground/70">
             {f.relative(comment.createdAt)}

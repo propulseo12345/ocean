@@ -4,8 +4,7 @@ import { FormatLabel } from "@/components/shared/format-icon"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { pick } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -24,7 +23,6 @@ export async function DetailHeader({
 }) {
   const t = await getT()
   const f = await getFormat()
-  const locale = await getLocale()
   return (
     <>
       <div className="flex items-center justify-between gap-2">
@@ -57,7 +55,7 @@ export async function DetailHeader({
           ) : null}
         </div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          {pick(content.title, locale)}
+          {content.title}
         </h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1 tabular-nums">
@@ -87,7 +85,7 @@ export async function DetailHeader({
       {content.lastError && content.status === "failed" ? (
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-          <p>{pick(content.lastError, locale)}</p>
+          <p>{content.lastError}</p>
         </div>
       ) : null}
     </>

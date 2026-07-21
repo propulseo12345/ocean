@@ -1,7 +1,7 @@
 import { Check, History, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { type Format, type Locale, pick, type Translator } from "@/lib/i18n"
+import { type Format, type Locale, type Translator } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import type { Approval, ContentVersion } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -88,16 +88,16 @@ function VersionRow({
         {approval ? <ApprovalChip approved={approval.decision === "approved"} t={t} /> : null}
       </div>
 
-      <p className="text-xs text-muted-foreground">{pick(version.note, locale)}</p>
+      <p className="text-xs text-muted-foreground">{version.note}</p>
 
       {previous ? (
         <CaptionDiff
-          before={pick(previous.caption, locale)}
-          after={pick(version.caption, locale)}
+          before={previous.caption}
+          after={version.caption}
         />
       ) : (
         <p className="rounded-md bg-muted/40 p-2 text-xs leading-relaxed whitespace-pre-wrap">
-          {pick(version.caption, locale)}
+          {version.caption}
         </p>
       )}
     </li>

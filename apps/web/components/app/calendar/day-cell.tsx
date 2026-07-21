@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { type MessageKey, pick, useLocale, useT } from "@/lib/i18n"
+import { type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
 import { contentStatusMeta, toneDotClass } from "@/lib/mocks/labels"
 import type { ContentItem } from "@/lib/mocks/types"
@@ -186,7 +186,7 @@ export function DayCell({
       {/* Desktop : contenu complet de la case. */}
       <div className="hidden min-w-0 flex-1 flex-col gap-1 sm:flex">
         {marronniers.map((m) => {
-          const label = pick(m.label, locale)
+          const label = m.label
           const kind = t(MARRONNIER_KIND_KEY[m.kind])
           return (
             <Link
@@ -207,7 +207,7 @@ export function DayCell({
             key={ev.id}
             type="button"
             onClick={() => ctx.onOpenDay(dayKey)}
-            title={pick(ev.title, locale)}
+            title={ev.title}
             className="flex items-center gap-1 truncate rounded-md border border-dashed bg-card px-1.5 py-0.5 text-left text-[10px] text-muted-foreground transition-colors hover:bg-muted"
           >
             {ev.kind === "note" ? (
@@ -215,7 +215,7 @@ export function DayCell({
             ) : (
               <Flag className="size-2.5 shrink-0" aria-label={t("calendar.dayCell.event")} />
             )}
-            <span className="truncate">{pick(ev.title, locale)}</span>
+            <span className="truncate">{ev.title}</span>
           </button>
         ))}
 

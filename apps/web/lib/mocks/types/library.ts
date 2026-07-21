@@ -1,6 +1,5 @@
 // Ocean — types médiathèque, hashtags et métriques de performance.
 
-import type { L } from "@/lib/i18n/localized"
 import type { EngagementStats, MediaType } from "./core"
 
 /** Provenance d'un asset de médiathèque. */

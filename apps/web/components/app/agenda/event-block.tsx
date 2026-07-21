@@ -2,7 +2,7 @@ import { MapPin } from "lucide-react"
 import Link from "next/link"
 import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PlatformIcons } from "@/components/shared/platform-badge"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useLocale, useT } from "@/lib/i18n"
 import type { AgendaItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -33,11 +33,11 @@ export function EventBlock({
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: e.colorVar }} />
         {e.allDay ? t("agenda.allDay") : f.time(e.startsAt, tz)}
       </span>
-      <span className="truncate text-xs font-medium text-foreground">{pick(e.title, locale)}</span>
+      <span className="truncate text-xs font-medium text-foreground">{e.title}</span>
       {!compact && e.location ? (
         <span className="mt-auto flex items-center gap-1 truncate text-[10px] text-muted-foreground">
           <MapPin className="size-2.5 shrink-0" />
-          {pick(e.location, locale)}
+          {e.location}
         </span>
       ) : null}
     </div>
@@ -73,7 +73,7 @@ export function PublicationBlock({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-medium text-foreground group-hover:underline">
-          {pick(content.title, locale)}
+          {content.title}
         </span>
         {compact ? (
           <span className="block truncate text-[10px] text-muted-foreground">{client.name}</span>

@@ -10,8 +10,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { nowIso } from "@/lib/clock"
 import { getCurrentUser, getDashboardTasks, getNotifications, getUnifiedAgenda } from "@/lib/data"
-import { pick } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type { DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -23,10 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function DashboardPage() {
   const t = await getT()
   const f = await getFormat()
-  const locale = await getLocale()
   const ctx = await getActiveOrg()
   const user = await getCurrentUser()
-  const tasks = await getDashboardTasks(ctx.org.id, t, locale)
+  const tasks = await getDashboardTasks(ctx.org.id, t)
   const count = (kind: DashboardTask["kind"]) => tasks.filter((task) => task.kind === kind).length
   const firstName = user.name.split(" ")[0]
   const today = f.date(nowIso(), user.timezone)
@@ -118,10 +116,10 @@ export default async function DashboardPage() {
                       <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm group-hover:underline">
-                          {pick(n.title, locale)}
+                          {n.title}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {pick(n.body, locale)}
+                          {n.body}
                         </span>
                         <span className="text-[11px] text-muted-foreground/70">
                           {f.relative(n.createdAt)}

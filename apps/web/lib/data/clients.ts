@@ -3,7 +3,6 @@ import "server-only"
 import { cache } from "react"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
-import { loc } from "@/lib/i18n"
 import type { AccountStatus, Client, Platform, SocialAccount, User } from "@/lib/mocks/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -56,11 +55,11 @@ export function mapClient(row: DbClientRow, following = 0): Client {
     timezone: row.timezone,
     archivedAt: row.archived_at,
     theme: themeFor(row.id),
-    bio: loc(row.bio ?? "", row.bio ?? ""),
-    category: loc(row.category ?? "", row.category ?? ""),
+    bio: row.bio ?? "",
+    category: row.category ?? "",
     following,
     approvalMode: row.approval_mode as Client["approvalMode"],
-    notes: row.notes ? loc(row.notes, row.notes) : undefined,
+    notes: row.notes ? row.notes : undefined,
   }
 }
 

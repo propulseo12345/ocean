@@ -2,11 +2,10 @@
 // Miroir simplifié du modèle PRD §6. Aucune dépendance backend.
 //
 // i18n : les champs de TEXTE NARRATIF (bios, catégories, légendes, titres, notes…)
-// sont bilingues `string`, résolus à l'affichage via pick(field, locale).
+// sont bilingues `string`, résolus à l'affichage via field.
 // Les NOMS PROPRES (name, handle, username, hashtags, email) restent en `string`
 // (une agence gère des marques au nom fixe — décision du 19/06/2026).
 
-import type { L } from "@/lib/i18n/localized"
 
 export type Platform = "instagram" | "facebook" | "tiktok" | "newsletter" | "custom"
 

@@ -1,5 +1,4 @@
 import type { MessageKey } from "@/lib/i18n"
-import type { L } from "@/lib/i18n/localized"
 import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 
 // Types partagés de la médiathèque client (preview, données mockées).
@@ -7,7 +6,7 @@ import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 /** Référence d'un contenu utilisant un asset — pour les liens vers le studio. */
 export interface UsageRef {
   id: string
-  /** Titre du contenu (bilingue) — résolu via pick() à l'affichage. */
+  /** Titre du contenu (monolingue, D1). */
   title: string
   status: ContentStatus
   href: string

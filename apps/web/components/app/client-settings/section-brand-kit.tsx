@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { updateBrandKit } from "@/lib/actions/brand-kit"
-import { type L, pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { BrandKit } from "@/lib/mocks/types"
 import { BannedWordsEditor } from "./banned-words-editor"
 import { arraysEqual, PaletteEditor } from "./palette-editor"
@@ -30,14 +30,13 @@ export function SectionBrandKit({
   brandKit: BrandKit | undefined
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [pending, startTransition] = useTransition()
   const resolveList = (list: string[] | undefined) =>
-    (list ?? []).map((item) => pick(item, locale))
+    (list ?? [])
 
   const base: ResolvedKit = {
     palette: brandKit?.palette ?? [],
-    tone: brandKit ? pick(brandKit.tone, locale) : "",
+    tone: brandKit ? brandKit.tone : "",
     doList: resolveList(brandKit?.doList),
     dontList: resolveList(brandKit?.dontList),
     bannedWords: brandKit?.bannedWords ?? [],

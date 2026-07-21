@@ -2,7 +2,6 @@ import "server-only"
 
 import { cache } from "react"
 
-import { loc } from "@/lib/i18n"
 import type { AppNotification, NotificationAudience, NotificationChannel } from "@/lib/mocks/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -30,8 +29,8 @@ export const getNotifications = cache(
     return (data ?? []).map((row) => ({
       id: row.id,
       type: row.type,
-      title: loc(row.title, row.title),
-      body: loc(row.body ?? "", row.body ?? ""),
+      title: row.title,
+      body: row.body ?? "",
       channels: row.channels as NotificationChannel[],
       audience: row.audience as NotificationAudience,
       read: row.read_at !== null,

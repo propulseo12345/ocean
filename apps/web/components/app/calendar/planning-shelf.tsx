@@ -8,7 +8,7 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Switch } from "@/components/ui/switch"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { DayContext } from "./calendar-types"
@@ -99,7 +99,7 @@ export function PlanningShelf({
                   <ShelfThumb item={item} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">
-                      {pick(item.title, locale)}
+                      {item.title}
                     </span>
                     <ContentStatusBadge status={item.status} className="mt-0.5 text-[10px]" />
                   </span>
@@ -137,7 +137,7 @@ export function PlanningShelf({
                       {weekdayDayMonth(dayKey, ctx.tz, locale)}
                     </span>
                     <span className="text-muted-foreground">
-                      {t("calendar.shelf.proposalArrow", { title: pick(item.title, locale) })}
+                      {t("calendar.shelf.proposalArrow", { title: item.title })}
                     </span>
                   </li>
                 ))}
@@ -178,7 +178,7 @@ function ShelfCard({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
       <span className="flex items-center gap-2.5">
         <ShelfThumb item={item} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{pick(item.title, locale)}</span>
+          <span className="block truncate text-sm font-medium">{item.title}</span>
           <span className="mt-0.5 flex items-center gap-1.5">
             <ContentStatusBadge status={item.status} className="text-[10px]" />
             <span className="text-xs text-muted-foreground">{t("calendar.shelf.noDate")}</span>

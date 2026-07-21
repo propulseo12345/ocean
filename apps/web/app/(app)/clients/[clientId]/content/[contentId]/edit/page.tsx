@@ -17,8 +17,7 @@ import {
   getRecurringSlots,
   getSocialAccounts,
 } from "@/lib/data"
-import { pick } from "@/lib/i18n"
-import { getLocale, getT } from "@/lib/i18n/server"
+import { getT } from "@/lib/i18n/server"
 import type { ContentStatus, QuotaUsage } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -42,7 +41,6 @@ export default async function EditContentPage({
 
   if (READ_ONLY.includes(content.status)) {
     const t = await getT()
-    const locale = await getLocale()
     return (
       <div className="space-y-5">
         <Button
@@ -58,7 +56,7 @@ export default async function EditContentPage({
           <Lock />
           <AlertTitle>{t("clients.readOnlyTitle")}</AlertTitle>
           <AlertDescription>
-            {t("clients.readOnlyDescription", { title: pick(content.title, locale) })}
+            {t("clients.readOnlyDescription", { title: content.title })}
           </AlertDescription>
         </Alert>
       </div>

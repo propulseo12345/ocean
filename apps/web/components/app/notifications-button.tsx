@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { AppNotification } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -19,7 +19,6 @@ export function NotificationsButton({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const visibleItems = items.slice(0, 6)
   return (
     <Popover>
@@ -68,10 +67,10 @@ export function NotificationsButton({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">
-                      {pick(n.title, locale)}
+                      {n.title}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {pick(n.body, locale)}
+                      {n.body}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-muted-foreground/80">
                       {f.relative(n.createdAt)}

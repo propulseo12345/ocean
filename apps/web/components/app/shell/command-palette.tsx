@@ -16,7 +16,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import type { Client, ContentItem, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { clientAccountIssues, clientSwitchHref } from "./client-nav"
@@ -52,7 +52,6 @@ export function CommandPalette({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const { paletteOpen, setPaletteOpen, setCaptureOpen, recentClientIds } = useShell()
@@ -151,12 +150,12 @@ export function CommandPalette({
             {contents.map((item) => (
               <CommandItem
                 key={item.id}
-                value={`${pick(item.title, locale)} ${clientNames.get(item.clientId) ?? ""} ${item.id}`}
-                keywords={[pick(item.caption, locale)]}
+                value={`${item.title} ${clientNames.get(item.clientId) ?? ""} ${item.id}`}
+                keywords={[item.caption]}
                 onSelect={() => run(() => router.push(routes.content(item.clientId, item.id)))}
               >
                 <StatusDot status={item.status} withTooltip={false} />
-                <span className="truncate">{pick(item.title, locale)}</span>
+                <span className="truncate">{item.title}</span>
                 <CommandShortcut className="shrink-0 tracking-normal">
                   {clientNames.get(item.clientId) ?? "—"} · {lbl.contentStatus(item.status)}
                 </CommandShortcut>

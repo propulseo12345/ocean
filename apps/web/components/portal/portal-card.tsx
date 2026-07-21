@@ -5,8 +5,7 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { pick } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
 import { contentStatusMeta } from "@/lib/mocks/labels"
 import type { ContentItem, ContentStatus } from "@/lib/mocks/types"
@@ -36,11 +35,10 @@ export async function PortalCard({
 }) {
   const t = await getT()
   const f = await getFormat()
-  const locale = await getLocale()
   const cover = content.media[0]
   const status = clientFacingStatus(content.status)
-  const title = pick(content.title, locale)
-  const caption = pick(content.caption, locale).trim()
+  const title = content.title
+  const caption = content.caption.trim()
 
   return (
     <Card

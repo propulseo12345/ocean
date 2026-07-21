@@ -1,13 +1,13 @@
 import Image from "next/image"
 import { FormatIcon } from "@/components/shared/format-icon"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import type { PillarSlice, PostRow } from "./perf-data"
 import { compactNumber, percent } from "./perf-utils"
 
 function TopCard({ post, rank }: { post: PostRow; rank: number }) {
   const t = useT()
   const { locale } = useLocale()
-  const title = pick(post.title, locale)
+  const title = post.title
   return (
     <figure className="overflow-hidden rounded-xl border bg-card">
       <div className="relative aspect-square bg-muted">
@@ -71,7 +71,7 @@ export function ReportContentMix({ pillars }: { pillars: PillarSlice[] }) {
             key={p.id}
             style={{ width: `${p.engagementShare}%`, backgroundColor: p.colorVar }}
             title={t("report.mix.pillarTitle", {
-              name: pick(p.name, locale),
+              name: p.name,
               share: percent(p.engagementShare, locale, 0),
             })}
           />
@@ -85,7 +85,7 @@ export function ReportContentMix({ pillars }: { pillars: PillarSlice[] }) {
               style={{ backgroundColor: p.colorVar }}
               aria-hidden
             />
-            <span className="truncate">{pick(p.name, locale)}</span>
+            <span className="truncate">{p.name}</span>
             <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
               {percent(p.engagementShare, locale, 0)}
             </span>

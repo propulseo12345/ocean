@@ -1,5 +1,5 @@
 import { nowIso } from "@/lib/clock"
-import { type L, loc } from "@/lib/i18n"
+import { loc } from "@/lib/i18n"
 
 // Marronniers FR 2026 : jours fériés, fêtes, soldes et temps forts marketing.
 // Overlay du calendrier éditorial + suggestions d'idées de contenu.

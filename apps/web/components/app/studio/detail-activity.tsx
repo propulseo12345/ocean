@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { type Format, type Labels, type Locale, pick, type Translator } from "@/lib/i18n"
+import { type Format, type Labels, type Locale, type Translator } from "@/lib/i18n"
 import { getFormat, getLabels, getLocale, getT } from "@/lib/i18n/server"
 import { activityKindMeta, type StatusTone } from "@/lib/mocks/labels"
 import type { ActivityEntry, ActivityKind } from "@/lib/mocks/types"
@@ -135,7 +135,7 @@ function ActivityRow({
             })}
           </span>
         </p>
-        <p className="mt-0.5 text-xs text-foreground/85">{pick(entry.detail, locale)}</p>
+        <p className="mt-0.5 text-xs text-foreground/85">{entry.detail}</p>
         <p
           className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums"
           title={f.dateTime(entry.at, timezone)}

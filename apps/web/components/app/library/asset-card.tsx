@@ -3,7 +3,6 @@
 import { Check, CircleAlert, Film, TriangleAlert } from "lucide-react"
 import Image from "next/image"
 import { useFormat, useLocale, useT } from "@/lib/i18n"
-import { pick } from "@/lib/i18n/localized"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel, type SpecIssue } from "@/lib/specs"
 import { cn } from "@/lib/utils"
@@ -38,7 +37,7 @@ export function AssetCard({
   const errored = hasSpecErrors(issues)
   const source = sourceMeta[asset.source]
   const label = asset.altText
-    ? pick(asset.altText, locale)
+    ? asset.altText
     : t("library.card.fallbackLabel", { id: asset.id })
 
   return (

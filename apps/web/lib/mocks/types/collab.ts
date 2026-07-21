@@ -1,7 +1,6 @@
 // Ocean — types de collaboration : validation client, commentaires,
 // notifications, versions et journal d'activité.
 
-import type { L } from "@/lib/i18n/localized"
 import type { MemberRole } from "./core"
 
 export interface Reviewer {

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { defaultCreationTime, wallTimeOf } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
@@ -34,7 +34,6 @@ export function RescheduleDialog({
   onConfirm: (item: ContentItem, dayKey: DayKey, time: string) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [dayKey, setDayKey] = useState<DayKey>(todayKey)
   const [time, setTime] = useState("11:00")
 
@@ -53,7 +52,7 @@ export function RescheduleDialog({
         <DialogHeader>
           <DialogTitle>{t("calendar.reschedule.title")}</DialogTitle>
           <DialogDescription className="truncate">
-            {item ? pick(item.title, locale) : null}
+            {item ? item.title : null}
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">

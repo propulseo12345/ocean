@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { formatTime } from "@/lib/format"
-import { type MessageKey, pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { type MessageKey, useLabels, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { type DayKey, dayNumber, monthOf } from "./calendar-utils"
@@ -79,7 +79,6 @@ export function ExportDialog({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const [clientFriendly, setClientFriendly] = useState(true)
 
   function itemsFor(key: DayKey): ContentItem[] {
@@ -147,7 +146,7 @@ export function ExportDialog({
                       <span className="text-muted-foreground tabular-nums">
                         {item.scheduledAt ? formatTime(item.scheduledAt, tz) : ""}
                       </span>{" "}
-                      <span className="font-medium">{pick(item.title, locale)}</span>
+                      <span className="font-medium">{item.title}</span>
                       {!clientFriendly ? (
                         <span className="text-muted-foreground">
                           {" "}

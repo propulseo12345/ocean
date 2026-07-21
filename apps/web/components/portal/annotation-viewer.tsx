@@ -5,7 +5,7 @@ import { useState } from "react"
 import { MediaCarousel } from "@/components/portal/media-carousel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { initials } from "@/lib/format"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Comment, MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
@@ -118,7 +118,6 @@ function CommentThread({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   if (comments.length === 0) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
@@ -168,7 +167,7 @@ function CommentThread({
                     {f.relative(c.createdAt)}
                   </span>
                 </div>
-                <p className="mt-0.5 text-sm text-foreground/90">{pick(c.body, locale)}</p>
+                <p className="mt-0.5 text-sm text-foreground/90">{c.body}</p>
               </div>
             </button>
           </li>

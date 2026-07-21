@@ -1,4 +1,4 @@
-import type { L, MessageKey } from "@/lib/i18n"
+import type { MessageKey } from "@/lib/i18n"
 import type { AgendaItem } from "@/lib/mocks/types"
 
 // Bornes horaires de la grille semaine (fuseau du freelance).

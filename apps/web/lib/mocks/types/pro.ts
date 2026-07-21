@@ -1,7 +1,6 @@
 // Ocean — types de pilotage pro : piliers éditoriaux, événements client,
 // créneaux récurrents, brand kit, vues enregistrées et quotas plateformes.
 
-import type { L } from "@/lib/i18n/localized"
 import type { ContentFormat, ContentStatus, Platform } from "./core"
 
 /** Pilier éditorial d'un client (« Coulisses », « Produit »…). */

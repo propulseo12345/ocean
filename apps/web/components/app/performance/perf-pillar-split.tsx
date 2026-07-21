@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useLocale, useT } from "@/lib/i18n"
 import type { PillarSlice } from "./perf-data"
 import { percent } from "./perf-utils"
 
@@ -51,7 +51,7 @@ export function PerfPillarSplit({ pillars }: { pillars: PillarSlice[] }) {
                     style={{ backgroundColor: p.colorVar }}
                     aria-hidden
                   />
-                  <span className="truncate">{pick(p.name, locale)}</span>
+                  <span className="truncate">{p.name}</span>
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                   {t("performance.pillar.postsAndShare", {

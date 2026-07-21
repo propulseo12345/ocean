@@ -1,7 +1,7 @@
 "use client"
 
 import { TriangleAlert } from "lucide-react"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { PillarMixRow } from "./calendar-insights"
 
@@ -10,7 +10,6 @@ import type { PillarMixRow } from "./calendar-insights"
 
 export function PillarMixPanel({ rows }: { rows: PillarMixRow[] }) {
   const t = useT()
-  const { locale } = useLocale()
   return (
     <div className="space-y-3">
       <div>
@@ -19,7 +18,7 @@ export function PillarMixPanel({ rows }: { rows: PillarMixRow[] }) {
       </div>
       <ul className="space-y-2.5">
         {rows.map(({ pillar, count, share, drift }) => {
-          const name = pick(pillar.name, locale)
+          const name = pillar.name
           return (
             <li key={pillar.id} className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs">

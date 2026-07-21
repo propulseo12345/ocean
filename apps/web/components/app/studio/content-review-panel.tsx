@@ -1,6 +1,6 @@
 import { Check, CircleHelp, Clock, type LucideIcon, TriangleAlert, X, Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { type Format, type Locale, pick, type Translator } from "@/lib/i18n"
+import { type Format, type Locale, type Translator } from "@/lib/i18n"
 import { getFormat, getLabels, getLocale, getT } from "@/lib/i18n/server"
 import type { Approval, ApprovalMode, ContentStatus, Reviewer } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -208,7 +208,7 @@ function ApprovalRow({
           )}
         </div>
         {approval.message ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{pick(approval.message, locale)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{approval.message}</p>
         ) : null}
         <p className="mt-0.5 text-[11px] text-muted-foreground/70">
           {f.relative(approval.createdAt)}

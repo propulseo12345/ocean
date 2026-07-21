@@ -2,7 +2,6 @@ import "server-only"
 
 import { cache } from "react"
 
-import { loc } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentItem,
@@ -106,7 +105,7 @@ async function loadTargets(
       permalink: row.permalink ?? undefined,
       publishedAt: row.published_at ?? undefined,
       captionOverride: row.caption_override
-        ? loc(row.caption_override, row.caption_override)
+        ? row.caption_override
         : undefined,
     })
     byItem.set(row.content_item_id, list)
@@ -173,16 +172,16 @@ async function hydrate(rows: ItemRow[]): Promise<ContentItem[]> {
     return {
       id: row.id,
       clientId: row.client_id,
-      title: loc(row.title ?? "", row.title ?? ""),
-      caption: loc(row.caption ?? "", row.caption ?? ""),
+      title: row.title ?? "",
+      caption: row.caption ?? "",
       hashtags: row.hashtags,
       format: row.format as ContentFormat,
       status: row.status as ContentStatus,
       scheduledAt: row.scheduled_at,
       newsletterSubject: row.newsletter_subject
-        ? loc(row.newsletter_subject, row.newsletter_subject)
+        ? row.newsletter_subject
         : undefined,
-      internalNotes: row.internal_notes ? loc(row.internal_notes, row.internal_notes) : undefined,
+      internalNotes: row.internal_notes ? row.internal_notes : undefined,
       media: media.byItem.get(row.id) ?? [],
       targets: targets.get(row.id) ?? [],
       createdAt: row.created_at,
@@ -191,14 +190,14 @@ async function hydrate(rows: ItemRow[]): Promise<ContentItem[]> {
       // reviewer (migration 013).
       commentsCount: row.client_comments_count,
       approvalStale: row.approval_stale,
-      lastError: error ? loc(error, error) : undefined,
-      firstComment: row.first_comment ? loc(row.first_comment, row.first_comment) : undefined,
+      lastError: error ? error : undefined,
+      firstComment: row.first_comment ? row.first_comment : undefined,
       pillarId: row.pillar_id ?? undefined,
       pinned: row.pinned,
       excludeFromGrid: row.exclude_from_grid,
       coverUrl: media.coverByItem.get(row.id),
       deletedAt: row.deleted_at ?? undefined,
-      labels: itemLabels?.length ? itemLabels.map((name) => loc(name, name)) : undefined,
+      labels: itemLabels?.length ? itemLabels : undefined,
     }
   })
 }

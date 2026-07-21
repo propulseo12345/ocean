@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import { contentStatusMeta, formatLabelKey, platformMeta } from "@/lib/mocks/labels"
 import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -74,7 +74,6 @@ export function CalendarFiltersBar({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const active = hasActiveFilters(filters)
 
   return (
@@ -142,7 +141,7 @@ export function CalendarFiltersBar({
                 style={{ backgroundColor: p.colorVar }}
                 aria-hidden
               />
-              {pick(p.name, locale)}
+              {p.name}
             </DropdownMenuCheckboxItem>
           ))}
         </FilterMenu>

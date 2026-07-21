@@ -15,7 +15,7 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IG_TRUNCATE_AT } from "@/lib/caption"
-import { pick, type Translator, useFormat, useLabels, useLocale, useT } from "@/lib/i18n"
+import { type Translator, useFormat, useLabels, useT } from "@/lib/i18n"
 import type { Client, ContentItem, Platform, SocialAccount } from "@/lib/mocks/types"
 import { DetailPreviewMedia } from "./detail-preview-media"
 
@@ -38,7 +38,6 @@ export function DetailNativePreview({
   const t = useT()
   const f = useFormat()
   const lbl = useLabels()
-  const { locale } = useLocale()
   const platforms = previewPlatforms(content)
   const [tab, setTab] = useState<PreviewPlatform | null>(null)
   const [slide, setSlide] = useState(0)
@@ -55,7 +54,7 @@ export function DetailNativePreview({
   const account = accounts.find((a) => a.platform === platform) ?? null
   const captionSource =
     content.targets.find((tg) => tg.platform === platform)?.captionOverride ?? content.caption
-  const caption = pick(captionSource, locale)
+  const caption = captionSource
   const hashtags = content.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
   const vertical = content.format === "reel" || content.format === "story"
   const dateLabel = content.scheduledAt
@@ -133,7 +132,7 @@ export function DetailNativePreview({
                   <span className="font-semibold text-foreground/80">
                     {account?.username ?? client.handle}
                   </span>{" "}
-                  {pick(content.firstComment, locale)}
+                  {content.firstComment}
                 </p>
               ) : null}
               <p className="text-[10px] text-muted-foreground uppercase">{dateLabel}</p>

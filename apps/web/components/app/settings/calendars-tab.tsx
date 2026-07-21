@@ -6,7 +6,7 @@ import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { CalendarAccount } from "@/lib/mocks/types"
 import { CalendarProviderIcon, useCalendarProviderLabel } from "./calendar-provider-icon"
 
@@ -48,7 +48,6 @@ export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {
 
 function CalendarRow({ account }: { account: CalendarAccount }) {
   const t = useT()
-  const { locale } = useLocale()
   const providerLabel = useCalendarProviderLabel()
   const needsAttention = account.status !== "connected"
 
@@ -66,7 +65,7 @@ function CalendarRow({ account }: { account: CalendarAccount }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{pick(account.label, locale)}</p>
+        <p className="truncate text-sm font-medium">{account.label}</p>
         <p className="truncate text-xs text-muted-foreground">{account.email}</p>
       </div>
 

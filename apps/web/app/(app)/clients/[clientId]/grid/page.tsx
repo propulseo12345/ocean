@@ -17,7 +17,6 @@ import {
   getTopPosts,
 } from "@/lib/data"
 import type { Format, Locale, Translator } from "@/lib/i18n"
-import { pick } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import type {
   ContentItem,
@@ -91,7 +90,7 @@ function toContentTile(
     media: c.media[0] ?? null,
     mediaCount: c.media.length,
     format: c.format,
-    title: pick(c.title, locale),
+    title: c.title,
     dateIso,
     tz,
     href: routes.content(c.clientId, c.id),
@@ -102,10 +101,10 @@ function toContentTile(
     pinned: c.pinned,
     excludedFromGrid: c.excludeFromGrid,
     coverUrl: c.coverUrl,
-    caption: pick(c.caption, locale),
+    caption: c.caption,
     commentsCount: c.commentsCount,
     approvalStale: c.approvalStale,
-    lastError: c.lastError ? pick(c.lastError, locale) : undefined,
+    lastError: c.lastError ? c.lastError : undefined,
     metrics: metricsOf(metrics, c.id),
     isTopPost: topId === c.id,
   }
@@ -188,7 +187,7 @@ export default async function ClientGridPage({
   const quota = igAccount ? await getQuotaUsage(ctx.org.id, igAccount.id) : null
   const pillars: PillarOption[] = (await getPillars(ctx.org.id, clientId)).map((p) => ({
     id: p.id,
-    label: pick(p.name, locale),
+    label: p.name,
     colorVar: p.colorVar,
   }))
 
@@ -202,8 +201,8 @@ export default async function ClientGridPage({
   const profile: InstagramProfileData = {
     name: client.name,
     handle: igAccount?.username ?? client.handle,
-    category: pick(client.category, locale),
-    bio: pick(client.bio, locale),
+    category: client.category,
+    bio: client.bio,
     avatarUrl: importedPosts[0]?.thumbUrl ?? publishedAll[0]?.media?.thumbUrl ?? "",
     postCount: publishedAll.length + importedAll.length,
     followers: igAccount?.followers ?? 0,

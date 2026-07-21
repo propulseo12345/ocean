@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { INTL_LOCALE, pick, useLocale, useT } from "@/lib/i18n"
+import { INTL_LOCALE, useLocale, useT } from "@/lib/i18n"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel } from "@/lib/specs"
 import { cn } from "@/lib/utils"
@@ -101,7 +101,7 @@ export function MediaPickerDialog({
                     <Image
                       src={asset.thumbUrl}
                       alt={
-                        asset.altText ? pick(asset.altText, locale) : t("composer.picker.assetAlt")
+                        asset.altText ? asset.altText : t("composer.picker.assetAlt")
                       }
                       fill
                       sizes="(max-width: 640px) 33vw, 160px"

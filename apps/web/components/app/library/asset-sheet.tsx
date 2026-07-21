@@ -13,8 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { useFormat, useLocale, useT } from "@/lib/i18n"
-import { pick } from "@/lib/i18n/localized"
+import { useFormat, useT } from "@/lib/i18n"
 import type { LibraryAsset } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import type { SpecIssue } from "@/lib/specs"
@@ -46,7 +45,6 @@ export function AssetSheet({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   return (
     <Sheet open={asset !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-md">
@@ -65,7 +63,7 @@ export function AssetSheet({
               <div className="relative aspect-square w-full overflow-hidden rounded-xl border bg-muted">
                 <Image
                   src={asset.fullUrl}
-                  alt={asset.altText ? pick(asset.altText, locale) : assetFileName(asset)}
+                  alt={asset.altText ? asset.altText : assetFileName(asset)}
                   fill
                   sizes="(max-width: 640px) 100vw, 420px"
                   className="object-contain"

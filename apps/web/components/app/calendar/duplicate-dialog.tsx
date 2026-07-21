@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
 
@@ -44,7 +44,6 @@ export function DuplicateDialog({
   onConfirm: (item: ContentItem, dayKey: DayKey, targetClientId: string) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [dayKey, setDayKey] = useState<DayKey>(todayKey)
   const [clientId, setClientId] = useState(currentClientId)
 
@@ -65,7 +64,7 @@ export function DuplicateDialog({
         <DialogHeader>
           <DialogTitle>{t("calendar.duplicate.title")}</DialogTitle>
           <DialogDescription className="truncate">
-            {item ? pick(item.title, locale) : null}
+            {item ? item.title : null}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

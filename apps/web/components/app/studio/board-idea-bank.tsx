@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { nowIso } from "@/lib/clock"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Client, ContentItem, ContentPillar } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
@@ -84,7 +84,6 @@ export function BoardIdeaBank({
   pillars: ContentPillar[]
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [captured, setCaptured] = useState<IdeaEntry[]>([])
   const [draft, setDraft] = useState("")
   const [pillarId, setPillarId] = useState<string>(NO_PILLAR)
@@ -93,8 +92,8 @@ export function BoardIdeaBank({
     ...captured,
     ...ideas.map((it) => ({
       id: it.id,
-      title: pick(it.title, locale),
-      caption: pick(it.caption, locale),
+      title: it.title,
+      caption: it.caption,
       pillarId: it.pillarId,
       createdAt: it.createdAt,
       contentId: it.id,
@@ -165,7 +164,7 @@ export function BoardIdeaBank({
               <SelectItem value={NO_PILLAR}>{t("studio.ideaBank.noPillar")}</SelectItem>
               {pillars.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
-                  {pick(p.name, locale)}
+                  {p.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -192,7 +191,7 @@ export function BoardIdeaBank({
                 className="size-2.5 rounded-full"
                 style={{ backgroundColor: pillar?.colorVar ?? "var(--muted-foreground)" }}
               />
-              {pillar ? pick(pillar.name, locale) : t("studio.ideaBank.noPillar")}
+              {pillar ? pillar.name : t("studio.ideaBank.noPillar")}
               <span className="text-xs font-normal text-muted-foreground tabular-nums">
                 {items.length}
               </span>

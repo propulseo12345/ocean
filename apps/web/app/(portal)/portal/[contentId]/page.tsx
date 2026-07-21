@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getApprovals, getClient, getComments, getPortalContentItem } from "@/lib/data"
 import type { Format, Locale } from "@/lib/i18n"
-import { pick } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
 import type { Approval, Client } from "@/lib/mocks/types"
@@ -44,7 +43,7 @@ export default async function PortalContentPage({
   const approvals = await getApprovals(reviewerCtx.orgId, content.clientId, contentId)
   const status = clientFacingStatus(content.status)
   const isToReview = content.status === "in_review" || content.status === "changes_requested"
-  const title = pick(content.title, locale)
+  const title = content.title
 
   return (
     <div className="space-y-6">
@@ -78,7 +77,7 @@ export default async function PortalContentPage({
             ) : null}
           </div>
 
-          <CaptionBlock caption={pick(content.caption, locale)} hashtags={content.hashtags} />
+          <CaptionBlock caption={content.caption} hashtags={content.hashtags} />
 
           {isToReview ? (
             <Card>
@@ -168,7 +167,7 @@ function ApprovalHistory({
                     </span>
                   </p>
                   {a.message ? (
-                    <p className="text-sm text-muted-foreground">{pick(a.message, locale)}</p>
+                    <p className="text-sm text-muted-foreground">{a.message}</p>
                   ) : null}
                   <p className="mt-0.5 text-xs text-muted-foreground/70">
                     {f.relative(a.createdAt)}

@@ -8,7 +8,7 @@ import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { type MessageKey, pick, type Translator, useFormat, useLocale, useT } from "@/lib/i18n"
+import { type MessageKey, type Translator, useFormat, useT } from "@/lib/i18n"
 import { hours } from "@/lib/mocks/time"
 import type { ContentTarget, Platform, SocialAccount } from "@/lib/mocks/types"
 
@@ -63,7 +63,6 @@ export function DetailManualCenter({
   timezone: string
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [steps, setSteps] = useState<Record<string, StepState>>({})
 
   const stateOf = (id: string): StepState =>
@@ -75,7 +74,7 @@ export function DetailManualCenter({
     const tags = hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
     // La légende de base arrive résolue ; la déclinaison par cible reste string.
     const captionText = item.target.captionOverride
-      ? pick(item.target.captionOverride, locale)
+      ? item.target.captionOverride
       : caption
     const text = [captionText, tags].filter(Boolean).join("\n\n")
     try {

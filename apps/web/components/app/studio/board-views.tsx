@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { SavedView } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { BoardState } from "./board-state"
@@ -44,7 +44,6 @@ function ViewChip({
 
 export function BoardViews({ board, clientId }: { board: BoardState; clientId: string }) {
   const t = useT()
-  const { locale } = useLocale()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const noFilters = filtersAreEmpty(board.filters)
@@ -70,7 +69,7 @@ export function BoardViews({ board, clientId }: { board: BoardState; clientId: s
       {board.views.map((view: SavedView) => (
         <ViewChip
           key={view.id}
-          label={pick(view.name, locale)}
+          label={view.name}
           active={board.activeViewId === view.id}
           onClick={() => board.applyView(view)}
         />

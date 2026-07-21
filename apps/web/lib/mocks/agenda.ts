@@ -1,4 +1,3 @@
-import type { L } from "@/lib/i18n"
 import { loc } from "@/lib/i18n"
 import { dayAt } from "./time"
 import type { CalendarEvent } from "./types"

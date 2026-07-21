@@ -27,8 +27,7 @@ import {
   getReviewer,
   getSocialAccounts,
 } from "@/lib/data"
-import { pick } from "@/lib/i18n"
-import { getLocale, getT } from "@/lib/i18n/server"
+import { getT } from "@/lib/i18n/server"
 import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
 import type { ContentItem, ContentStatus, ContentTarget } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -61,9 +60,8 @@ export default async function ContentDetailPage({
   if (!client || !content) notFound()
 
   const t = await getT()
-  const locale = await getLocale()
-  const title = pick(content.title, locale)
-  const caption = pick(content.caption, locale)
+  const title = content.title
+  const caption = content.caption
 
   const comments = await getComments(ctx.org.id, clientId, contentId)
   const approvals = await getApprovals(ctx.org.id, clientId, contentId)
@@ -112,7 +110,7 @@ export default async function ContentDetailPage({
           <div className="space-y-4">
             {content.newsletterSubject ? (
               <Field icon={Mail} label={t("clients.fieldNewsletterSubject")}>
-                <p className="text-sm font-medium">{pick(content.newsletterSubject, locale)}</p>
+                <p className="text-sm font-medium">{content.newsletterSubject}</p>
               </Field>
             ) : null}
 
@@ -133,7 +131,7 @@ export default async function ContentDetailPage({
             {content.firstComment ? (
               <Field icon={MessageSquareText} label={t("clients.fieldFirstComment")}>
                 <p className="text-sm text-muted-foreground">
-                  {pick(content.firstComment, locale)}
+                  {content.firstComment}
                 </p>
               </Field>
             ) : null}
@@ -182,7 +180,7 @@ export default async function ContentDetailPage({
                 client={client}
                 accounts={accounts}
                 quotas={quotas}
-                contentError={content.lastError ? pick(content.lastError, locale) : undefined}
+                contentError={content.lastError ? content.lastError : undefined}
                 editHref={routes.contentEdit(clientId, contentId)}
               />
             </CardContent>
@@ -200,7 +198,7 @@ export default async function ContentDetailPage({
 
           <DetailThread
             comments={comments}
-            internalNotes={content.internalNotes ? pick(content.internalNotes, locale) : undefined}
+            internalNotes={content.internalNotes ? content.internalNotes : undefined}
             reviewerName={reviewer?.name}
           />
 

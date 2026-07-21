@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState } from "react"
 import { MediaCarousel } from "@/components/portal/media-carousel"
 import { Button } from "@/components/ui/button"
-import { pick, useFormat, useLocale, useT } from "@/lib/i18n"
+import { useFormat, useT } from "@/lib/i18n"
 import type { Comment, ContentFormat, MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { DetailCoverDialog } from "./detail-cover-dialog"
@@ -31,7 +31,6 @@ export function ContentDetailMedia({
 }) {
   const t = useT()
   const f = useFormat()
-  const { locale } = useLocale()
   const [slideIndex, setSlideIndex] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [coverLabel, setCoverLabel] = useState(
@@ -87,7 +86,7 @@ export function ContentDetailMedia({
               {f.relative(active.createdAt)}
             </span>
           </div>
-          <p className="mt-1 text-sm text-foreground/90">{pick(active.body, locale)}</p>
+          <p className="mt-1 text-sm text-foreground/90">{active.body}</p>
         </div>
       ) : pinned.length > 0 ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">

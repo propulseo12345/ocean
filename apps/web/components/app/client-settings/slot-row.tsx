@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { pick, useLabels, useLocale, useT } from "@/lib/i18n"
+import { useLabels, useT } from "@/lib/i18n"
 import { API_PLATFORMS } from "@/lib/mocks/labels"
 import type { ContentPillar, Platform, RecurringSlot } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
@@ -33,7 +33,6 @@ export function SlotRow({
 }) {
   const t = useT()
   const lbl = useLabels()
-  const { locale } = useLocale()
 
   function togglePlatform(platform: Platform) {
     const next = slot.platforms.includes(platform)
@@ -108,7 +107,7 @@ export function SlotRow({
             <SelectItem value={NO_PILLAR}>{t("clientSettings.slots.noPillar")}</SelectItem>
             {pillars.map((p) => (
               <SelectItem key={p.id} value={p.id}>
-                {pick(p.name, locale)}
+                {p.name}
               </SelectItem>
             ))}
           </SelectContent>

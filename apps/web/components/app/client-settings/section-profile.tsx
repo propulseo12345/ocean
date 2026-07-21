@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { Client } from "@/lib/mocks/types"
 import { BrandColorPalette } from "./brand-color-palette"
 import { SaveBar, SectionCard } from "./section-card"
@@ -31,10 +31,9 @@ const TIMEZONES = [
 
 export function SectionProfile({ client }: { client: Client }) {
   const t = useT()
-  const { locale } = useLocale()
-  const initialCategory = pick(client.category, locale)
-  const initialBio = pick(client.bio, locale)
-  const initialNotes = client.notes ? pick(client.notes, locale) : ""
+  const initialCategory = client.category
+  const initialBio = client.bio
+  const initialNotes = client.notes ? client.notes : ""
 
   const [name, setName] = useState(client.name)
   const [handle, setHandle] = useState(client.handle)

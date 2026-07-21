@@ -3,7 +3,7 @@ import "server-only"
 import { cache } from "react"
 
 import { isSameDay } from "@/lib/format"
-import { type Labels, type Locale, makeLabels, pick, type Translator } from "@/lib/i18n"
+import { type Labels, makeLabels, type Translator } from "@/lib/i18n"
 import type { AgendaItem, Client, ContentItem, DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { getClients, getCurrentUser, getSocialAccounts } from "./clients"
@@ -25,7 +25,7 @@ function platformsLabel(item: ContentItem, labels: Labels): string {
  * finaliser, contenus en attente de validation, comptes à reconnecter.
  */
 export const getDashboardTasks = cache(
-  async (orgId: string, t: Translator, locale: Locale): Promise<DashboardTask[]> => {
+  async (orgId: string, t: Translator): Promise<DashboardTask[]> => {
     if (!orgId) return []
     const [items, accounts, clients] = await Promise.all([
       getContentItems(orgId),
@@ -36,7 +36,7 @@ export const getDashboardTasks = cache(
     const nameById = new Map(clients.map((client) => [client.id, client.name]))
     const name = (id: string) => nameById.get(id) ?? ""
     const labels = makeLabels(t)
-    const title = (item: ContentItem) => pick(item.title, locale)
+    const title = (item: ContentItem) => item.title
     const tasks: DashboardTask[] = []
 
     for (const item of items) {
@@ -56,7 +56,7 @@ export const getDashboardTasks = cache(
     for (const item of items) {
       if (item.status === "failed" || item.status === "partially_published") {
         const err = item.lastError
-          ? pick(item.lastError, locale)
+          ? item.lastError
           : t("dashboard.task.publishFailed")
         tasks.push({
           id: `t_fail_${item.id}`,

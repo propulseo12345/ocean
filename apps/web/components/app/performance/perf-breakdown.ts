@@ -1,4 +1,4 @@
-import type { L, MessageKey } from "@/lib/i18n"
+import type { MessageKey } from "@/lib/i18n"
 import { getContentItems, getPillars, getPostMetrics, getSocialAccounts } from "@/lib/mocks"
 import type { Platform, SocialAccount } from "@/lib/mocks/types"
 import { engagementOf, PERIOD_FACTOR, type PerfPeriod, round1, scaleStats } from "./perf-core"

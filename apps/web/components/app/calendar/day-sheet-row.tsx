@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { formatTime } from "@/lib/format"
-import { pick, useLocale, useT } from "@/lib/i18n"
+import { useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
@@ -26,10 +26,9 @@ import type { DayContext } from "./calendar-types"
 
 export function DaySheetRow({ item, ctx }: { item: ContentItem; ctx: DayContext }) {
   const t = useT()
-  const { locale } = useLocale()
   const waiting = ctx.waitingDays.get(item.id)
-  const title = pick(item.title, locale)
-  const lastError = item.lastError ? pick(item.lastError, locale) : null
+  const title = item.title
+  const lastError = item.lastError ? item.lastError : null
   return (
     <li
       className={cn(

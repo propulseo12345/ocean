@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { UseMultiSelectResult } from "@/hooks/use-multi-select"
-import { pick, type Translator, useLocale, useT } from "@/lib/i18n"
+import { type Translator, useT } from "@/lib/i18n"
 import type { Client, ContentItem } from "@/lib/mocks/types"
 import { LabelEditor } from "./board-label-popover"
 import { BoardScheduleDialog } from "./board-schedule-dialog"
@@ -41,7 +41,6 @@ export function BoardBatchActions({
   onOpenReview: () => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [labelOpen, setLabelOpen] = useState(false)
 
@@ -173,7 +172,7 @@ export function BoardBatchActions({
                   selection.selectedIds,
                   labels,
                   new Map(
-                    selected.map((it) => [it.id, (it.labels ?? []).map((l) => pick(l, locale))])
+                    selected.map((it) => [it.id, (it.labels ?? [])])
                   )
                 )
                 toast.success(t("studio.batch.tagsAdded"), {

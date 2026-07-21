@@ -1,6 +1,6 @@
 import { now } from "@/lib/clock"
 import { formatDayMonth } from "@/lib/format"
-import { createTranslator, type L } from "@/lib/i18n"
+import { createTranslator } from "@/lib/i18n"
 import { getContentItems, getImportedPosts, getPostMetrics } from "@/lib/mocks"
 import type {
   ContentFormat,
