@@ -226,8 +226,25 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
 - Résidus test online : TEST NUIT 8 (corbeille) + TEST PUB 9 (published) sur
   Client de demo, à purger SQL (ids dans SESSION.md).
 
-## À FAIRE — Phases 10→11 (plan de nuit §)
-Reprendre à la **Phase 10**. Méthode par phase, INVARIANTE (pour toute migration) :
+## FAIT (Phase 10, plan de nuit) ✅ — perf réelle & dettes — commit 42a75cd
+- **perf-data/perf-breakdown/report-data** : import `@/lib/mocks` SUPPRIMÉ,
+  async+orgId, lisent post_metrics RÉEL (batch). **PERIOD_FACTOR/scaleStats
+  SUPPRIMÉS** (filtrage par date réelle, « month » = mois-à-date). **DELTA_SHAPE
+  + deltas inventés SUPPRIMÉS** (delta=null → « — » ; synthèse rapport sans
+  « +X% » fabriqué). **FB×0.35 SUPPRIMÉ**.
+- **N+1 grille** : `getPostMetricsBatch(orgId, refIds[])` (1 requête/table)
+  remplace le getPostMetrics/tuile. **saved_views** : getSavedViews résout
+  label_ids→NOMS (filtre étiquettes des vues enfin opérant).
+- **Piège client/serveur** : perf-data importe `@/lib/data` (next/headers) → les
+  Client Components importent PERIOD_META depuis perf-core, pas perf-data. Le
+  BUILD (pas le typecheck) attrape la fuite server-only côté client.
+- VÉRIFIÉ RUNTIME (Maison Verde, page vide car pas de post_metrics seedés) :
+  perf/rapport/grille sans crash, KPI « — 0 », zéro delta % fabriqué. typecheck 0,
+  build vert. Dette : reach reste number (coerce null→0), propagation « non
+  disponible » à faire quand de vraies métriques existent.
+
+## À FAIRE — Phase 11 (DERNIÈRE, plan de nuit §)
+Reprendre à la **Phase 11**. Méthode par phase, INVARIANTE (pour toute migration) :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
    GUARD-05, `on delete set null` + snapshot noms, `set null (col)` PG15).

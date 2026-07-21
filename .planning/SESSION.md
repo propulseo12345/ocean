@@ -1,15 +1,16 @@
 # Session State — 2026-07-22 (câblage Supabase : Phases 1→8 faites)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `bf6d8dc`. Working tree propre.
+`feat/cablage-supabase` @ `42a75cd`. Working tree propre.
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
-## ⏭️ REPRISE — Phase 10 (plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
-Exécution autonome des 4 dernières phases (8→11). Vérif runtime = « créer puis
-supprimer ». **Phases 8 (2/2) + 9 FAITES et vérifiées** (commits `dcc5d0c`,
-`bf6d8dc`). Reprendre à la **Phase 10** : perf-data/perf-breakdown/report-data
-async+orgId, SUPPRIMER PERIOD_FACTOR/DELTA_SHAPE (deltas inventés), N+1 grille,
-saved_views labels par id.
+## ⏭️ REPRISE — Phase 11 (DERNIÈRE, plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
+Exécution autonome des 4 dernières phases (8→11). **Phases 8 (2/2) + 9 + 10
+FAITES et vérifiées** (commits `dcc5d0c`, `bf6d8dc`, `42a75cd`). Reprendre à la
+**Phase 11** : DÉGELER `lib/clock.ts` (vrai now()), relocaliser
+`lib/mocks/types`→`lib/domain`, SUPPRIMER `lib/mocks/**` (+ `loc`, `Client.theme`,
+`lib/mocks/images`, DemoBanner), suite pgTAP complète rejouée, vérif runtime
+post-dégel. `get_advisors` + régén types.ts = handoff Étienne (MCP autre compte).
 
 ## ⚠️ RÉSIDUS DE TEST EN LIGNE (Client de demo — à purger SQL par Étienne)
 Deux contenus de test créés au runtime, non supprimables via l'UI :
@@ -87,6 +88,7 @@ client « Client de demo ») :
 | **8 (1/2) — actions écriture** | **1a8db10** | — | **13/13** (091) |
 | **8 (2/2) — câblage UI écritures** | **dcc5d0c** | — | — (UI-only, actions déjà testées) |
 | **9 — câblage RPC + portail + fil** | **bf6d8dc** | — | — (UI-only, RPC déjà testées 013/016) |
+| **10 — perf réelle & dettes lecture** | **42a75cd** | — | — (lectures ; getPostMetricsBatch + getSavedViews) |
 
 **Suite pgTAP complète 003→016 + 090 + 091 : 231/231, plan == émis sur 16 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
@@ -217,10 +219,7 @@ Overview, Awaiting approval, Free day…), le contenu reste FR (Maison Verde,
 « Recette express en 30 secondes », « Jeton Instagram expire… »). D1 exact.
 
 ## Reste à faire — phases du plan de nuit (§ PLAN_NUIT), dans l'ordre
-- **Phase 10** (prochaine) — `perf-data`/`perf-breakdown`/`report-data` en async+orgId ;
-  **SUPPRIMER PERIOD_FACTOR/DELTA_SHAPE** (deltas inventés dans un rapport
-  client) ; N+1 grille (`getPostMetricsBatch`) ; saved_views labels par id.
-- **Phase 11** (dernière) — **dégel `lib/clock.ts`** (vrai now()) ; relocaliser
+- **Phase 11** (DERNIÈRE, prochaine) — **dégel `lib/clock.ts`** (vrai now()) ; relocaliser
   `lib/mocks/types` → `lib/domain` ; **supprimer `lib/mocks/**`** (+ `loc`,
   `Client.theme`, `lib/mocks/images`, DemoBanner) ; suite pgTAP complète
   rejouée ; `get_advisors` à faire faire par Étienne (MCP autre compte).
