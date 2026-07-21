@@ -1,9 +1,16 @@
 # Session State — 2026-07-21 (câblage Supabase : Phases 1→7 + lectures CŒUR)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `8f0c791`. Working tree propre sauf
-`apps/web/__tz_repro.mjs` (débug non commité, à supprimer en Phase 8).
+`feat/cablage-supabase` @ `1a8db10`. Working tree propre.
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
+
+## ⏭️ REPRISE EN SESSION FRAÎCHE — lis `.planning/PLAN_NUIT_cablage-phases-8-11.md`
+Étienne a validé l'exécution autonome des **4 dernières phases (8→11)** en
+session fraîche (contexte précédent saturé). Le plan complet et précis est dans
+`.planning/PLAN_NUIT_cablage-phases-8-11.md` : lis-le en entier. Vérif runtime
+choisie = « créer puis supprimer ». **Phase 8 est à moitié faite** : les Server
+Actions d'écriture existent (`lib/actions/content.ts`, commit `1a8db10`, pgTAP
+091 vert), il RESTE à les brancher à l'UI (composer/board/calendrier/corbeille).
 
 ## Fait (11 commits)
 | Phase | Commit | Migration | pgTAP |
@@ -17,8 +24,9 @@ Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 | **lectures CŒUR + seed** | **5bcdced** | — (tables 004→007) | **16/16** (090) |
 | **6 — transitions** | **1e1eab1** | **016** (matrice + 2 RPC) | **19/19** |
 | **7 — aplatissement i18n** | **300fc7a** (T1-3) + **8f0c791** (T4) | — | — |
+| **8 (1/2) — actions écriture** | **1a8db10** | — | **13/13** (091) |
 
-**Suite pgTAP complète 003→016 + 090 : 218/218, plan == émis sur les 15 fichiers.**
+**Suite pgTAP complète 003→016 + 090 + 091 : 231/231, plan == émis sur 16 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
 
 ## ÉTAT DE L'APPLICATION EN LIGNE (projet hgdeopkmkwyoumsfggrm)
