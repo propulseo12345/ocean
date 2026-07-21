@@ -196,8 +196,23 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
 - **VÉRIFIÉ RUNTIME** (serveur dev 3010, vrai Supabase) : toggle EN → UI en
   anglais, contenu resté FR. D1 exact. Build vert, typecheck 0.
 
-## À FAIRE — Phase 8 (dernière)
-Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
+## FAIT (Phase 8, plan de nuit) ✅ — câblage UI écritures — commits 1a8db10 + dcc5d0c
+> ⚠️ Numérotation du **plan de nuit** (`.planning/PLAN_NUIT_cablage-phases-8-11.md`) :
+> Phase 8 = écritures cœur, 9 = actions déjà écrites, 10 = perf, 11 = dégel+mocks.
+> (≠ l'ancienne liste « Ordre des phases » ci-dessous, antérieure au plan de nuit.)
+- **8 (1/2)** `1a8db10` : Server Actions d'écriture `lib/actions/content.ts`
+  (saveContentItem + split hashtags, scheduleContentItem, trash/restore) +
+  `content-status.ts` (applyStatusIntent). pgTAP 091 = 13/13.
+- **8 (2/2)** `dcc5d0c` : câblage des 4 surfaces UI, **vérifié runtime
+  create-verify-delete** (linda@socean.com, client « Client de demo ») :
+  composer→saveContentItem (round-trip hashtag OK), board kanban→applyStatusIntent
+  (draft→in_review persisté), calendrier→scheduleContentItem (undated→daté
+  persisté), corbeille→trash/restore. Optimiste + rollback partout. i18n fr+en
+  nettoyée des « (aperçu) » + clés d'erreur. Résidu de test « TEST NUIT 8 »
+  soft-deleted (client demo, id c092f256…) — pas de purge UI, à supprimer SQL.
+
+## À FAIRE — Phases 9→11 (plan de nuit §)
+Reprendre à la **Phase 9**. Méthode par phase, INVARIANTE (pour toute migration) :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
    GUARD-05, `on delete set null` + snapshot noms, `set null (col)` PG15).

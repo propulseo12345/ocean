@@ -1,16 +1,46 @@
-# Session State — 2026-07-21 (câblage Supabase : Phases 1→7 + lectures CŒUR)
+# Session State — 2026-07-22 (câblage Supabase : Phases 1→8 faites)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `1a8db10`. Working tree propre.
+`feat/cablage-supabase` @ `dcc5d0c`. Working tree propre.
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
-## ⏭️ REPRISE EN SESSION FRAÎCHE — lis `.planning/PLAN_NUIT_cablage-phases-8-11.md`
-Étienne a validé l'exécution autonome des **4 dernières phases (8→11)** en
-session fraîche (contexte précédent saturé). Le plan complet et précis est dans
-`.planning/PLAN_NUIT_cablage-phases-8-11.md` : lis-le en entier. Vérif runtime
-choisie = « créer puis supprimer ». **Phase 8 est à moitié faite** : les Server
-Actions d'écriture existent (`lib/actions/content.ts`, commit `1a8db10`, pgTAP
-091 vert), il RESTE à les brancher à l'UI (composer/board/calendrier/corbeille).
+## ⏭️ REPRISE — Phase 9 (plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
+Exécution autonome des 4 dernières phases (8→11). Vérif runtime = « créer puis
+supprimer ». **Phase 8 (2/2) FAITE et vérifiée runtime** (commit `dcc5d0c`).
+Reprendre à la **Phase 9** (§ du plan) : Phase 6 RPC dans detail-manual-center,
+portail submitReviewDecision/postComment, media attach/delete/alt.
+
+## 🌙 FAIT CETTE NUIT (2026-07-21→22)
+### Phase 8 (2/2) — câblage UI des écritures cœur — commit `dcc5d0c`
+Les 4 surfaces branchées aux Server Actions (écrites en 8 1/2), **vérifiées
+runtime create-verify-delete** sur le projet en ligne (session linda@socean.com,
+client « Client de demo ») :
+- **Composer → saveContentItem** : création OK, round-trip hashtag vérifié
+  (« Recette test #promo » → caption « Recette test », #promo réinjecté sans
+  doublon à l'édition). `saving` anti-double-envoi, médias sans libraryAssetId
+  écartés (toast).
+- **Board kanban → applyStatusIntent** : drag draft→in_review, **persisté**
+  (rechargement complet ⇒ « In review »). Optimiste + rollback sur échec.
+- **Calendrier → scheduleContentItem** : drag shelf→jour, undated→daté 11:00,
+  **persisté** (détail ⇒ « Sat, Jul 4 · 11:00 AM »). Optimiste + rollback.
+- **Corbeille → trashContent / restoreContent** : Discard→corbeille (disparaît
+  du studio), Restore→retour studio. Les deux persistés.
+- i18n fr+en : « (aperçu) » retiré des toasts désormais réels + clés d'erreur.
+- **⚠️ Résidu de test** : le contenu « TEST NUIT 8 » (client « Client de demo »,
+  id `c092f256-d215-4f7a-9a15-653d3371857d`) est **soft-deleted dans la corbeille**
+  (pas d'action hard-delete UI, pas d'accès SQL au projet online). À purger à la
+  main par Étienne si voulu (`delete from content_items where id='c092…'`).
+- **Piège payé (runtime)** : dnd-kit + Playwright `dragTo` mono-étape ne déclenche
+  pas le drop (le pointeur n'atteint pas le droppable). Solution : PointerEvents
+  manuels multi-étapes async (pointerdown sur le card → N pointermove sur document
+  avec délais → pointerup au centre exact de la section droppable). Le card est un
+  `<div role=button aria-roledescription=draggable>`, les colonnes des `<section
+  aria-label="… column">`. Les rects droppables sont mesurés au pickup → viser le
+  centre exact, pas une bordure.
+- **Piège payé (browser MCP)** : profil chrome MCP verrouillé par une instance
+  orpheline (« Browser is already in use ») → tuer UNIQUEMENT les chrome du profil
+  `mcp-chrome-<hash>` (via CommandLine LIKE `*mcp-chrome-*`), jamais le navigateur
+  normal ni d'autres projets.
 
 ## Fait (11 commits)
 | Phase | Commit | Migration | pgTAP |
@@ -25,9 +55,12 @@ Actions d'écriture existent (`lib/actions/content.ts`, commit `1a8db10`, pgTAP
 | **6 — transitions** | **1e1eab1** | **016** (matrice + 2 RPC) | **19/19** |
 | **7 — aplatissement i18n** | **300fc7a** (T1-3) + **8f0c791** (T4) | — | — |
 | **8 (1/2) — actions écriture** | **1a8db10** | — | **13/13** (091) |
+| **8 (2/2) — câblage UI écritures** | **dcc5d0c** | — | — (UI-only, actions déjà testées) |
 
 **Suite pgTAP complète 003→016 + 090 + 091 : 231/231, plan == émis sur 16 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
+Phase 8 (2/2) ne touche ni migration ni action DB (câblage UI pur) → pgTAP
+inchangé ; la suite complète sera rejouée au gate final Phase 11.
 
 ## ÉTAT DE L'APPLICATION EN LIGNE (projet hgdeopkmkwyoumsfggrm)
 
@@ -152,20 +185,20 @@ formateur global (`--formatter-enabled=false` bloque aussi le retrait d'imports)
 Overview, Awaiting approval, Free day…), le contenu reste FR (Maison Verde,
 « Recette express en 30 secondes », « Jeton Instagram expire… »). D1 exact.
 
-## Reste à faire, dans cet ordre suggéré
-1. **Phase 8** (dernière) — **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
-   5 composants qui importent fromNow/hours/days ; côté runtime c'est ce gel qui
-   fait « 0 à publier aujourd'hui » sur le dashboard seedé). Relocaliser
-   `lib/mocks/types` → `lib/domain` (les types domaine ne doivent plus vivre
-   sous `mocks`). **Supprimer `lib/mocks/**`** : au passage `loc` disparaît (son
-   seul appelant restant après la Phase 7) — le retirer de `lib/i18n`. Reste
-   aussi à passer `perf-data`/`perf-breakdown`/`report-data` en async+orgId (ils
-   importent `@/lib/mocks` en synchrone) et retirer `Client.theme` +
-   `lib/mocks/images` (dérivé par hash aujourd'hui). `get_advisors` clean (à
-   faire faire par Étienne, MCP sur autre compte), vérif visuelle post-dégel.
-
-   NB câblage restant hors Phase 8 (déjà noté en dettes) : les 2 RPC de la
-   Phase 6 dans l'UI, l'upload TUS, l'UI portail, les emails Brevo.
+## Reste à faire — phases du plan de nuit (§ PLAN_NUIT), dans l'ordre
+- **Phase 9** (prochaine) — câbler les actions déjà écrites : Phase 6 RPC dans
+  `detail-manual-center` (bouton « Publié » → markTargetPublishedManually ;
+  retry → requestTargetRetry) ; portail (review-actions →
+  submitReviewDecision ; annotation/thread → postComment) — **vérif portail =
+  pgTAP only** (aucun compte reviewer seedé, ne PAS en créer sans Étienne) ;
+  médias (attach/delete/alt via `lib/actions/media.ts`, upload TUS exclu).
+- **Phase 10** — `perf-data`/`perf-breakdown`/`report-data` en async+orgId ;
+  **SUPPRIMER PERIOD_FACTOR/DELTA_SHAPE** (deltas inventés dans un rapport
+  client) ; N+1 grille (`getPostMetricsBatch`) ; saved_views labels par id.
+- **Phase 11** (dernière) — **dégel `lib/clock.ts`** (vrai now()) ; relocaliser
+  `lib/mocks/types` → `lib/domain` ; **supprimer `lib/mocks/**`** (+ `loc`,
+  `Client.theme`, `lib/mocks/images`, DemoBanner) ; suite pgTAP complète
+  rejouée ; `get_advisors` à faire faire par Étienne (MCP autre compte).
 
 ## Dettes connues
 - **Phase 6 : les 2 RPC ne sont pas encore appelées par des composants.** Les
