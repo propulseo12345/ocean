@@ -4,15 +4,25 @@ import { cache } from "react"
 
 import { loc } from "@/lib/i18n"
 import type {
+  ActivityEntry,
+  ActivityKind,
+  ApprovalDecision,
+  Approval as ApprovalType,
   BrandKit,
   ClientEvent,
+  Comment as CommentType,
   ContentPillar,
+  ContentVersion,
   HashtagGroup,
   LibraryAsset,
   LibraryAssetSource,
   MediaType,
+  MemberRole,
   Platform,
   RecurringSlot,
+  Reviewer,
+  ReviewRequest,
+  ReviewRequestState,
   SavedView,
   SavedViewFilters,
 } from "@/lib/mocks/types"
@@ -250,6 +260,226 @@ export const getLibraryAssets = cache(
         mimeType: row.mime_type ?? undefined,
       }
     })
+  }
+)
+
+// --- Collaboration (migration 013) -----------------------------------------
+
+export const getReviewer = cache(
+  async (orgId: string, clientId: string): Promise<Reviewer | null> => {
+    if (!orgId) return null
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("client_members")
+      .select("user_id, last_active_at, profiles(email, full_name, initials)")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .eq("role", "reviewer")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (!data) return null
+    const profile = data.profiles as unknown as {
+      email: string | null
+      full_name: string | null
+      initials: string | null
+    } | null
+    const email = profile?.email ?? ""
+    return {
+      id: data.user_id,
+      clientId,
+      name: profile?.full_name ?? email,
+      email,
+      initials: profile?.initials ?? email.slice(0, 2).toUpperCase(),
+      lastActiveAt: data.last_active_at,
+    }
+  }
+)
+
+export const getComments = cache(
+  async (orgId: string, clientId: string, contentId: string): Promise<CommentType[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("content_comments")
+      .select(
+        "id, content_item_id, author_name, author_role, body, created_at, annotation_content_media_id, annotation_x, annotation_y"
+      )
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .eq("content_item_id", contentId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+
+    const rows = data ?? []
+    // Résoudre les ancres d'annotation (content_media -> media_asset + position).
+    const anchorIds = rows
+      .map((r) => r.annotation_content_media_id)
+      .filter((id): id is string => id !== null)
+    const anchors = new Map<string, { mediaAssetId: string; slideIndex: number }>()
+    if (anchorIds.length > 0) {
+      const { data: media } = await supabase
+        .from("content_media")
+        .select("id, media_asset_id, position")
+        .in("id", anchorIds)
+      for (const m of media ?? []) {
+        anchors.set(m.id, { mediaAssetId: m.media_asset_id, slideIndex: m.position })
+      }
+    }
+
+    return rows.map((row) => {
+      const anchor = row.annotation_content_media_id
+        ? anchors.get(row.annotation_content_media_id)
+        : undefined
+      return {
+        id: row.id,
+        contentId: row.content_item_id,
+        authorName: row.author_name ?? "",
+        role: row.author_role as MemberRole,
+        body: loc(row.body, row.body),
+        createdAt: row.created_at,
+        annotation:
+          anchor && row.annotation_x !== null && row.annotation_y !== null
+            ? {
+                mediaAssetId: anchor.mediaAssetId,
+                slideIndex: anchor.slideIndex,
+                x: row.annotation_x,
+                y: row.annotation_y,
+              }
+            : undefined,
+      }
+    })
+  }
+)
+
+export const getApprovals = cache(
+  async (orgId: string, clientId: string, contentId: string): Promise<ApprovalType[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("approvals")
+      .select("id, content_item_id, decided_by, decision, message, version_label, created_at")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .eq("content_item_id", contentId)
+      .order("created_at", { ascending: false })
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      contentId: row.content_item_id,
+      reviewerId: row.decided_by ?? "",
+      decision: row.decision as ApprovalDecision,
+      message: row.message ? loc(row.message, row.message) : undefined,
+      versionLabel: row.version_label ?? "",
+      createdAt: row.created_at,
+    }))
+  }
+)
+
+export const getContentVersions = cache(
+  async (orgId: string, clientId: string, contentId: string): Promise<ContentVersion[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("content_versions")
+      .select("id, content_item_id, version_number, caption, note, created_at")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .eq("content_item_id", contentId)
+      .order("version_number", { ascending: true })
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      contentId: row.content_item_id,
+      label: `v${row.version_number}`,
+      caption: loc(row.caption ?? "", row.caption ?? ""),
+      note: loc(row.note ?? "", row.note ?? ""),
+      createdAt: row.created_at,
+    }))
+  }
+)
+
+export const getActivityEntries = cache(
+  async (orgId: string, clientId: string, contentId: string): Promise<ActivityEntry[]> => {
+    if (!orgId) return []
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("content_activity")
+      .select("id, content_item_id, at, actor_name, kind, detail")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .eq("content_item_id", contentId)
+      .order("at", { ascending: false })
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      contentId: row.content_item_id,
+      at: row.at,
+      actorName: row.actor_name ?? "Ocean",
+      kind: row.kind as ActivityKind,
+      // La phrase est composée à l'affichage (kind + payload) ; detail = surcharge.
+      detail: loc(row.detail ?? "", row.detail ?? ""),
+    }))
+  }
+)
+
+export const getReviewRequest = cache(
+  async (orgId: string, clientId: string): Promise<ReviewRequest | null> => {
+    if (!orgId) return null
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("review_requests")
+      .select("id, client_id, message, sent_at")
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .is("closed_at", null)
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!data) return null
+
+    const [{ data: items }, { data: recipients }] = await Promise.all([
+      supabase
+        .from("review_request_items")
+        .select("content_item_id")
+        .eq("org_id", orgId)
+        .eq("review_request_id", data.id),
+      supabase
+        .from("review_request_recipients")
+        .select("recipient_user_id")
+        .eq("org_id", orgId)
+        .eq("review_request_id", data.id),
+    ])
+
+    const contentIds = (items ?? []).map((i) => i.content_item_id)
+
+    // state dérivé des statuts des contenus du lot.
+    let state: ReviewRequestState = "pending"
+    if (contentIds.length > 0) {
+      const { data: statuses } = await supabase
+        .from("content_items")
+        .select("status")
+        .in("id", contentIds)
+      const done = (statuses ?? []).filter((s) =>
+        ["approved", "scheduled", "publishing", "published", "partially_published"].includes(
+          s.status
+        )
+      ).length
+      if (done === contentIds.length) state = "done"
+      else if (done > 0) state = "partial"
+    }
+
+    return {
+      id: data.id,
+      clientId: data.client_id,
+      contentIds,
+      reviewerIds: (recipients ?? []).map((r) => r.recipient_user_id),
+      message: data.message ? loc(data.message, data.message) : undefined,
+      sentAt: data.sent_at,
+      state,
+    }
   }
 )
 

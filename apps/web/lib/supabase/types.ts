@@ -15,18 +15,20 @@ export type Database = {
           user_id: string
           role: string
           invited_by: string | null
+          last_active_at: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           client_id: string
           user_id: string
           role: string
           invited_by?: string | null
-          created_at: string
-          updated_at: string
+          last_active_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -35,6 +37,7 @@ export type Database = {
           user_id?: string
           role?: string
           invited_by?: string | null
+          last_active_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -138,6 +141,7 @@ export type Database = {
           updated_by: string | null
           cover_media_asset_id: string | null
           cover_frame_ms: number | null
+          client_comments_count: number
           created_at: string
           updated_at: string
         }
@@ -194,6 +198,7 @@ export type Database = {
           updated_by?: string | null
           cover_media_asset_id?: string | null
           cover_frame_ms?: number | null
+          client_comments_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -247,25 +252,35 @@ export type Database = {
           deleted_external_at: string | null
           caption_override: string | null
           metadata: Json
+          last_error: Json | null
+          manual_published_by: string | null
+          manual_published_at: string | null
+          retry_requested_at: string | null
+          skipped_reason: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           client_id: string
           content_item_id: string
           social_account_id?: string | null
           platform: string
-          status: string
+          status?: string
           external_post_id?: string | null
           permalink?: string | null
           published_at?: string | null
           deleted_external_at?: string | null
           caption_override?: string | null
-          metadata: Json
-          created_at: string
-          updated_at: string
+          metadata?: Json
+          last_error?: Json | null
+          manual_published_by?: string | null
+          manual_published_at?: string | null
+          retry_requested_at?: string | null
+          skipped_reason?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -281,6 +296,11 @@ export type Database = {
           deleted_external_at?: string | null
           caption_override?: string | null
           metadata?: Json
+          last_error?: Json | null
+          manual_published_by?: string | null
+          manual_published_at?: string | null
+          retry_requested_at?: string | null
+          skipped_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1015,6 +1035,336 @@ export type Database = {
         }
         Relationships: []
       }
+      content_versions: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          version_number: number
+          caption: string | null
+          note: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          version_number: number
+          caption?: string | null
+          note?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          content_item_id?: string
+          version_number?: number
+          caption?: string | null
+          note?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      approvals: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          content_version_id: string | null
+          version_label: string | null
+          decided_by: string | null
+          decided_by_display_name: string | null
+          decided_by_role: string
+          decision: string
+          message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          content_version_id?: string | null
+          version_label?: string | null
+          decided_by?: string | null
+          decided_by_display_name?: string | null
+          decided_by_role: string
+          decision: string
+          message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          content_item_id?: string
+          content_version_id?: string | null
+          version_label?: string | null
+          decided_by?: string | null
+          decided_by_display_name?: string | null
+          decided_by_role?: string
+          decision?: string
+          message?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      content_comments: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          author_user_id: string | null
+          author_name: string | null
+          author_role: string
+          visibility: string
+          body: string
+          annotation_content_media_id: string | null
+          annotation_x: number | null
+          annotation_y: number | null
+          resolved_at: string | null
+          resolved_by: string | null
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          author_user_id?: string | null
+          author_name?: string | null
+          author_role: string
+          visibility?: string
+          body: string
+          annotation_content_media_id?: string | null
+          annotation_x?: number | null
+          annotation_y?: number | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          content_item_id?: string
+          author_user_id?: string | null
+          author_name?: string | null
+          author_role?: string
+          visibility?: string
+          body?: string
+          annotation_content_media_id?: string | null
+          annotation_x?: number | null
+          annotation_y?: number | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      content_activity: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          at: string
+          actor_user_id: string | null
+          actor_name: string | null
+          kind: string
+          detail: string | null
+          payload: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          content_item_id: string
+          at?: string
+          actor_user_id?: string | null
+          actor_name?: string | null
+          kind: string
+          detail?: string | null
+          payload?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          content_item_id?: string
+          at?: string
+          actor_user_id?: string | null
+          actor_name?: string | null
+          kind?: string
+          detail?: string | null
+          payload?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      review_requests: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          message: string | null
+          sent_at: string
+          sent_by: string | null
+          reminder_count: number
+          last_reminded_at: string | null
+          closed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          message?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          reminder_count?: number
+          last_reminded_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          message?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          reminder_count?: number
+          last_reminded_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      review_request_items: {
+        Row: {
+          org_id: string
+          client_id: string
+          review_request_id: string
+          content_item_id: string
+          created_at: string
+        }
+        Insert: {
+          org_id: string
+          client_id: string
+          review_request_id: string
+          content_item_id: string
+          created_at?: string
+        }
+        Update: {
+          org_id?: string
+          client_id?: string
+          review_request_id?: string
+          content_item_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      review_request_recipients: {
+        Row: {
+          org_id: string
+          client_id: string
+          review_request_id: string
+          recipient_user_id: string
+          notified_at: string | null
+          opened_at: string | null
+          created_at: string
+        }
+        Insert: {
+          org_id: string
+          client_id: string
+          review_request_id: string
+          recipient_user_id: string
+          notified_at?: string | null
+          opened_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          org_id?: string
+          client_id?: string
+          review_request_id?: string
+          recipient_user_id?: string
+          notified_at?: string | null
+          opened_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      client_invitations: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          email: string
+          role: string
+          token_hash: string
+          status: string
+          expires_at: string
+          accepted_at: string | null
+          accepted_user_id: string | null
+          revoked_at: string | null
+          invited_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          email: string
+          role?: string
+          token_hash: string
+          status?: string
+          expires_at: string
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          revoked_at?: string | null
+          invited_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          email?: string
+          role?: string
+          token_hash?: string
+          status?: string
+          expires_at?: string
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          revoked_at?: string | null
+          invited_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1035,6 +1385,29 @@ export type Database = {
       reorder_content_media: {
         Args: { _content_item: string; _ordered_media_ids: string[] }
         Returns: undefined
+      }
+      submit_review_decision: {
+        Args: { _content_item: string; _decision: string; _message?: string | null }
+        Returns: undefined
+      }
+      touch_client_member_seen: {
+        Args: { _client: string }
+        Returns: undefined
+      }
+      emit_notification: {
+        Args: {
+          _recipient: string
+          _org: string
+          _client: string | null
+          _type: string
+          _title: string
+          _href: string
+          _audience: string
+          _body?: string | null
+          _channels?: string[]
+          _payload?: Json
+        }
+        Returns: string
       }
     }
     Enums: {

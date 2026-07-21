@@ -10,13 +10,20 @@ export * from "./mock"
 export type { ClientSettings } from "./pro"
 // Phase 1 — configuration éditoriale câblée sur Supabase (migration 011).
 // Phase 2 — médiathèque (getLibraryAssets, migration 012).
+// Phase 3 — collaboration (migration 013).
 export {
+  getActivityEntries,
+  getApprovals,
   getBrandKit,
   getClientEvents,
   getClientSettings,
+  getComments,
+  getContentVersions,
   getHashtagGroups,
   getLibraryAssets,
   getPillars,
   getRecurringSlots,
+  getReviewer,
+  getReviewRequest,
   getSavedViews,
 } from "./pro"

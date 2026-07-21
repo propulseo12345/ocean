@@ -22,10 +22,12 @@ create type public.approval_decision as enum ('approved', 'changes_requested');
 create type public.client_event_kind as enum ('note', 'event');
 create type public.invitation_status as enum ('pending', 'accepted', 'revoked', 'expired');
 
+-- Valeurs ALIGNÉES sur le type front ActivityKind (collab.ts) : les composants
+-- UI en font des Record<ActivityKind, …> exhaustifs (activityKindMeta,
+-- KIND_ICONS). Une valeur DB non mappée casserait ces Record.
 create type public.activity_kind as enum (
-  'created', 'edited', 'status_changed', 'scheduled', 'rescheduled',
-  'review_requested', 'approved', 'changes_requested', 'commented',
-  'published', 'failed'
+  'created', 'updated', 'sent_for_review', 'commented', 'approved',
+  'changes_requested', 'scheduled', 'rescheduled', 'published', 'failed', 'retried'
 );
 
 -- Compteurs de quota par plateforme (CLAUDE.md §6 : IG a 2 compteurs, FB 2, TT 1).
