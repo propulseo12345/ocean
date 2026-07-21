@@ -2,7 +2,7 @@
 // Miroir simplifié du modèle PRD §6. Aucune dépendance backend.
 //
 // i18n : les champs de TEXTE NARRATIF (bios, catégories, légendes, titres, notes…)
-// sont bilingues `L<string>`, résolus à l'affichage via pick(field, locale).
+// sont bilingues `string`, résolus à l'affichage via pick(field, locale).
 // Les NOMS PROPRES (name, handle, username, hashtags, email) restent en `string`
 // (une agence gère des marques au nom fixe — décision du 19/06/2026).
 
@@ -73,12 +73,12 @@ export interface Client {
   archivedAt: string | null
   theme: keyof typeof import("../images").IMAGES
   /** Bio Instagram (multiligne) — pour l'aperçu de profil. */
-  bio: L<string>
-  category: L<string>
+  bio: string
+  category: string
   following: number
   approvalMode: ApprovalMode
   /** Note de collaboration interne (forfait, délais, préférences). */
-  notes?: L<string>
+  notes?: string
 }
 
 export interface SocialAccount {
@@ -122,7 +122,7 @@ export interface MediaAsset {
   durationSec?: number
   position: number
   /** Texte alternatif (accessibilité + SEO social). */
-  altText?: L<string>
+  altText?: string
   /** Poids simulé en Mo — pour la validation des specs plateformes. */
   fileSizeMb?: number
   /** Type MIME simulé (ex. "image/jpeg", "image/heic", "video/mp4"). */
@@ -138,30 +138,30 @@ export interface ContentTarget {
   permalink?: string
   publishedAt?: string
   /** Légende déclinée pour cette plateforme (sinon légende commune). */
-  captionOverride?: L<string>
+  captionOverride?: string
 }
 
 export interface ContentItem {
   id: string
   clientId: string
-  title: L<string>
-  caption: L<string>
+  title: string
+  caption: string
   hashtags: string[]
   format: ContentFormat
   status: ContentStatus
   /** ISO UTC ; null tant que non daté (idea/draft sur l'étagère). */
   scheduledAt: string | null
-  newsletterSubject?: L<string>
-  internalNotes?: L<string>
+  newsletterSubject?: string
+  internalNotes?: string
   media: MediaAsset[]
   targets: ContentTarget[]
   createdAt: string
   createdBy: string
   commentsCount: number
   approvalStale?: boolean
-  lastError?: L<string>
+  lastError?: string
   /** Premier commentaire Instagram (hashtags hors légende). */
-  firstComment?: L<string>
+  firstComment?: string
   /** Pilier éditorial (ContentPillar.id). */
   pillarId?: string
   /** Post épinglé en tête du profil (simulation grille). */
@@ -173,13 +173,13 @@ export interface ContentItem {
   /** Corbeille : date de suppression (restaurable pendant le délai de grâce). */
   deletedAt?: string
   /** Étiquettes libres transverses (« Promo », « UGC », « Marronnier »…). */
-  labels?: L<string>[]
+  labels?: string[]
 }
 
 export interface CalendarAccount {
   id: string
   provider: CalendarProvider
-  label: L<string>
+  label: string
   email: string
   status: AccountStatus
 }
@@ -187,14 +187,14 @@ export interface CalendarAccount {
 export interface CalendarEvent {
   id: string
   accountId: string
-  calendarName: L<string>
+  calendarName: string
   /** Couleur exprimée via une variable de thème, ex. "var(--chart-2)". */
   colorVar: string
-  title: L<string>
+  title: string
   startsAt: string
   endsAt: string
   allDay: boolean
-  location?: L<string>
+  location?: string
   enabled: boolean
 }
 

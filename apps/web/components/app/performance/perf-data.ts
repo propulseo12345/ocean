@@ -36,7 +36,7 @@ export { PERIOD_META } from "./perf-core"
 
 export interface PostRow {
   refId: string
-  title: L<string>
+  title: string
   thumbUrl: string
   format: ContentFormat
   platforms: Platform[]
@@ -68,15 +68,14 @@ function contentRow(c: ContentItem, m: EngagementStats): PostRow {
 // Traducteurs locale-figés : un post importé n'a pas de titre éditorial, on le
 // dérive de sa date dans les deux langues (pré-rendu côté serveur, puis pick()).
 const tFr = createTranslator("fr")
-const tEn = createTranslator("en")
 
 function importedRow(p: ImportedPost, m: EngagementStats, tz: string): PostRow {
   return {
     refId: p.id,
-    title: {
-      fr: tFr("performance.posts.importedTitle", { date: formatDayMonth(p.publishedAt, tz, "fr") }),
-      en: tEn("performance.posts.importedTitle", { date: formatDayMonth(p.publishedAt, tz, "en") }),
-    },
+    // Titre monolingue (D1).
+    title: tFr("performance.posts.importedTitle", {
+      date: formatDayMonth(p.publishedAt, tz, "fr"),
+    }),
     thumbUrl: p.thumbUrl,
     format: p.mediaType === "video" ? "reel" : "post",
     platforms: ["instagram"],

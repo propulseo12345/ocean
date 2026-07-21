@@ -53,7 +53,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
   // Vue par défaut : la colonne is_default (données réelles) ; repli sur l'ancien
   // match par nom pour les vues encore mockées, sans colonne is_default.
   const defaultView =
-    savedViews.find((v) => v.isDefault) ?? savedViews.find((v) => v.name.fr === "À traiter") ?? null
+    savedViews.find((v) => v.isDefault) ?? savedViews.find((v) => v.name === "À traiter") ?? null
 
   const [filters, setFilters] = useState<BoardFilters>(() => viewToFilters(defaultView))
   const [activeViewId, setActiveViewId] = useState<string | null>(defaultView?.id ?? null)
@@ -63,9 +63,9 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
 
   // Mutations locales (aperçu) appliquées par-dessus les mocks.
   // Les étiquettes saisies (déjà résolues dans la locale) sont stockées comme
-  // L<string> via loc(s, s) pour rester compatibles avec le type ContentItem.
+  // string via loc(s, s) pour rester compatibles avec le type ContentItem.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, ContentStatus>>({})
-  const [labelOverrides, setLabelOverrides] = useState<Record<string, L<string>[]>>({})
+  const [labelOverrides, setLabelOverrides] = useState<Record<string, string[]>>({})
   const [scheduleOverrides, setScheduleOverrides] = useState<Record<string, string>>({})
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set())
 

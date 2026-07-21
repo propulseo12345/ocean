@@ -24,12 +24,11 @@ type DbClientRow = {
 }
 
 /**
- * Pont temporaire ligne DB -> type front `Client`. Les champs narratifs sont
- * dupliqués fr=en le temps de la Phase 7 (aplatissement L<string> -> text) ;
- * `theme`/`following` n'existent pas en base (défauts). À retirer en Phase 7.
+ * Pont ligne DB -> type front `Client` pour le contexte Reviewer. Le contenu
+ * est monolingue (D1). `theme`/`following` n'existent pas en base (défauts —
+ * `theme` disparaîtra du type en Phase 8 avec les mocks).
  */
 function dbClientToClient(row: DbClientRow): Client {
-  const mono = (v: string | null) => ({ fr: v ?? "", en: v ?? "" })
   return {
     id: row.id,
     name: row.name,
@@ -38,11 +37,11 @@ function dbClientToClient(row: DbClientRow): Client {
     timezone: row.timezone,
     archivedAt: row.archived_at,
     theme: "coffee",
-    bio: mono(row.bio),
-    category: mono(row.category),
+    bio: row.bio ?? "",
+    category: row.category ?? "",
     following: 0,
     approvalMode: row.approval_mode as Client["approvalMode"],
-    notes: mono(row.notes),
+    notes: row.notes ?? undefined,
   }
 }
 
@@ -81,8 +80,7 @@ export const getActiveOrg = cache(async () => {
     redirect("/onboarding")
   }
 
-  const active =
-    memberships.find((m) => m.org_id === wantedOrgId) ?? memberships[0]
+  const active = memberships.find((m) => m.org_id === wantedOrgId) ?? memberships[0]
 
   const organization = active.organizations as unknown as {
     id: string
@@ -125,13 +123,13 @@ export const getReviewerContext = cache(async () => {
   const { data: rows } = await supabase
     .from("client_members")
     .select(
-      "org_id, client_id, clients(id, name, handle, brand_color, timezone, approval_mode, bio, category, notes, archived_at)",
+      "org_id, client_id, clients(id, name, handle, brand_color, timezone, approval_mode, bio, category, notes, archived_at)"
     )
     .eq("user_id", user.id)
 
   const memberships = rows ?? []
   const clients = memberships
-    .map((m) => (m.clients as unknown as DbClientRow | null))
+    .map((m) => m.clients as unknown as DbClientRow | null)
     .filter((c): c is DbClientRow => c !== null)
     .map(dbClientToClient)
 

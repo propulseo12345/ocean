@@ -70,7 +70,7 @@ export const CONTENT_OVERRIDES: Record<string, Partial<ContentItem>> = {
 }
 
 // Légendes déclinées par plateforme (ContentTarget.captionOverride).
-export const TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, L<string>>>> = {
+export const TARGET_CAPTION_OVERRIDES: Record<string, Partial<Record<Platform, string>>> = {
   ct_cl_verde_7: {
     facebook: loc(
       "Le brunch est de retour ce dimanche ! Pancakes, granola maison, jus pressés. Réservez votre table : maisonverde.fr/brunch",

@@ -20,7 +20,7 @@ export interface LibraryAsset {
   source: LibraryAssetSource
   /** Contenus dans lesquels l'asset est utilisé ([] = inédit). */
   usedInContentIds: string[]
-  altText?: L<string>
+  altText?: string
   /** Poids simulé en Mo — pour la validation des specs plateformes. */
   fileSizeMb?: number
   /** Type MIME simulé (ex. "image/jpeg", "image/heic", "video/mp4"). */
@@ -31,7 +31,7 @@ export interface LibraryAsset {
 export interface HashtagGroup {
   id: string
   clientId: string
-  name: L<string>
+  name: string
   /** Tags avec leur « # », ex. ["#brunch", "#foodie"]. */
   tags: string[]
 }

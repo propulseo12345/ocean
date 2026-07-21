@@ -8,7 +8,7 @@ import type { ContentFormat, ContentStatus, Platform } from "./core"
 export interface ContentPillar {
   id: string
   clientId: string
-  name: L<string>
+  name: string
   /** Couleur via variable de thème, ex. "var(--chart-2)". */
   colorVar: string
   /** Part cible dans le mix éditorial, en % (la somme par client ≈ 100). */
@@ -23,7 +23,7 @@ export interface ClientEvent {
   clientId: string
   /** ISO UTC (l'affichage se fait dans le fuseau du client). */
   date: string
-  title: L<string>
+  title: string
   kind: ClientEventKind
 }
 
@@ -45,9 +45,9 @@ export interface BrandKit {
   /** Couleurs de marque en valeurs oklch (affichées en pastilles). */
   palette: string[]
   /** Ton de voix résumé en une phrase. */
-  tone: L<string>
-  doList: L<string>[]
-  dontList: L<string>[]
+  tone: string
+  doList: string[]
+  dontList: string[]
   /** Mots/termes interdits, détectés par lib/caption.ts (proper nouns, non traduits). */
   bannedWords: string[]
 }
@@ -66,7 +66,7 @@ export interface SavedViewFilters {
 export interface SavedView {
   id: string
   clientId: string
-  name: L<string>
+  name: string
   filters: SavedViewFilters
   /** Vue par défaut du board (remplace le match sur le nom « À traiter »). */
   isDefault?: boolean

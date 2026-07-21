@@ -9,7 +9,7 @@ import type { PostRow } from "./perf-data"
 
 export interface PillarSlice {
   id: string
-  name: L<string>
+  name: string
   colorVar: string
   targetShare: number
   posts: number

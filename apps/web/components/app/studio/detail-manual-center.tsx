@@ -73,7 +73,7 @@ export function DetailManualCenter({
 
   async function copyCaption(item: ManualItem) {
     const tags = hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
-    // La légende de base arrive résolue ; la déclinaison par cible reste L<string>.
+    // La légende de base arrive résolue ; la déclinaison par cible reste string.
     const captionText = item.target.captionOverride
       ? pick(item.target.captionOverride, locale)
       : caption

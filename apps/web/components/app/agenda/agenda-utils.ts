@@ -114,10 +114,11 @@ export function agendaStart(item: AgendaItem): string {
   return item.kind === "event" ? item.event.startsAt : item.startsAt
 }
 
-// Clé d'identité stable d'un calendrier (indépendante de la langue d'affichage) :
-// on retient la valeur FR du libellé bilingue comme identifiant canonique.
-export function calendarKey(name: L<string>): string {
-  return name.fr
+// Clé d'identité stable d'un calendrier. Le libellé est monolingue (D1) — la
+// clé canonique est le nom lui-même (le vrai identifiant stable côté base est
+// `external_calendar_id`, résolu en amont ; ceci ne sert que le mock d'agenda).
+export function calendarKey(name: string): string {
+  return name
 }
 
 // Un item est visible si ses filtres calendrier/compte sont actifs.

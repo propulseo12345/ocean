@@ -28,7 +28,7 @@ export default async function ClientLibraryPage({
   const assets = await getLibraryAssets(ctx.org.id, clientId)
 
   // Références des contenus utilisant au moins un asset → liens vers le studio.
-  // title reste L<string> : la médiathèque le résout à l'affichage via pick().
+  // title reste string : la médiathèque le résout à l'affichage via pick().
   const referenced = new Set(assets.flatMap((a) => a.usedInContentIds))
   const contentItems = await getContentItems(ctx.org.id, clientId)
   const contentRefs: ContentRefMap = Object.fromEntries(

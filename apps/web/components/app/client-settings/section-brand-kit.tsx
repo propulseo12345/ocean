@@ -32,7 +32,7 @@ export function SectionBrandKit({
   const t = useT()
   const { locale } = useLocale()
   const [pending, startTransition] = useTransition()
-  const resolveList = (list: L<string>[] | undefined) =>
+  const resolveList = (list: string[] | undefined) =>
     (list ?? []).map((item) => pick(item, locale))
 
   const base: ResolvedKit = {

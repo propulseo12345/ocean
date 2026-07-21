@@ -11,7 +11,7 @@ export type MarronnierKind = "ferie" | "fete" | "soldes" | "marketing"
 export interface Marronnier {
   /** Date au format "AAAA-MM-JJ" (jour entier, fuseau FR implicite). */
   date: string
-  label: L<string>
+  label: string
   kind: MarronnierKind
 }
 

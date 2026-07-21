@@ -37,8 +37,8 @@ export function useCalendarDerived(s: CalendarState, props: CalendarData) {
   const weekEmpty = useMemo(() => nextWeekIsEmpty(s.datedItems, s.tz), [s.datedItems, s.tz])
   const pillarById = useMemo(() => new Map(props.pillars.map((p) => [p.id, p])), [props.pillars])
   const evergreenItems = useMemo(
-    // Les labels sont du contenu bilingue ; « Evergreen » est un tag identique FR/EN.
-    () => s.effectiveItems.filter((it) => it.labels?.some((l) => l.fr === EVERGREEN_LABEL)),
+    // Les labels sont monolingues (D1) ; « Evergreen » est un tag exact.
+    () => s.effectiveItems.filter((it) => it.labels?.some((l) => l === EVERGREEN_LABEL)),
     [s.effectiveItems]
   )
   const upcomingByAccount = useMemo(() => {

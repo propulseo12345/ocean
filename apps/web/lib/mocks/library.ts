@@ -9,7 +9,7 @@ import type { Client, LibraryAsset, LibraryAssetSource } from "./types"
 // Médiathèque par client : tout le pool d'images devient des assets, avec
 // usages réels calculés depuis les contenus (mêmes URLs) → mix utilisés/inédits.
 
-const ALT_TEXTS: Record<Client["theme"], L<string>[]> = {
+const ALT_TEXTS: Record<Client["theme"], string[]> = {
   coffee: [
     loc(
       "Tasse de café filtre fraîchement servie sur le comptoir",

@@ -8,7 +8,7 @@ import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 export interface UsageRef {
   id: string
   /** Titre du contenu (bilingue) — résolu via pick() à l'affichage. */
-  title: L<string>
+  title: string
   status: ContentStatus
   href: string
 }

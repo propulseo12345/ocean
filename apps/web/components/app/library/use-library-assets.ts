@@ -55,9 +55,8 @@ export function useLibraryAssets(client: Client, initial: LibraryAsset[]): UseLi
 
   function updateAltText(id: string, altText: string) {
     const trimmed = altText.trim()
-    // Preview : l'édition se fait dans la langue active — on stocke la même
-    // valeur sur les deux langues (la vraie i18n du contenu viendra du backend).
-    const value = trimmed === "" ? undefined : { fr: trimmed, en: trimmed }
+    // Texte alternatif monolingue (D1).
+    const value = trimmed === "" ? undefined : trimmed
     setAssets((prev) => prev.map((a) => (a.id === id ? { ...a, altText: value } : a)))
     toast.success(t("library.toast.altSaved"))
   }

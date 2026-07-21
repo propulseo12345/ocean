@@ -93,8 +93,8 @@ export function matchesFilters(
   if (filters.specs === "issues" && !offSpec) return false
   if (filters.search.trim()) {
     const needle = filters.search.trim().toLowerCase()
-    // Recherche bilingue : on indexe les deux langues du texte alternatif.
-    const alt = asset.altText ? `${asset.altText.fr} ${asset.altText.en}` : ""
+    // Le texte alternatif est monolingue (D1).
+    const alt = asset.altText ?? ""
     const haystack = `${alt} ${assetFileName(asset)}`.toLowerCase()
     if (!haystack.includes(needle)) return false
   }

@@ -12,7 +12,7 @@ export interface CalendarFilter {
   /** Identifiant stable (indépendant de la langue) — clé de filtre. */
   key: string
   /** Libellé bilingue affiché. */
-  name: L<string>
+  name: string
   colorVar: string
   accountId: string
 }

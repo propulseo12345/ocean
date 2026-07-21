@@ -5,7 +5,7 @@ import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/
 import { type BoardFilters, type SortKey, STATUS_ORDER } from "./board-types"
 
 // Helpers purs du board studio : recherche, tri, priorités, suivi de revue.
-// Les étiquettes (L<string>) sont résolues dans la locale active avant toute
+// Les étiquettes (string) sont résolues dans la locale active avant toute
 // comparaison/affichage — le board manipule des libellés `string` résolus.
 
 const LATE_DRAFT_AFTER_DAYS = 7

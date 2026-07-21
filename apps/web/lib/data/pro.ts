@@ -53,7 +53,7 @@ const SIGNED_URL_TTL = 3600 // 1 h
 // Câblage Supabase de la configuration éditoriale (Phase 1). Les lectures
 // filtrent explicitement org_id + client_id (défense en profondeur, règle 7) en
 // plus de la RLS. Le mapping enveloppe `text -> loc(x, x)` : les types front
-// portent encore `L<string>` jusqu'à l'aplatissement de la Phase 7 ; l'UI reste
+// portent encore `string` jusqu'à l'aplatissement de la Phase 7 ; l'UI reste
 // monolingue (D1), le toggle EN ne traduit pas le contenu client.
 
 /** Réglages cadence/relance d'un client (client_settings, org-only — D4). */

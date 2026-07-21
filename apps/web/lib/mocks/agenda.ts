@@ -7,7 +7,7 @@ const GOOGLE = "ca_google"
 const MS = "ca_ms"
 
 interface Cal {
-  name: L<string>
+  name: string
   color: string
   acc: string
 }
@@ -24,14 +24,14 @@ const CLIENTS_CAL: Cal = { name: loc("Clients", "Clients"), color: "var(--chart-
 
 interface Spec {
   cal: Cal
-  title: L<string>
+  title: string
   day: number
   start: number
   end: number
   min?: number
   endMin?: number
   allDay?: boolean
-  location?: L<string>
+  location?: string
   enabled?: boolean
 }
 

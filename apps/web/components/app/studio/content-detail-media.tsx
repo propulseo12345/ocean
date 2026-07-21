@@ -13,7 +13,7 @@ import { DetailCoverDialog } from "./detail-cover-dialog"
 // Visionneuse studio : carrousel (composant du portail) + épingles
 // d'annotation posées par le client, synchronisées avec leurs remarques.
 // Pour les Reels : choix de la couverture (dialog, état local — aperçu).
-// Le titre arrive déjà résolu (string) ; les commentaires (L<string>) sont
+// Le titre arrive déjà résolu (string) ; les commentaires (string) sont
 // résolus ici avec la locale active.
 
 export function ContentDetailMedia({

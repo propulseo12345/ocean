@@ -2,8 +2,8 @@ import { type L, loc } from "@/lib/i18n"
 import type { Client } from "./types"
 
 export interface Copy {
-  title: L<string>
-  caption: L<string>
+  title: string
+  caption: string
   hashtags: string[]
 }
 

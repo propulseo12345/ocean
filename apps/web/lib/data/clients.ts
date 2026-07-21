@@ -43,7 +43,7 @@ function themeFor(id: string): Client["theme"] {
 
 /**
  * Ligne DB -> type front `Client`. Les champs narratifs sont dupliqués fr=en :
- * le contenu est monolingue (D1), le `L<string>` disparaît en Phase 7.
+ * le contenu est monolingue (D1), le `string` disparaît en Phase 7.
  * `following` vient du compte Instagram du client (social_accounts), pas de
  * la table clients — 0 si aucun compte connecté.
  */
