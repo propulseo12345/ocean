@@ -1,11 +1,11 @@
-# Session State — 2026-07-21 (câblage Supabase : Phases 1→5 + lectures CŒUR)
+# Session State — 2026-07-21 (câblage Supabase : Phases 1→6 + lectures CŒUR)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `30d642b`. Working tree propre sauf
+`feat/cablage-supabase` @ `1e1eab1`. Working tree propre sauf
 `apps/web/__tz_repro.mjs` (débug non commité, à supprimer en Phase 8).
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
-## Fait (6 commits)
+## Fait (8 commits)
 | Phase | Commit | Migration | pgTAP |
 |---|---|---|---|
 | 1 — config éditoriale | f2cb402 | 011 (7 tables + `client_settings` D4) | 33/33 |
@@ -14,9 +14,10 @@ Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 | 4 — feed & performance | 4ca1725 | 014 (3 tables) | 12/12 |
 | 5 — agenda unifié | 2c050cf | 015 (4 tables + vue) | 14/14 |
 | fix — deploy 010 idempotent | a401103 | — | — |
-| **lectures CŒUR + seed** | **30d642b** | — (tables 004→007) | **16/16** (090) |
+| **lectures CŒUR + seed** | **5bcdced** | — (tables 004→007) | **16/16** (090) |
+| **6 — transitions** | **1e1eab1** | **016** (matrice + 2 RPC) | **19/19** |
 
-**Suite pgTAP complète 003→015 + 090 : 199/199, plan == émis sur les 14 fichiers.**
+**Suite pgTAP complète 003→016 + 090 : 218/218, plan == émis sur les 15 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur, AVEC `lib/data/mock.ts` supprimé.**
 
 ## ÉTAT DE L'APPLICATION EN LIGNE (projet hgdeopkmkwyoumsfggrm)
@@ -41,6 +42,11 @@ automatiquement s'il n'est pas encore utilisé par une colonne.
 4. `deploy/06_migration_013.sql`
 5. `deploy/07_migration_014.sql`
 6. `deploy/08_migration_015.sql`
+7. `deploy/10_migration_016.sql` — matrice 008 amendée + 2 RPC, rejouable
+8. `deploy/09_seed_demo.sql` — seed de démonstration (idempotent), en DERNIER
+
+`deploy/10` ne crée aucune table (create or replace + 2 RPC) : rejouable sans
+risque, contrairement aux suivants.
 
 `deploy/04` à `08` sont encapsulés dans `begin/commit` : si l'un est déjà passé,
 il échoue proprement et annule tout (aucun état partiel).
@@ -60,10 +66,10 @@ Le runtime Playwright n'est possible qu'après application en ligne des migratio
   Appliqué par recommandation du plan, **à confirmer avant `deploy/05`**.
 - **D3** — bucket `media-thumbs` PUBLIC (vignette d'un contenu non publié lisible
   par qui obtient l'URL). Acté PRD L409, **à reconfirmer avant `deploy/05`**.
-- **D8/D9** — reset mot de passe, lien de dépôt (Phase 6 / migration 016).
+- **D8/D9** — reset mot de passe, lien de dépôt (migration 017, non écrite).
 - **D10** — sélecteur de client au portail (UI Phase 3, non câblé).
 
-## ✅ ÉCART STRUCTUREL RÉSORBÉ (commit 30d642b)
+## ✅ ÉCART STRUCTUREL RÉSORBÉ (commit 5bcdced)
 Les 14 lectures cœur sont câblées sur Supabase, dans 5 modules :
 `lib/data/{clients,content,content-media,notifications,dashboard}.ts`.
 **`lib/data/mock.ts` est SUPPRIMÉ** et `export *` remplacé par des exports
@@ -90,16 +96,22 @@ comptes sociaux, 16 contenus couvrant les 5 types de tâches du dashboard).
 (écriture service_role exclusive, migration 014), NI calendriers (OAuth).
 
 ## Reste à faire, dans cet ordre suggéré
-1. **Phase 6** — complétude Server Actions & transitions : conflits C1/C2/C3 avec
-   la garde 008, RPC `mark_target_published_manually`, retry `content_targets`.
-2. **Phase 7** — aplatissement `L<string>` → `text` (~70 fichiers, stratégie 4
+1. **Phase 7** — aplatissement `L<string>` → `text` (~70 fichiers, stratégie 4
    temps du plan §6 : shim `pick()` → types → cas système → nettoyage).
-3. **Phase 8** — réduite à : **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
+2. **Phase 8** — réduite à : **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
    5 composants), relocalisation `lib/mocks/types` → `lib/domain`, suppression
    du reste de `lib/mocks/**` (constantes encore lues par `use-library-assets`
    et `perf-data`), `get_advisors` clean, vérif visuelle post-dégel.
 
 ## Dettes connues
+- **Phase 6 : les 2 RPC ne sont pas encore appelées par des composants.** Les
+  Server Actions `markTargetPublishedManually` / `requestTargetRetry` existent
+  et sont testées, mais `detail-manual-center` et le bouton retry appellent
+  encore les stubs mockés (`performRetry` = un toast).
+- Le calendrier reste MOCKÉ de bout en bout (`calendar-actions.ts` = overrides
+  locaux + toasts « (aperçu) »). Le drag ne persiste rien. `isMovable` ne gouverne
+  que la DATE, pas le statut — c'est `lib/domain/content-status.ts` qui fait foi
+  pour les statuts depuis la Phase 6.
 - `Client.theme` n'existe pas en base : dérivé de l'id (hash) dans
   `lib/data/clients.ts` pour que `useLibraryAssets.addMockAssets` compile.
   À retirer du type `Client` en Phase 8, avec `lib/mocks/images`.

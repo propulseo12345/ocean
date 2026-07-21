@@ -157,7 +157,34 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   médias (pas de fichier Storage réel), ni imported_posts/post_metrics
   (service_role exclusif), ni calendriers (OAuth) — motifs en en-tête du fichier.
 
-## À FAIRE — Phase 6 et suivantes
+## FAIT (Phase 6) ✅ — migration 016 — commit 1e1eab1
+- **Cause racine** : la matrice de transition était recopiée dans 3 listes codées
+  en dur de `board-kanban.tsx`, qui avaient dérivé de la garde 008. C1
+  (`changes_requested -> in_review`) et C2 (`approved -> in_review`) étaient
+  proposés puis refusés en 42501 ; C3 (`draft -> idea`) n'existait pas en base.
+- `016_transitions.sql` : matrice 008 + `draft -> idea` (C3 — n'ouvre aucun
+  contournement, `idea` autorise déjà `scheduled`) ; RPC
+  `mark_target_published_manually` (déclaration humaine tracée + statut agrégé,
+  idempotente) ; RPC `request_target_retry` (pose l'intention, PAS le statut —
+  règle 15, le worker seul republie).
+- **Piège payé** : les gardes 008/013 s'ancrent sur `request.jwt.claims`, PAS sur
+  SECURITY DEFINER — la RPC se faisait refuser par sa propre garde. Elle
+  neutralise les claims de façon étroite et les RESTAURE ; la restauration est
+  testée (016 test 14), pas supposée.
+- `lib/domain/content-status.ts` : LA matrice, partagée UI + Server Actions. Les
+  chemins d'intention sont DÉCLARÉS un par un, jamais calculés par
+  plus-court-chemin (un parcours automatique trouverait
+  `in_review -> approved -> scheduled` et fabriquerait une approbation cliente).
+  Auto-contrôle au chargement, **mutation-testé** : réintroduire C1 fait lever.
+- `lib/actions/content-status.ts` : `applyStatusIntent` (chemin multi-étapes),
+  `markTargetPublishedManually`, `requestTargetRetry`. Statut de départ RELU en
+  base, `approvalMode='auto'` revérifié serveur.
+- **pgTAP 016 = 19/19. Suite complète 003→016 + 090 = 218/218**, plan == émis sur
+  15 fichiers. Les 13 tests de 008 restent verts après réécriture de sa fonction.
+- ⚠️ Reste : câbler les 2 RPC dans l'UI (bouton « j'ai publié », bouton retry) —
+  les actions existent, les composants appellent encore les stubs mockés.
+
+## À FAIRE — Phase 7 et suivantes
 Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
