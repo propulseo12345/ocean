@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import type { ContentFormat, ContentPillar } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { ContentFormat, ContentPillar } from "@/lib/mocks/types"
 import type { ComposerDraft, DraftState } from "./composer-types"
 
 const FORMATS: ContentFormat[] = ["post", "carousel", "reel", "story"]

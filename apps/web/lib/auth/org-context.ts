@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 
-import type { Client } from "@/lib/mocks/types/core"
+import type { Client } from "@/lib/domain/core"
 import { createClient } from "@/lib/supabase/server"
 import { verifySession } from "./dal"
 
@@ -25,8 +25,8 @@ type DbClientRow = {
 
 /**
  * Pont ligne DB -> type front `Client` pour le contexte Reviewer. Le contenu
- * est monolingue (D1). `theme`/`following` n'existent pas en base (défauts —
- * `theme` disparaîtra du type en Phase 8 avec les mocks).
+ * est monolingue (D1). `following` n'existe pas sur la table clients (défaut 0 ;
+ * la vraie valeur vient du compte Instagram, cf. mapClient dans lib/data/clients).
  */
 function dbClientToClient(row: DbClientRow): Client {
   return {
@@ -36,7 +36,6 @@ function dbClientToClient(row: DbClientRow): Client {
     brandColor: row.brand_color ?? "oklch(0.62 0.19 250)",
     timezone: row.timezone,
     archivedAt: row.archived_at,
-    theme: "coffee",
     bio: row.bio ?? "",
     category: row.category ?? "",
     following: 0,

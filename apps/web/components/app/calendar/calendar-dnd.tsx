@@ -13,8 +13,8 @@ import {
 } from "@dnd-kit/core"
 import { createContext, type ReactNode, useContext, useState } from "react"
 import { FormatIcon } from "@/components/shared/format-icon"
+import type { ContentItem } from "@/lib/domain"
 import { formatTime } from "@/lib/format"
-import type { ContentItem } from "@/lib/mocks/types"
 import type { DayKey } from "./calendar-utils"
 
 // Contexte drag-and-drop du calendrier : cartes (contenus) → cases (jours).

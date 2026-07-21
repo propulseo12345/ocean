@@ -17,8 +17,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import type { Client, SocialAccount, User } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, SocialAccount, User } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { ClientSwitcher } from "./client-switcher"
 import { NavUser } from "./nav-user"

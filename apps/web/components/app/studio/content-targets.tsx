@@ -10,14 +10,8 @@ import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { requestTargetRetry } from "@/lib/actions/content-status"
+import type { Client, ContentTarget, QuotaUsage, SocialAccount, TargetStatus } from "@/lib/domain"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
-import type {
-  Client,
-  ContentTarget,
-  QuotaUsage,
-  SocialAccount,
-  TargetStatus,
-} from "@/lib/mocks/types"
 import { DetailTargetError } from "./detail-target-error"
 
 // Cibles d'un contenu reliées aux comptes réels : @username, abonnés, santé

@@ -11,10 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getApprovals, getClient, getComments, getPortalContentItem } from "@/lib/data"
+import type { Approval, Client } from "@/lib/domain"
 import type { Format } from "@/lib/i18n"
 import { getFormat, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
-import type { Approval, Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {

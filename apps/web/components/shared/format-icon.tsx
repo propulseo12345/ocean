@@ -1,8 +1,8 @@
 "use client"
 
 import { Circle, Film, Image as ImageIcon, Images, type LucideIcon } from "lucide-react"
+import type { ContentFormat } from "@/lib/domain"
 import { useLabels } from "@/lib/i18n"
-import type { ContentFormat } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 const ICONS: Record<ContentFormat, LucideIcon> = {

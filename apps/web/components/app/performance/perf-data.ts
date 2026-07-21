@@ -6,8 +6,6 @@ import {
   getPostMetricsBatch,
   getSocialAccounts,
 } from "@/lib/data"
-import { formatDayMonth } from "@/lib/format"
-import { createTranslator } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentItem,
@@ -17,7 +15,9 @@ import type {
   Platform,
   PostMetrics,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import { formatDayMonth } from "@/lib/format"
+import { createTranslator } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import {
   getPillarSplit,

@@ -5,7 +5,7 @@ import type {
   MediaAsset,
   Platform,
   TargetStatus,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
 
 // Vue-modèle d'une tuile de grille (sérialisable, construit côté serveur).
 

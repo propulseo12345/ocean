@@ -24,8 +24,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { QuotaUsage } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { QuotaUsage } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { GridRatio, PillarOption } from "./grid-types"
 import type { GridViewState } from "./use-grid-view"

@@ -3,8 +3,8 @@
 import { BellRing, Hand, Hourglass, Lock, MessageSquare, TriangleAlert } from "lucide-react"
 import type { CSSProperties } from "react"
 import { PlatformDot } from "@/components/shared/platform-badge"
+import type { ContentItem, Platform } from "@/lib/domain"
 import { type Labels, type Locale, useLabels, useT } from "@/lib/i18n"
-import type { ContentItem, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { manualKindOf } from "./calendar-insights"
 import { isMovable, lockReasonKey } from "./calendar-schedule"
@@ -39,9 +39,7 @@ export function EntryMarkers({
       {item.status === "partially_published" ? (
         <TriangleAlert
           className="size-3 text-warning"
-          aria-label={
-            item.lastError ? item.lastError : t("calendar.markers.partiallyPublished")
-          }
+          aria-label={item.lastError ? item.lastError : t("calendar.markers.partiallyPublished")}
         />
       ) : null}
       {manual === "tiktok" ? (

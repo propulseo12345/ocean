@@ -6,8 +6,8 @@ import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import type { CalendarAccount } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { CalendarAccount } from "@/lib/mocks/types"
 import { CalendarProviderIcon, useCalendarProviderLabel } from "./calendar-provider-icon"
 
 export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {

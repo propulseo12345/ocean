@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { TableCell, TableRow } from "@/components/ui/table"
+import type { ContentPillar, Platform, RecurringSlot } from "@/lib/domain"
+import { API_PLATFORMS } from "@/lib/domain/labels"
 import { useLabels, useT } from "@/lib/i18n"
-import { API_PLATFORMS } from "@/lib/mocks/labels"
-import type { ContentPillar, Platform, RecurringSlot } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "./constants"
 

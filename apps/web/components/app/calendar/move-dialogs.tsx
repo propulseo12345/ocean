@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import type { ContentItem } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { defaultCreationTime, wallTimeOf } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
 
@@ -51,9 +51,7 @@ export function RescheduleDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("calendar.reschedule.title")}</DialogTitle>
-          <DialogDescription className="truncate">
-            {item ? item.title : null}
-          </DialogDescription>
+          <DialogDescription className="truncate">{item ? item.title : null}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">

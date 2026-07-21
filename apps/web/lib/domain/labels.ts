@@ -1,5 +1,3 @@
-import type { MessageKey } from "@/lib/i18n"
-import { CONTENT_PILLARS } from "./pillars"
 import type {
   AccountStatus,
   ActivityKind,
@@ -9,11 +7,15 @@ import type {
   Platform,
   ReviewRequestState,
   TargetStatus,
-} from "./types"
+} from "@/lib/domain"
+import type { MessageKey } from "@/lib/i18n"
+
+// Métadonnées de présentation (permanentes) : tonalité + clé i18n par statut,
+// libellés de plateforme/format, pastilles de couleur. Locale-indépendant : le
+// libellé est résolu à l'affichage via t(labelKey).
 
 export type StatusTone = "success" | "warning" | "info" | "danger" | "neutral" | "brand"
 
-// Méta locale-indépendante : tonalité + clé de libellé i18n (résolue via t(labelKey)).
 interface Meta {
   labelKey: MessageKey
   tone: StatusTone
@@ -76,11 +78,6 @@ export const activityKindMeta: Record<ActivityKind, Meta> = {
   failed: { labelKey: "status.activity.failed", tone: "danger" },
   retried: { labelKey: "status.activity.retried", tone: "warning" },
 }
-
-// Méta des piliers éditoriaux par id (le nom est du contenu démo bilingue, résolu ailleurs).
-export const pillarMeta: Record<string, { colorVar: string }> = Object.fromEntries(
-  CONTENT_PILLARS.map((p) => [p.id, { colorVar: p.colorVar }])
-)
 
 // Libellé i18n d'un format (le nom propre des plateformes n'est pas traduit).
 export const formatLabelKey: Record<ContentFormat, MessageKey> = {

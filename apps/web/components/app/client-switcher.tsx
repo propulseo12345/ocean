@@ -13,8 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import type { Client, SocialAccount } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { activeClientIdFromPath, clientAccountIssues, clientSwitchHref } from "./shell/client-nav"
 import { useShell } from "./shell/shell-provider"

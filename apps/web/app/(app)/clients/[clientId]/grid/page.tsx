@@ -16,15 +16,15 @@ import {
   getSocialAccounts,
   getTopPosts,
 } from "@/lib/data"
-import type { Format, Translator } from "@/lib/i18n"
-import { getFormat, getT } from "@/lib/i18n/server"
 import type {
   ContentItem,
   EngagementStats,
   ImportedPost,
   MediaAsset,
   PostMetrics,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import type { Format, Translator } from "@/lib/i18n"
+import { getFormat, getT } from "@/lib/i18n/server"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {

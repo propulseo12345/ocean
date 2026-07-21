@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import type { Comment } from "@/lib/domain"
 import { initials } from "@/lib/format"
 import { useFormat, useT } from "@/lib/i18n"
-import type { Comment } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Sous-composants du fil de discussion (detail-thread) : message client,

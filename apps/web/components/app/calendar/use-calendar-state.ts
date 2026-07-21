@@ -2,8 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 import { nowIso } from "@/lib/clock"
-import { loc } from "@/lib/i18n"
-import type { ClientEvent } from "@/lib/mocks/types"
+import type { ClientEvent } from "@/lib/domain"
 import {
   type CalendarData,
   type CalendarFilters,
@@ -89,7 +88,7 @@ export function useCalendarState(data: CalendarData) {
           clientId: data.client.id,
           date: `${dayKey}T12:00:00.000Z`,
           // Note saisie par l'utilisateur : un seul texte, stocké pour les 2 locales.
-          title: loc(title, title),
+          title: title,
           kind,
         },
       ])

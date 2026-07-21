@@ -3,8 +3,8 @@
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import type { ContentItem } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Zone média de l'aperçu natif : visuel courant + navigation de carrousel.

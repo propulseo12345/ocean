@@ -1,7 +1,6 @@
-import { now } from "@/lib/clock"
-import { type Locale } from "@/lib/i18n"
-import { days } from "@/lib/mocks/time"
-import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/mocks/types"
+import { days, now } from "@/lib/clock"
+import type { ContentItem, ContentStatus, Reviewer, ReviewRequest } from "@/lib/domain"
+import type { Locale } from "@/lib/i18n"
 import { type BoardFilters, type SortKey, STATUS_ORDER } from "./board-types"
 
 // Helpers purs du board studio : recherche, tri, priorités, suivi de revue.
@@ -22,12 +21,7 @@ function normalize(text: string): string {
 export function matchesSearch(item: ContentItem, query: string, locale: Locale): boolean {
   if (query.trim().length === 0) return true
   const haystack = normalize(
-    [
-      item.title,
-      item.caption,
-      ...(item.labels ?? []),
-      ...item.hashtags,
-    ].join(" ")
+    [item.title, item.caption, ...(item.labels ?? []), ...item.hashtags].join(" ")
   )
   return normalize(query)
     .split(/\s+/)

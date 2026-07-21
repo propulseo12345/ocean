@@ -1,5 +1,5 @@
+import type { LibraryAsset, LibraryAssetSource } from "@/lib/domain"
 import { INTL_LOCALE, type Locale, type MessageKey, type Translator } from "@/lib/i18n"
-import type { LibraryAsset, LibraryAssetSource } from "@/lib/mocks/types"
 import { type SpecIssue, validateMedia } from "@/lib/specs"
 import type { LibraryFilters, SortKey } from "./library-types"
 

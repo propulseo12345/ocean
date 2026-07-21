@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { LibraryAssetSource } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { LibraryAssetSource } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import {
   EMPTY_FILTERS,

@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { Platform } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { CONNECTABLE_PLATFORMS, type DraftSlot, WEEKDAYS } from "./wizard-types"
 

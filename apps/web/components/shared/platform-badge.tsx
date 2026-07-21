@@ -1,7 +1,7 @@
 import { Mail, Megaphone } from "lucide-react"
 import type { ComponentType, SVGProps } from "react"
-import { platformMeta } from "@/lib/mocks/labels"
-import type { Platform } from "@/lib/mocks/types"
+import type { Platform } from "@/lib/domain"
+import { platformMeta } from "@/lib/domain/labels"
 import { cn } from "@/lib/utils"
 import { FacebookIcon, InstagramIcon, TiktokIcon } from "./brand-icons"
 

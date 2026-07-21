@@ -9,9 +9,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/domain"
+import { contentStatusMeta, formatLabelKey, platformMeta } from "@/lib/domain/labels"
 import { useLabels, useT } from "@/lib/i18n"
-import { contentStatusMeta, formatLabelKey, platformMeta } from "@/lib/mocks/labels"
-import type { ContentFormat, ContentPillar, ContentStatus, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { type CalendarFilters, hasActiveFilters } from "./calendar-types"
 

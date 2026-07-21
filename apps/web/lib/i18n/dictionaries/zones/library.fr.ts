@@ -142,9 +142,10 @@ export const libraryFr = {
     upload: {
       title: "Ajouter des médias",
       description:
-        "Aucun fichier n'est réellement téléversé pendant la preview — le clic simule l'ajout.",
+        "L'upload de fichiers arrive avec le câblage TUS. Voici déjà les specs à respecter.",
       dropTitle: "Glisse tes photos et vidéos ici",
-      dropHint: "ou clique pour parcourir (simulation d'ajout)",
+      dropHint: "ou clique pour parcourir",
+      pending: "L'upload de fichiers arrive bientôt (câblage TUS).",
       specImage:
         "Images Instagram : JPEG ≤ {max} Mo, ratio 4:5 à 1.91:1 — conversion automatique des PNG.",
       specHeic: "HEIC iPhone : converti en JPEG à l'import, rien à faire de ton côté.",

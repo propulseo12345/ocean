@@ -17,8 +17,8 @@ import {
   getRecurringSlots,
   getSocialAccounts,
 } from "@/lib/data"
+import type { ContentStatus, QuotaUsage } from "@/lib/domain"
 import { getT } from "@/lib/i18n/server"
-import type { ContentStatus, QuotaUsage } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {

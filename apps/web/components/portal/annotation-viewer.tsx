@@ -4,9 +4,9 @@ import { MapPin, MessageSquare } from "lucide-react"
 import { useState } from "react"
 import { MediaCarousel } from "@/components/portal/media-carousel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import type { Comment, MediaAsset } from "@/lib/domain"
 import { initials } from "@/lib/format"
 import { useFormat, useT } from "@/lib/i18n"
-import type { Comment, MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 export function AnnotationViewer({

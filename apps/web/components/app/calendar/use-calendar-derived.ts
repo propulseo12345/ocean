@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo } from "react"
-import type { ContentItem } from "@/lib/mocks/types"
+import type { ContentItem } from "@/lib/domain"
 import {
   accountIssueContentIds,
   cadenceGaps,

@@ -18,8 +18,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { now as clockNow } from "@/lib/clock"
+import type { Client, RecurringSlot } from "@/lib/domain"
 import { useFormat, useLocale, useT } from "@/lib/i18n"
-import type { Client, RecurringSlot } from "@/lib/mocks/types"
 import {
   ASAP_DELAY_MS,
   GRACE_WINDOW_HOURS,

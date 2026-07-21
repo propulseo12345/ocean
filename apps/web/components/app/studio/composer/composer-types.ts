@@ -1,4 +1,3 @@
-import { type Locale } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentItem,
@@ -6,7 +5,8 @@ import type {
   MediaType,
   Platform,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import type { Locale } from "@/lib/i18n"
 
 // Types du composer (état local UI — preview, aucune écriture réelle).
 // Le brouillon reflète l'anatomie d'un ContentItem du PRD §5.B pour brancher

@@ -4,9 +4,9 @@ import { PortalCard } from "@/components/portal/portal-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getPortalContent } from "@/lib/data"
+import type { Client, ContentStatus } from "@/lib/domain"
 import { getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
-import type { Client, ContentStatus } from "@/lib/mocks/types"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()

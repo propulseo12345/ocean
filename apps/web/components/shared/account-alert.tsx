@@ -4,8 +4,8 @@ import { TriangleAlert } from "lucide-react"
 import { toast } from "sonner"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import type { SocialAccount } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { SocialAccount } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Alerte santé d'un compte social (needs_reauth / expired).

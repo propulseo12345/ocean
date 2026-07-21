@@ -2,8 +2,8 @@
 
 import { CalendarDays, Share2, UserRound } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { CalendarAccount, User } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { CalendarAccount, User } from "@/lib/mocks/types"
 import { AccountsTab, type ClientAccountsGroup } from "./accounts-tab"
 import { CalendarsTab } from "./calendars-tab"
 import { ProfileTab } from "./profile-tab"

@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { days, fromNow, hours } from "@/lib/clock"
+import type { Client } from "@/lib/domain"
 import { type MessageKey, useFormat, useT } from "@/lib/i18n"
-import { days, fromNow, hours } from "@/lib/mocks/time"
-import type { Client } from "@/lib/mocks/types"
 import { wallClockIn, zonedToUtcIso } from "./composer/composer-utils"
 
 // Programmation en série (lot) : date/heure de départ dans le fuseau du

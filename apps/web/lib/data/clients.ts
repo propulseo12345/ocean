@@ -3,7 +3,7 @@ import "server-only"
 import { cache } from "react"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
-import type { AccountStatus, Client, Platform, SocialAccount, User } from "@/lib/mocks/types"
+import type { AccountStatus, Client, Platform, SocialAccount, User } from "@/lib/domain"
 import { createClient } from "@/lib/supabase/server"
 
 // Câblage Supabase des lectures CŒUR « identité » : clients, comptes sociaux,
@@ -28,18 +28,6 @@ export interface DbClientRow {
 
 const DEFAULT_BRAND_COLOR = "oklch(0.62 0.19 250)"
 
-// `theme` n'existe PAS en base : c'est un artefact de la preview (pools d'images
-// Pexels de lib/mocks/images). On le dérive de l'id pour rester déterministe
-// tant que `useLibraryAssets.addMockAssets` en dépend — à retirer en Phase 8
-// avec les mocks, en même temps que le champ du type `Client`.
-const PREVIEW_THEMES = ["coffee", "food", "fashion", "yoga"] as const
-
-function themeFor(id: string): Client["theme"] {
-  let hash = 0
-  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  return PREVIEW_THEMES[hash % PREVIEW_THEMES.length]
-}
-
 /**
  * Ligne DB -> type front `Client`. Les champs narratifs sont dupliqués fr=en :
  * le contenu est monolingue (D1), le `string` disparaît en Phase 7.
@@ -54,7 +42,6 @@ export function mapClient(row: DbClientRow, following = 0): Client {
     brandColor: row.brand_color ?? DEFAULT_BRAND_COLOR,
     timezone: row.timezone,
     archivedAt: row.archived_at,
-    theme: themeFor(row.id),
     bio: row.bio ?? "",
     category: row.category ?? "",
     following,

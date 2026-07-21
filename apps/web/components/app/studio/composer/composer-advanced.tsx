@@ -11,9 +11,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import type { Platform } from "@/lib/domain"
+import { platformMeta } from "@/lib/domain/labels"
 import { useT } from "@/lib/i18n"
-import { platformMeta } from "@/lib/mocks/labels"
-import type { Platform } from "@/lib/mocks/types"
 import type { ComposerDraft } from "./composer-types"
 
 // Options avancées par plateforme ciblée — uniquement des champs crédibles

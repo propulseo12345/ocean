@@ -2,7 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 
-import type { AppNotification, NotificationAudience, NotificationChannel } from "@/lib/mocks/types"
+import type { AppNotification, NotificationAudience, NotificationChannel } from "@/lib/domain"
 import { createClient } from "@/lib/supabase/server"
 
 // Notifications in-app. La RLS scope déjà sur le destinataire ; on répète

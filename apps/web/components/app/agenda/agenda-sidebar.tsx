@@ -4,8 +4,8 @@ import { CalendarRange, Send } from "lucide-react"
 import { GoogleIcon, MicrosoftIcon } from "@/components/app/agenda/provider-icons"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Switch } from "@/components/ui/switch"
+import type { CalendarAccount, CalendarProvider } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { CalendarAccount, CalendarProvider } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 export interface CalendarFilter {
@@ -48,9 +48,7 @@ export function AgendaSidebar({
                 <ProviderIcon provider={acc.provider} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">
-                  {acc.label}
-                </span>
+                <span className="block truncate text-sm font-medium">{acc.label}</span>
                 <span className="block truncate text-xs text-muted-foreground">{acc.email}</span>
               </span>
               <AccountStatusBadge status={acc.status} className="shrink-0" />

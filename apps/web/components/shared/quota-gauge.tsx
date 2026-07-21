@@ -1,7 +1,7 @@
 "use client"
 
+import type { QuotaUsage } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { QuotaUsage } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Jauge fine de quota plateforme — « 87/100 publications · 24 h ».

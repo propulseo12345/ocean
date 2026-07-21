@@ -13,9 +13,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useIsMobile } from "@/hooks/use-mobile"
+import type { ClientEvent, ContentItem } from "@/lib/domain"
 import { type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
-import type { ClientEvent, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { createContentHref } from "./calendar-schedule"
 import type { DayContext } from "./calendar-types"

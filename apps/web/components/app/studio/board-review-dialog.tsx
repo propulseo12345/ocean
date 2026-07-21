@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import type { ContentItem, Reviewer } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { ContentItem, Reviewer } from "@/lib/mocks/types"
 
 // Dialog « Demander une validation » : lot de contenus prêts (brouillons et
 // retours corrigés), message au reviewer, récap email mocké (Brevo).
@@ -122,9 +122,7 @@ export function BoardReviewDialog({
                     ) : (
                       <span className="size-9 shrink-0 rounded-md bg-muted" />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {item.title}
-                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">{item.title}</span>
                     <ContentStatusBadge status={item.status} />
                   </Label>
                 ))

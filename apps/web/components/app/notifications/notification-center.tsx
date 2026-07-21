@@ -7,8 +7,8 @@ import { NotificationRow } from "@/components/app/notifications/notification-row
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { AppNotification } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { AppNotification } from "@/lib/mocks/types"
 
 type Filter = "all" | "unread"
 

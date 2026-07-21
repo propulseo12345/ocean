@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import type { Client } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell-provider"
 

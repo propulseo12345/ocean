@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { updateBrandKit } from "@/lib/actions/brand-kit"
+import type { BrandKit } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { BrandKit } from "@/lib/mocks/types"
 import { BannedWordsEditor } from "./banned-words-editor"
 import { arraysEqual, PaletteEditor } from "./palette-editor"
 import { SaveBar, SectionCard } from "./section-card"
@@ -31,8 +31,7 @@ export function SectionBrandKit({
 }) {
   const t = useT()
   const [pending, startTransition] = useTransition()
-  const resolveList = (list: string[] | undefined) =>
-    (list ?? [])
+  const resolveList = (list: string[] | undefined) => list ?? []
 
   const base: ResolvedKit = {
     palette: brandKit?.palette ?? [],

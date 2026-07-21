@@ -1,5 +1,5 @@
+import type { EngagementStats } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { EngagementStats } from "@/lib/mocks/types"
 
 // Socle de la page Performance : modèle de période + primitives de calcul,
 // partagés par perf-data.ts et perf-breakdown.ts.

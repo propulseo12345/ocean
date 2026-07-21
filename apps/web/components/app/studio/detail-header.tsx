@@ -4,8 +4,8 @@ import { FormatLabel } from "@/components/shared/format-icon"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import type { Client, ContentItem } from "@/lib/domain"
 import { getFormat, getT } from "@/lib/i18n/server"
-import type { Client, ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 // En-tête du détail contenu : retour, statut + format, titre, créneau,
@@ -54,9 +54,7 @@ export async function DetailHeader({
             </Badge>
           ) : null}
         </div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          {content.title}
-        </h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">{content.title}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1 tabular-nums">
             {content.scheduledAt ? (

@@ -8,7 +8,6 @@ import { ContentCard } from "@/components/app/studio/content-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { useMultiSelect } from "@/hooks/use-multi-select"
-import { useLocale, useT } from "@/lib/i18n"
 import type {
   Client,
   ContentItem,
@@ -17,7 +16,8 @@ import type {
   Reviewer,
   ReviewRequest,
   SavedView,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import { useLocale, useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { BoardBatchActions } from "./board-batch-actions"
 import { BoardKanban } from "./board-kanban"

@@ -1,5 +1,5 @@
+import type { AgendaItem } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { AgendaItem } from "@/lib/mocks/types"
 
 // Bornes horaires de la grille semaine (fuseau du freelance).
 export const DAY_START_HOUR = 7

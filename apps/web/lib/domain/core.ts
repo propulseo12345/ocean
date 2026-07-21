@@ -6,7 +6,6 @@
 // Les NOMS PROPRES (name, handle, username, hashtags, email) restent en `string`
 // (une agence gère des marques au nom fixe — décision du 19/06/2026).
 
-
 export type Platform = "instagram" | "facebook" | "tiktok" | "newsletter" | "custom"
 
 export type ContentFormat = "post" | "carousel" | "reel" | "story"
@@ -70,7 +69,6 @@ export interface Client {
   brandColor: string
   timezone: string
   archivedAt: string | null
-  theme: keyof typeof import("../images").IMAGES
   /** Bio Instagram (multiligne) — pour l'aperçu de profil. */
   bio: string
   category: string

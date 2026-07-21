@@ -3,7 +3,6 @@ import { AppSidebar } from "@/components/app/app-sidebar"
 import { LocaleToggle } from "@/components/app/locale-toggle"
 import { NotificationsButton } from "@/components/app/notifications-button"
 import { CommandPalette } from "@/components/app/shell/command-palette"
-import { DemoBanner } from "@/components/app/shell/demo-banner"
 import { HeaderSearchButton } from "@/components/app/shell/header-search-button"
 import { PwaInstallAssistant } from "@/components/app/shell/pwa-install-assistant"
 import { QuickCapture } from "@/components/app/shell/quick-capture"
@@ -35,7 +34,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           socialAccounts={shell.socialAccounts}
         />
         <SidebarInset>
-          <DemoBanner />
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-md sm:px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />

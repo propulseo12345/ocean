@@ -10,9 +10,9 @@ import {
   zonedParts,
 } from "@/components/app/agenda/agenda-utils"
 import { AgendaBlock } from "@/components/app/agenda/event-block"
+import type { AgendaItem } from "@/lib/domain"
 import { isSameDay } from "@/lib/format"
 import { INTL_LOCALE, type Locale, useFormat, useLocale, useT } from "@/lib/i18n"
-import type { AgendaItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 const ROW_HEIGHT = 56 // px par heure

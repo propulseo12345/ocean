@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Film } from "lucide-react"
 import Image from "next/image"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import type { MediaAsset } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 export function MediaCarousel({

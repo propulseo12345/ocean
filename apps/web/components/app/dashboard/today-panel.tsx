@@ -3,10 +3,10 @@ import Link from "next/link"
 import { ClientAvatar } from "@/components/shared/client-avatar"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PlatformIcons } from "@/components/shared/platform-badge"
+import type { AgendaItem } from "@/lib/domain"
 import { isSameDay } from "@/lib/format"
-import { type Format, type Locale } from "@/lib/i18n"
+import type { Format, Locale } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
-import type { AgendaItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function TodayPanel({ items, timezone }: { items: AgendaItem[]; timezone: string }) {
@@ -65,9 +65,7 @@ function AgendaRow({
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: e.colorVar }} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm">{e.title}</span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {e.calendarName}
-          </span>
+          <span className="block truncate text-xs text-muted-foreground">{e.calendarName}</span>
         </span>
       </li>
     )

@@ -1,6 +1,6 @@
 import "server-only"
 
-import type { MediaAsset, MediaType } from "@/lib/mocks/types"
+import type { MediaAsset, MediaType } from "@/lib/domain"
 import { createClient } from "@/lib/supabase/server"
 
 // Hydratation des médias d'un lot de contenus. Isolé de `content.ts` pour tenir

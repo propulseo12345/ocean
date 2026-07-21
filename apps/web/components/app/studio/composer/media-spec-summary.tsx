@@ -2,8 +2,8 @@
 
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { SpecIssues } from "@/components/shared/spec-issues"
+import type { Platform } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { Platform } from "@/lib/mocks/types"
 import { type SpecIssue, validateMedia } from "@/lib/specs"
 import type { ComposerDraft, ComposerMedia } from "./composer-types"
 

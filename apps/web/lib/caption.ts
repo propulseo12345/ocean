@@ -1,4 +1,4 @@
-import type { Platform } from "@/lib/mocks/types"
+import type { Platform } from "@/lib/domain"
 
 // Compteurs et garde-fous de légende (composer studio).
 // Limites réelles : IG 2 200, FB 63 206, TikTok 2 200 ; coupure feed IG ~125.

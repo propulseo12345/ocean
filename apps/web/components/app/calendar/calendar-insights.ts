@@ -1,6 +1,6 @@
 import { now } from "@/lib/clock"
-import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
-import type { ContentItem, ContentPillar, ContentStatus, SocialAccount } from "@/lib/mocks/types"
+import type { ContentItem, ContentPillar, ContentStatus, SocialAccount } from "@/lib/domain"
+import { MANUAL_PLATFORMS } from "@/lib/domain/labels"
 import { GAP_THRESHOLD_DAYS } from "./calendar-types"
 import { type DayKey, dayKeyOf } from "./calendar-utils"
 

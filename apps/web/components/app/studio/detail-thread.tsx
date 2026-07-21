@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { postComment } from "@/lib/actions/collaboration"
 import { nowIso } from "@/lib/clock"
+import type { Comment } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Comment } from "@/lib/mocks/types"
 import { CommentRow, NoteRow, ThreadComposer } from "./detail-thread-items"
 
 // Fil de discussion du contenu, en deux couches étanches :

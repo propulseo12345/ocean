@@ -13,8 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { UseMultiSelectResult } from "@/hooks/use-multi-select"
+import type { Client, ContentItem } from "@/lib/domain"
 import { type Translator, useT } from "@/lib/i18n"
-import type { Client, ContentItem } from "@/lib/mocks/types"
 import { LabelEditor } from "./board-label-popover"
 import { BoardScheduleDialog } from "./board-schedule-dialog"
 import type { BoardState } from "./board-state"
@@ -171,9 +171,7 @@ export function BoardBatchActions({
                 board.addLabelsBatch(
                   selection.selectedIds,
                   labels,
-                  new Map(
-                    selected.map((it) => [it.id, (it.labels ?? [])])
-                  )
+                  new Map(selected.map((it) => [it.id, it.labels ?? []]))
                 )
                 toast.success(t("studio.batch.tagsAdded"), {
                   description: labels.join(" · "),

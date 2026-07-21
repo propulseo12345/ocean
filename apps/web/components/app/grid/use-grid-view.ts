@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { ContentFormat, ContentStatus } from "@/lib/mocks/types"
+import type { ContentFormat, ContentStatus } from "@/lib/domain"
 import type { GridRatio, GridTileData } from "./grid-types"
 
 // État de présentation de la grille : ratio, rendu final, filtres, bac à sable

@@ -10,8 +10,8 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import type { HashtagGroup } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { HashtagGroup } from "@/lib/mocks/types"
 
 // Popover « Groupes de hashtags » du client : insertion d'un groupe en un clic
 // dans la légende ou le premier commentaire (destination portée par le parent).

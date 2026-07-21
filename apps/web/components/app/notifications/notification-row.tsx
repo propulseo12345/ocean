@@ -14,9 +14,9 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import Link from "next/link"
+import type { AppNotification, NotificationChannel } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
 import { useFormat, useT } from "@/lib/i18n"
-import type { AppNotification, NotificationChannel } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 const TYPE_ICON: Record<string, LucideIcon> = {
@@ -96,9 +96,7 @@ export function NotificationRow({ notification }: { notification: AppNotificatio
           ) : null}
         </div>
 
-        <p className="line-clamp-2 text-xs text-muted-foreground">
-          {notification.body}
-        </p>
+        <p className="line-clamp-2 text-xs text-muted-foreground">{notification.body}</p>
 
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span className="text-[11px] text-muted-foreground/80 tabular-nums">

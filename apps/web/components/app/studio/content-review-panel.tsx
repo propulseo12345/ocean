@@ -1,8 +1,8 @@
 import { Check, CircleHelp, Clock, type LucideIcon, TriangleAlert, X, Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { type Format, type Locale, type Translator } from "@/lib/i18n"
+import type { Approval, ApprovalMode, ContentStatus, Reviewer } from "@/lib/domain"
+import type { Format, Locale, Translator } from "@/lib/i18n"
 import { getFormat, getLabels, getLocale, getT } from "@/lib/i18n/server"
-import type { Approval, ApprovalMode, ContentStatus, Reviewer } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // État de validation du contenu : bandeau de synthèse (en attente, approuvé,

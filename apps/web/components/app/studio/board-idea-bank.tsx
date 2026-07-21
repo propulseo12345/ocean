@@ -15,8 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { nowIso } from "@/lib/clock"
+import type { Client, ContentItem, ContentPillar } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { Client, ContentItem, ContentPillar } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 // Banque d'idées du client : capture rapide (état local), tri par pilier

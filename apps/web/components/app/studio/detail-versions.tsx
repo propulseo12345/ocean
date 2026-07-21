@@ -1,9 +1,9 @@
 import { Check, History, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { type Format, type Locale, type Translator } from "@/lib/i18n"
+import type { Approval, ContentVersion } from "@/lib/domain"
+import type { Format, Locale, Translator } from "@/lib/i18n"
 import { getFormat, getLocale, getT } from "@/lib/i18n/server"
-import type { Approval, ContentVersion } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { diffWords } from "./detail-diff"
 
@@ -91,10 +91,7 @@ function VersionRow({
       <p className="text-xs text-muted-foreground">{version.note}</p>
 
       {previous ? (
-        <CaptionDiff
-          before={previous.caption}
-          after={version.caption}
-        />
+        <CaptionDiff before={previous.caption} after={version.caption} />
       ) : (
         <p className="rounded-md bg-muted/40 p-2 text-xs leading-relaxed whitespace-pre-wrap">
           {version.caption}

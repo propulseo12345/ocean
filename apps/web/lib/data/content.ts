@@ -9,7 +9,7 @@ import type {
   ContentTarget,
   Platform,
   TargetStatus,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
 import { createClient } from "@/lib/supabase/server"
 import { loadContentMedia } from "./content-media"
 
@@ -104,9 +104,7 @@ async function loadTargets(
       externalPostId: row.external_post_id ?? undefined,
       permalink: row.permalink ?? undefined,
       publishedAt: row.published_at ?? undefined,
-      captionOverride: row.caption_override
-        ? row.caption_override
-        : undefined,
+      captionOverride: row.caption_override ? row.caption_override : undefined,
     })
     byItem.set(row.content_item_id, list)
   }
@@ -178,9 +176,7 @@ async function hydrate(rows: ItemRow[]): Promise<ContentItem[]> {
       format: row.format as ContentFormat,
       status: row.status as ContentStatus,
       scheduledAt: row.scheduled_at,
-      newsletterSubject: row.newsletter_subject
-        ? row.newsletter_subject
-        : undefined,
+      newsletterSubject: row.newsletter_subject ? row.newsletter_subject : undefined,
       internalNotes: row.internal_notes ? row.internal_notes : undefined,
       media: media.byItem.get(row.id) ?? [],
       targets: targets.get(row.id) ?? [],

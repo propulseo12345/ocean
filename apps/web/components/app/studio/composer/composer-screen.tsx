@@ -6,7 +6,6 @@ import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { type SaveContentPayload, saveContentItem } from "@/lib/actions/content"
-import { type Locale, useLabels, useLocale, useT } from "@/lib/i18n"
 import type {
   BrandKit,
   Client,
@@ -18,7 +17,8 @@ import type {
   QuotaUsage,
   RecurringSlot,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import { type Locale, useLabels, useLocale, useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { ComposerAdvanced } from "./composer-advanced"
 import { ComposerBasics } from "./composer-basics"

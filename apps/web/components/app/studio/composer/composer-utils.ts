@@ -1,11 +1,11 @@
 import { now as clockNow } from "@/lib/clock"
+import type { Client, Platform, RecurringSlot, SocialAccount } from "@/lib/domain"
 import type { MessageKey, MessageParams } from "@/lib/i18n"
-import type { Client, Platform, RecurringSlot, SocialAccount } from "@/lib/mocks/types"
 import { zonedWallToUtcIso } from "@/lib/tz"
 import type { ComposerDraft } from "./composer-types"
 
 // Helpers purs du composer : fuseaux, raccourcis de programmation, ciblage.
-// Tout est calculé depuis MOCK_NOW (11/06/2026) — aucune horloge réelle.
+// Le temps vient de now() (lib/clock, vrai temps courant depuis le dégel).
 
 /** Garde-fou PRD §5.B : programmation ≥ maintenant + 15 min. */
 export const MIN_LEAD_MS = 15 * 60_000

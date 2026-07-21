@@ -13,8 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import type { MediaAsset } from "@/lib/domain"
 import { type Translator, useT } from "@/lib/i18n"
-import type { MediaAsset } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Choix de la couverture d'un Reel : image actuelle ou frame extraite de la

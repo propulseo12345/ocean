@@ -14,8 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import type { Client } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client } from "@/lib/mocks/types"
 import { BrandColorPalette } from "./brand-color-palette"
 import { SaveBar, SectionCard } from "./section-card"
 

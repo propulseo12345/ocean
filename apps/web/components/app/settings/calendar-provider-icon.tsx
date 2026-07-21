@@ -1,8 +1,8 @@
 "use client"
 
 import type { SVGProps } from "react"
+import type { CalendarProvider } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { CalendarProvider } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Glyphes calendrier neutres (lucide a retiré les logos de marque) —

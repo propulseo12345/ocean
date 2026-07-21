@@ -13,8 +13,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import type { LibraryAsset } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { LibraryAsset } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import type { SpecIssue } from "@/lib/specs"
 import { AssetDetails } from "./asset-details"

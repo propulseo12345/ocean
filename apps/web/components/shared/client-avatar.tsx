@@ -1,5 +1,5 @@
+import type { Client } from "@/lib/domain"
 import { initials } from "@/lib/format"
-import type { Client } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 export function ClientAvatar({

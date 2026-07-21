@@ -5,8 +5,8 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import type { Client, LibraryAsset } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, LibraryAsset } from "@/lib/mocks/types"
 import type { SpecIssue } from "@/lib/specs"
 import { AssetGrid } from "./asset-grid"
 import { AssetSheet } from "./asset-sheet"
@@ -39,7 +39,7 @@ export function LibraryWorkspace({
   contentRefs: ContentRefMap
 }) {
   const t = useT()
-  const lib = useLibraryAssets(client, initialAssets)
+  const lib = useLibraryAssets(initialAssets)
   const select = useMultiSelect()
   const [filters, setFilters] = useState<LibraryFilters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortKey>("recent")
@@ -218,7 +218,11 @@ export function LibraryWorkspace({
         onConfirm={doDelete}
       />
 
-      <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} onSimulate={lib.addMockAssets} />
+      <UploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onSimulate={() => toast.info(t("library.upload.pending"))}
+      />
 
       <DepositLinkDialog
         open={depositOpen}

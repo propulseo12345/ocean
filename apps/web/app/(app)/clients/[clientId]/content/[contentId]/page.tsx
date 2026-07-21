@@ -27,9 +27,9 @@ import {
   getReviewer,
   getSocialAccounts,
 } from "@/lib/data"
+import type { ContentItem, ContentStatus, ContentTarget } from "@/lib/domain"
+import { MANUAL_PLATFORMS } from "@/lib/domain/labels"
 import { getT } from "@/lib/i18n/server"
-import { MANUAL_PLATFORMS } from "@/lib/mocks/labels"
-import type { ContentItem, ContentStatus, ContentTarget } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {

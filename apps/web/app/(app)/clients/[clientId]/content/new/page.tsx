@@ -17,8 +17,8 @@ import {
   getRecurringSlots,
   getSocialAccounts,
 } from "@/lib/data"
+import type { QuotaUsage } from "@/lib/domain"
 import { getT } from "@/lib/i18n/server"
-import type { QuotaUsage } from "@/lib/mocks/types"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT()

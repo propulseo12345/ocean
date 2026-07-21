@@ -4,8 +4,8 @@ import { BellRing, Send } from "lucide-react"
 import { toast } from "sonner"
 import { ReviewStateBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
+import type { ContentItem, ReviewRequestState } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { ContentItem, ReviewRequestState } from "@/lib/mocks/types"
 import type { BoardState } from "./board-state"
 
 // Bandeau de suivi de la demande de validation en cours : N envoyés ·

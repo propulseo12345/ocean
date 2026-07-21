@@ -3,7 +3,7 @@
 import { Film, Layers } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
-import type { MediaAsset } from "@/lib/mocks/types"
+import type { MediaAsset } from "@/lib/domain"
 import { cn } from "@/lib/utils"
 
 export function MediaThumb({

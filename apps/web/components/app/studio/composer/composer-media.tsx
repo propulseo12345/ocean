@@ -21,8 +21,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import type { LibraryAsset, Platform } from "@/lib/domain"
 import { INTL_LOCALE, useLocale, useT } from "@/lib/i18n"
-import type { LibraryAsset, Platform } from "@/lib/mocks/types"
 import { CAROUSEL_LIMITS, ratioLabel, validateCarousel } from "@/lib/specs"
 import {
   applyCrop,

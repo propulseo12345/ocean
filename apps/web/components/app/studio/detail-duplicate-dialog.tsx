@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import type { Client } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client } from "@/lib/mocks/types"
 
 // Duplication d'un contenu : copie pour le même client, ou vers un autre
 // client avec adaptation des hashtags. Les médias ne traversent JAMAIS d'un

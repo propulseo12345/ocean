@@ -1,5 +1,5 @@
+import type { ContentPillar, Platform, SocialAccount } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { ContentPillar, Platform, SocialAccount } from "@/lib/mocks/types"
 import { round1 } from "./perf-core"
 import type { PostRow } from "./perf-data"
 

@@ -146,10 +146,10 @@ export const libraryEn: Widen<typeof libraryFr> = {
     // Upload dialog
     upload: {
       title: "Add media",
-      description:
-        "No file is actually uploaded during the preview — clicking simulates the upload.",
+      description: "File upload arrives with the TUS wiring. Here are the specs to follow already.",
       dropTitle: "Drop your photos and videos here",
-      dropHint: "or click to browse (upload simulation)",
+      dropHint: "or click to browse",
+      pending: "File upload is coming soon (TUS wiring).",
       specImage:
         "Instagram images: JPEG ≤ {max} MB, ratio 4:5 to 1.91:1 — PNGs converted automatically.",
       specHeic: "iPhone HEIC: converted to JPEG on import, nothing for you to do.",

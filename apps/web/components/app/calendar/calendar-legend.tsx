@@ -1,9 +1,9 @@
 "use client"
 
 import { BellRing, Flag, Hand, Lock, PartyPopper, StickyNote } from "lucide-react"
+import type { ContentStatus, Platform } from "@/lib/domain"
+import { contentStatusMeta, platformMeta, toneDotClass } from "@/lib/domain/labels"
 import { useLabels, useT } from "@/lib/i18n"
-import { contentStatusMeta, platformMeta, toneDotClass } from "@/lib/mocks/labels"
-import type { ContentStatus, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Légende repliable : statuts, plateformes et marqueurs spéciaux du calendrier.

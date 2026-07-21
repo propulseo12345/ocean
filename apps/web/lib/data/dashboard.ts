@@ -1,10 +1,9 @@
 import "server-only"
 
 import { cache } from "react"
-
+import type { AgendaItem, Client, ContentItem, DashboardTask } from "@/lib/domain"
 import { isSameDay } from "@/lib/format"
 import { type Labels, makeLabels, type Translator } from "@/lib/i18n"
-import type { AgendaItem, Client, ContentItem, DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { getClients, getCurrentUser, getSocialAccounts } from "./clients"
 import { getContentItems } from "./content"
@@ -55,9 +54,7 @@ export const getDashboardTasks = cache(
     }
     for (const item of items) {
       if (item.status === "failed" || item.status === "partially_published") {
-        const err = item.lastError
-          ? item.lastError
-          : t("dashboard.task.publishFailed")
+        const err = item.lastError ? item.lastError : t("dashboard.task.publishFailed")
         tasks.push({
           id: `t_fail_${item.id}`,
           kind: "failed",

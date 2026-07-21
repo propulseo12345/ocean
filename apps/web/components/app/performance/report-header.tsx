@@ -1,6 +1,6 @@
+import type { Client } from "@/lib/domain"
 import { initials } from "@/lib/format"
 import { useLocale, useT } from "@/lib/i18n"
-import type { Client } from "@/lib/mocks/types"
 import { compactNumber } from "./perf-utils"
 
 // En-tête brandé du rapport : initiales du client sur sa couleur de marque,

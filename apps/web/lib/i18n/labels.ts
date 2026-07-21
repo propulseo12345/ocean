@@ -1,3 +1,13 @@
+import type {
+  AccountStatus,
+  ActivityKind,
+  ApprovalMode,
+  ContentFormat,
+  ContentStatus,
+  Platform,
+  ReviewRequestState,
+  TargetStatus,
+} from "@/lib/domain"
 import {
   accountStatusMeta,
   activityKindMeta,
@@ -8,17 +18,7 @@ import {
   platformMeta,
   reviewStateMeta,
   targetStatusMeta,
-} from "@/lib/mocks/labels"
-import type {
-  AccountStatus,
-  ActivityKind,
-  ApprovalMode,
-  ContentFormat,
-  ContentStatus,
-  Platform,
-  ReviewRequestState,
-  TargetStatus,
-} from "@/lib/mocks/types"
+} from "@/lib/domain/labels"
 import type { Translator } from "./translator"
 
 // Résolveurs de libellés localisés à partir d'un Translator (server ou client).

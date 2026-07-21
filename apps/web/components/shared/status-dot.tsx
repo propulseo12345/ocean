@@ -1,8 +1,8 @@
 "use client"
 
+import type { ContentStatus, TargetStatus } from "@/lib/domain"
+import { contentStatusMeta, targetStatusMeta, toneDotClass } from "@/lib/domain/labels"
 import { useLabels } from "@/lib/i18n"
-import { contentStatusMeta, targetStatusMeta, toneDotClass } from "@/lib/mocks/labels"
-import type { ContentStatus, TargetStatus } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Pastille de statut compacte (tuiles de grille, cases du calendrier).

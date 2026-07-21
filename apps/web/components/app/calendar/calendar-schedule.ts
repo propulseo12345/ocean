@@ -1,6 +1,6 @@
 import { nowIso } from "@/lib/clock"
+import type { ContentItem, ContentStatus } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { zonedWallToUtcIso } from "@/lib/tz"
 import type { DayKey } from "./calendar-utils"

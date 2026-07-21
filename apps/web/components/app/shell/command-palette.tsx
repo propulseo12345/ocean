@@ -16,8 +16,8 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
+import type { Client, ContentItem, SocialAccount } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { Client, ContentItem, SocialAccount } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { clientAccountIssues, clientSwitchHref } from "./client-nav"
 import { useShell } from "./shell-provider"

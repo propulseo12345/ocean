@@ -5,8 +5,8 @@ import { toast } from "sonner"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
+import type { SocialAccount } from "@/lib/domain"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
-import type { SocialAccount } from "@/lib/mocks/types"
 
 export function AccountRow({ account }: { account: SocialAccount }) {
   const t = useT()

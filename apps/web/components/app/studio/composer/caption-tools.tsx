@@ -9,8 +9,8 @@ import {
   IG_HASHTAG_LIMIT,
   IG_TRUNCATE_AT,
 } from "@/lib/caption"
+import type { Platform } from "@/lib/domain"
 import { INTL_LOCALE, useLocale, useT } from "@/lib/i18n"
-import type { Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Outils de légende : compteurs par plateforme, garde-fous brand kit,

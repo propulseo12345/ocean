@@ -1,7 +1,7 @@
 import { toast } from "sonner"
 import { scheduleContentItem } from "@/lib/actions/content"
+import type { ContentItem } from "@/lib/domain"
 import type { Locale, Translator } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { isMovable, movedIso, zonedToUtcIso } from "./calendar-schedule"
 import { type DayKey, dayKeyOf, shiftWeek, weekdayDayMonth } from "./calendar-utils"
 

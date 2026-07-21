@@ -8,8 +8,8 @@ import { MediaThumb } from "@/components/shared/media-thumb"
 import { ContentStatusBadge } from "@/components/shared/status-badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Switch } from "@/components/ui/switch"
+import type { ContentItem } from "@/lib/domain"
 import { useLocale, useT } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import type { DayContext } from "./calendar-types"
 import { type DayKey, weekdayDayMonth } from "./calendar-utils"
@@ -98,9 +98,7 @@ export function PlanningShelf({
                 >
                   <ShelfThumb item={item} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      {item.title}
-                    </span>
+                    <span className="block truncate text-sm font-medium">{item.title}</span>
                     <ContentStatusBadge status={item.status} className="mt-0.5 text-[10px]" />
                   </span>
                 </li>

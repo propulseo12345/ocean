@@ -1,16 +1,9 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import { nowIso } from "@/lib/clock"
-import { loc, useLocale } from "@/lib/i18n"
-import { hours } from "@/lib/mocks/time"
-import type {
-  ContentItem,
-  ContentStatus,
-  Reviewer,
-  ReviewRequest,
-  SavedView,
-} from "@/lib/mocks/types"
+import { hours, nowIso } from "@/lib/clock"
+import type { ContentItem, ContentStatus, Reviewer, ReviewRequest, SavedView } from "@/lib/domain"
+import { useLocale } from "@/lib/i18n"
 import { type BoardFilters, type BoardViewMode, EMPTY_FILTERS, type SortKey } from "./board-types"
 import { matchesFilters, sortItems } from "./board-utils"
 
@@ -63,7 +56,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
 
   // Mutations locales (aperçu) appliquées par-dessus les mocks.
   // Les étiquettes saisies (déjà résolues dans la locale) sont stockées comme
-  // string via loc(s, s) pour rester compatibles avec le type ContentItem.
+  // string via s pour rester compatibles avec le type ContentItem.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, ContentStatus>>({})
   const [labelOverrides, setLabelOverrides] = useState<Record<string, string[]>>({})
   const [scheduleOverrides, setScheduleOverrides] = useState<Record<string, string>>({})
@@ -96,7 +89,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
         id: nextLocalId("sv_local"),
         clientId,
         // Vue locale (aperçu) : nom saisi dans la locale active, dupliqué.
-        name: loc(name, name),
+        name: name,
         filters: { ...filters },
       }
       setLocalViews((prev) => [...prev, view])
@@ -114,7 +107,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
   }, [])
 
   const setItemLabels = useCallback((id: string, labels: string[]) => {
-    setLabelOverrides((prev) => ({ ...prev, [id]: labels.map((l) => loc(l, l)) }))
+    setLabelOverrides((prev) => ({ ...prev, [id]: labels.map((l) => l) }))
   }, [])
 
   const addLabelsBatch = useCallback(
@@ -123,7 +116,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
         const next = { ...prev }
         for (const id of ids) {
           const merged = [...new Set([...(current.get(id) ?? []), ...labels])]
-          next[id] = merged.map((l) => loc(l, l))
+          next[id] = merged.map((l) => l)
         }
         return next
       })
@@ -162,7 +155,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
         contentIds: ids,
         reviewerIds: reviewer ? [reviewer.id] : [],
         // Message local (aperçu) saisi dans la locale active, dupliqué.
-        message: trimmed ? loc(trimmed, trimmed) : undefined,
+        message: trimmed ? trimmed : undefined,
         sentAt: nowIso(),
         state: "pending",
       })

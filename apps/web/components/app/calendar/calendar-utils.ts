@@ -1,5 +1,5 @@
+import type { ContentItem } from "@/lib/domain"
 import { DEFAULT_LOCALE, INTL_LOCALE, type Locale } from "@/lib/i18n/config"
-import type { ContentItem } from "@/lib/mocks/types"
 
 // Vue calendrier. Tout est raisonne en "cle jour" (YYYY-MM-DD) dans le fuseau
 // du client : on ne se fie jamais au fuseau runtime du navigateur/serveur pour

@@ -3,8 +3,8 @@
 import { CalendarOff, ClockAlert } from "lucide-react"
 import { AccountAlert } from "@/components/shared/account-alert"
 import { Button } from "@/components/ui/button"
+import type { SocialAccount } from "@/lib/domain"
 import { useLabels, useT } from "@/lib/i18n"
-import type { SocialAccount } from "@/lib/mocks/types"
 
 // Bandeaux d'alerte du calendrier : comptes à reconnecter (avec impact),
 // contenus en attente de validation, semaine à venir vide.

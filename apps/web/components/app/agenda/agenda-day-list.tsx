@@ -9,9 +9,9 @@ import {
 } from "@/components/app/agenda/agenda-utils"
 import { AgendaBlock } from "@/components/app/agenda/event-block"
 import { EmptyState } from "@/components/shared/empty-state"
+import type { AgendaItem } from "@/lib/domain"
 import { isSameDay } from "@/lib/format"
 import { useFormat, useT } from "@/lib/i18n"
-import type { AgendaItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Repli mobile : la grille semaine est trop dense → liste par jour.

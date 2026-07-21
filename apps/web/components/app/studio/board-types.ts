@@ -1,11 +1,11 @@
-import type { MessageKey } from "@/lib/i18n"
 import type {
   ContentFormat,
   ContentStatus,
   Platform,
   QuotaUsage,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import type { MessageKey } from "@/lib/i18n"
 
 // Types et constantes du board studio : filtres, tris, vues, kanban.
 

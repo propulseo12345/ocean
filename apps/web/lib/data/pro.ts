@@ -1,8 +1,6 @@
 import "server-only"
 
 import { cache } from "react"
-
-import { PLATFORM_QUOTAS } from "@/lib/mocks/quotas"
 import type {
   AccountStatus,
   ActivityEntry,
@@ -33,7 +31,8 @@ import type {
   ReviewRequestState,
   SavedView,
   SavedViewFilters,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import { PLATFORM_QUOTAS } from "@/lib/domain/quotas"
 import { createClient } from "@/lib/supabase/server"
 
 // Quota « principal » affiché par plateforme (une jauge). IG = publications,

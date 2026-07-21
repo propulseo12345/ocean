@@ -10,10 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { ContentItem } from "@/lib/domain"
+import { contentStatusMeta, toneDotClass } from "@/lib/domain/labels"
 import { type MessageKey, useLocale, useT } from "@/lib/i18n"
 import { getMarronniersOn, type MarronnierKind } from "@/lib/marronniers"
-import { contentStatusMeta, toneDotClass } from "@/lib/mocks/labels"
-import type { ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { droppableDayId, useDragActive } from "./calendar-dnd"
 import { createContentHref } from "./calendar-schedule"

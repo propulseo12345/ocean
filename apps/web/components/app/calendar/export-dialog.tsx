@@ -12,9 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+import type { Client, ContentItem } from "@/lib/domain"
 import { formatTime } from "@/lib/format"
 import { type MessageKey, useLabels, useT } from "@/lib/i18n"
-import type { Client, ContentItem } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { type DayKey, dayNumber, monthOf } from "./calendar-utils"
 

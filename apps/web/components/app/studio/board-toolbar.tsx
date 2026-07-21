@@ -10,8 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { ContentPillar, Platform } from "@/lib/domain"
 import { type Translator, useT } from "@/lib/i18n"
-import type { ContentPillar, Platform } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 import { BoardFiltersPopover } from "./board-filters"
 import type { BoardState } from "./board-state"

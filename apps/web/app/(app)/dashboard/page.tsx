@@ -10,8 +10,8 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { nowIso } from "@/lib/clock"
 import { getCurrentUser, getDashboardTasks, getNotifications, getUnifiedAgenda } from "@/lib/data"
+import type { DashboardTask } from "@/lib/domain"
 import { getFormat, getT } from "@/lib/i18n/server"
-import type { DashboardTask } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 export async function generateMetadata(): Promise<Metadata> {

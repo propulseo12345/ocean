@@ -17,8 +17,8 @@ import { WeekGrid } from "@/components/app/agenda/week-grid"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { now as clockNow } from "@/lib/clock"
+import type { AgendaItem, CalendarAccount, CalendarEvent } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { AgendaItem, CalendarAccount, CalendarEvent } from "@/lib/mocks/types"
 
 function buildCalendars(events: CalendarEvent[]): CalendarFilter[] {
   const map = new Map<string, CalendarFilter>()

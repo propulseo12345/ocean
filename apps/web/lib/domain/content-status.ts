@@ -1,4 +1,4 @@
-import type { ContentStatus } from "@/lib/mocks/types"
+import type { ContentStatus } from "@/lib/domain"
 
 // LA matrice de transition de statut, côté code.
 //

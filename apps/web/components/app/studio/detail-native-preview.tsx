@@ -15,8 +15,8 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IG_TRUNCATE_AT } from "@/lib/caption"
+import type { Client, ContentItem, Platform, SocialAccount } from "@/lib/domain"
 import { type Translator, useFormat, useLabels, useT } from "@/lib/i18n"
-import type { Client, ContentItem, Platform, SocialAccount } from "@/lib/mocks/types"
 import { DetailPreviewMedia } from "./detail-preview-media"
 
 // Aperçu natif « comme sur la plateforme » : post feed Instagram (header

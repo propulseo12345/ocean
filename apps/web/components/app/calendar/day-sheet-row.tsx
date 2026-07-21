@@ -13,9 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { ContentItem } from "@/lib/domain"
 import { formatTime } from "@/lib/format"
 import { useT } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 import { isMovable } from "./calendar-schedule"

@@ -3,8 +3,8 @@
 import { ArrowLeft, CalendarClock, CalendarOff, Check, TriangleAlert } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import type { Client } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
-import type { Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 
 // En-tête du composer : retour studio, titre, rappel de programmation

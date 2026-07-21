@@ -2,8 +2,8 @@
 
 import { Check, CircleAlert, Film, TriangleAlert } from "lucide-react"
 import Image from "next/image"
+import type { LibraryAsset } from "@/lib/domain"
 import { useFormat, useLocale, useT } from "@/lib/i18n"
-import type { LibraryAsset } from "@/lib/mocks/types"
 import { ratioLabel, type SpecIssue } from "@/lib/specs"
 import { cn } from "@/lib/utils"
 import { formatDuration, formatMb, hasSpecErrors, sourceMeta } from "./library-utils"
@@ -36,9 +36,7 @@ export function AssetCard({
   const used = asset.usedInContentIds.length
   const errored = hasSpecErrors(issues)
   const source = sourceMeta[asset.source]
-  const label = asset.altText
-    ? asset.altText
-    : t("library.card.fallbackLabel", { id: asset.id })
+  const label = asset.altText ? asset.altText : t("library.card.fallbackLabel", { id: asset.id })
 
   return (
     <button

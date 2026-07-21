@@ -1,6 +1,6 @@
 import { Lock, Pin } from "lucide-react"
+import { toneDotClass } from "@/lib/domain/labels"
 import { useT } from "@/lib/i18n"
-import { toneDotClass } from "@/lib/mocks/labels"
 import { cn } from "@/lib/utils"
 
 function LegendDot({ className }: { className: string }) {

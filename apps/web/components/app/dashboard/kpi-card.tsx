@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
-import type { StatusTone } from "@/lib/mocks/labels"
-import { toneTextClass } from "@/lib/mocks/labels"
+import type { StatusTone } from "@/lib/domain/labels"
+import { toneTextClass } from "@/lib/domain/labels"
 import { cn } from "@/lib/utils"
 
 const toneBg: Record<StatusTone, string> = {

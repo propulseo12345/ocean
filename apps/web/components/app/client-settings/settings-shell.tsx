@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import type { ClientSettings } from "@/lib/data"
-import { type MessageKey, useT } from "@/lib/i18n"
 import type {
   BrandKit,
   Client,
@@ -21,7 +20,8 @@ import type {
   RecurringSlot,
   Reviewer,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
+import { type MessageKey, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { SectionAccounts } from "./section-accounts"
 import { SectionApproval } from "./section-approval"

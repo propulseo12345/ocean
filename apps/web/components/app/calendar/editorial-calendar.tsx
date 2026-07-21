@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import type { ContentItem } from "@/lib/domain"
 import { useLocale, useT } from "@/lib/i18n"
-import type { ContentItem } from "@/lib/mocks/types"
 import { AutomationDialog } from "./automation-dialog"
 import {
   performDrop,

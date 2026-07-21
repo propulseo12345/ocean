@@ -1,5 +1,5 @@
+import type { ApprovalMode, Platform } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { ApprovalMode, Platform } from "@/lib/mocks/types"
 
 // État centralisé du wizard de création d'un client (preview, en mémoire).
 // Les champs reprennent le vocabulaire de la future donnée : Client, BrandKit,

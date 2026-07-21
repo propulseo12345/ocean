@@ -1,4 +1,4 @@
-import type { SocialAccount } from "@/lib/mocks/types"
+import type { SocialAccount } from "@/lib/domain"
 import { routes } from "@/lib/routes"
 
 // Navigation contextuelle entre clients : en passant de Verde à Nove depuis

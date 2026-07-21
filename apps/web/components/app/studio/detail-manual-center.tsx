@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { markTargetPublishedManually } from "@/lib/actions/content-status"
+import { hours } from "@/lib/clock"
+import type { ContentTarget, Platform, SocialAccount } from "@/lib/domain"
 import { type MessageKey, type Translator, useFormat, useT } from "@/lib/i18n"
-import { hours } from "@/lib/mocks/time"
-import type { ContentTarget, Platform, SocialAccount } from "@/lib/mocks/types"
 
 // Centre de publication manuelle : brouillons TikTok poussés, newsletter et
 // canaux sur mesure. Checklist guidée — copier la légende (vrai presse-papier),

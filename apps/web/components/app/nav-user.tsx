@@ -24,8 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import type { User } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { User } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
 import { useShell } from "./shell/shell-provider"
 

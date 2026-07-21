@@ -15,10 +15,10 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { type Format, type Labels, type Locale, type Translator } from "@/lib/i18n"
+import type { ActivityEntry, ActivityKind } from "@/lib/domain"
+import { activityKindMeta, type StatusTone } from "@/lib/domain/labels"
+import type { Format, Labels, Locale, Translator } from "@/lib/i18n"
 import { getFormat, getLabels, getLocale, getT } from "@/lib/i18n/server"
-import { activityKindMeta, type StatusTone } from "@/lib/mocks/labels"
-import type { ActivityEntry, ActivityKind } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 // Journal d'activité du contenu : qui a fait quoi, quand — la preuve en cas

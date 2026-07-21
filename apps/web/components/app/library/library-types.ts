@@ -1,5 +1,5 @@
+import type { ContentStatus, LibraryAssetSource } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
-import type { ContentStatus, LibraryAssetSource } from "@/lib/mocks/types"
 
 // Types partagés de la médiathèque client (preview, données mockées).
 

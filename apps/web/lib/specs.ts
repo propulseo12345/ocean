@@ -1,5 +1,5 @@
+import type { ContentFormat, MediaType, Platform } from "@/lib/domain"
 import type { MessageKey, MessageParams } from "@/lib/i18n"
-import type { ContentFormat, MediaType, Platform } from "@/lib/mocks/types"
 
 // Specs médias par plateforme (état réel des API, juin 2026) + validation.
 // Les messages sont retournés sous forme {key, params} et résolus à l'affichage

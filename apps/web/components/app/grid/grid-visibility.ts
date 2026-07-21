@@ -1,4 +1,4 @@
-import type { ContentFormat, ContentStatus } from "@/lib/mocks/types"
+import type { ContentFormat, ContentStatus } from "@/lib/domain"
 import type { CoverCompareTarget } from "./cover-compare-dialog"
 import { FINAL_RENDER_STATUSES, type GridTileData } from "./grid-types"
 

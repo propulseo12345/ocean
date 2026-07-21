@@ -10,8 +10,8 @@ import {
   deleteRecurringSlot,
   updateRecurringSlot,
 } from "@/lib/actions/recurring-slots"
+import type { Client, ContentPillar, RecurringSlot } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, ContentPillar, RecurringSlot } from "@/lib/mocks/types"
 import { SectionCard } from "./section-card"
 import { SlotRow } from "./slot-row"
 import { SlotsWeekPreview } from "./slots-week-preview"

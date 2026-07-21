@@ -2,8 +2,8 @@
 
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import type { ApprovalMode } from "@/lib/domain"
 import { type MessageKey, useLabels, useT } from "@/lib/i18n"
-import type { ApprovalMode } from "@/lib/mocks/types"
 import { PillarEditor } from "./pillar-editor"
 import { SlotEditor } from "./slot-editor"
 import type { ClientDraft } from "./wizard-types"

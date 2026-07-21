@@ -1,21 +1,16 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { useLabels } from "@/lib/i18n"
-import type { StatusTone } from "@/lib/mocks/labels"
+import type { AccountStatus, ContentStatus, ReviewRequestState, TargetStatus } from "@/lib/domain"
+import type { StatusTone } from "@/lib/domain/labels"
 import {
   accountStatusMeta,
   contentStatusMeta,
   reviewStateMeta,
   targetStatusMeta,
   toneDotClass,
-} from "@/lib/mocks/labels"
-import type {
-  AccountStatus,
-  ContentStatus,
-  ReviewRequestState,
-  TargetStatus,
-} from "@/lib/mocks/types"
+} from "@/lib/domain/labels"
+import { useLabels } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 function Dot({ tone }: { tone: StatusTone }) {

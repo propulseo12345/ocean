@@ -12,9 +12,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/shared/empty-state"
+import type { DashboardTask } from "@/lib/domain"
 import type { Format, MessageKey } from "@/lib/i18n"
 import { getFormat, getT } from "@/lib/i18n/server"
-import type { DashboardTask } from "@/lib/mocks/types"
 import { cn } from "@/lib/utils"
 
 const KIND_ICON: Record<DashboardTask["kind"], LucideIcon> = {

@@ -1,5 +1,5 @@
 import { getBrandKit, getClient, getSocialAccounts } from "@/lib/data"
-import type { Client } from "@/lib/mocks/types"
+import type { Client } from "@/lib/domain"
 import { getPerfPeriodData, type PerfPeriod, type PerfPeriodData } from "./perf-data"
 
 // Couche de données du rapport client : valeurs brutes + tops (métriques réelles,

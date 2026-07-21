@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { Client, ContentItem } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, ContentItem } from "@/lib/mocks/types"
 import { type DayKey, dayKeyOf, shiftWeek } from "./calendar-utils"
 
 // Dupliquer un contenu vers une date, pour ce client ou un autre. La copie
@@ -63,9 +63,7 @@ export function DuplicateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("calendar.duplicate.title")}</DialogTitle>
-          <DialogDescription className="truncate">
-            {item ? item.title : null}
-          </DialogDescription>
+          <DialogDescription className="truncate">{item ? item.title : null}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">

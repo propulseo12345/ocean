@@ -1,8 +1,8 @@
 "use client"
 
 import { PlatformIcons } from "@/components/shared/platform-badge"
+import type { ContentPillar, RecurringSlot } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { ContentPillar, RecurringSlot } from "@/lib/mocks/types"
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "./constants"
 
 // Aperçu hebdomadaire des créneaux récurrents : grille 7 jours, chaque créneau

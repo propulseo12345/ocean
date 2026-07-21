@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import type { LibraryAsset } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { LibraryAsset } from "@/lib/mocks/types"
 import type { UsageRef } from "./library-types"
 import { assetFileName } from "./library-utils"
 

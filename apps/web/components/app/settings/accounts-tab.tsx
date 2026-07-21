@@ -5,8 +5,8 @@ import { ClientAvatar } from "@/components/shared/client-avatar"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Client, SocialAccount } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
-import type { Client, SocialAccount } from "@/lib/mocks/types"
 import { AccountRow } from "./account-row"
 
 export interface ClientAccountsGroup {

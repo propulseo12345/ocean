@@ -8,7 +8,7 @@ import type {
   Platform,
   QuotaUsage,
   SocialAccount,
-} from "@/lib/mocks/types"
+} from "@/lib/domain"
 
 // Types partagés du calendrier éditorial (état, filtres, contexte des cases).
 
