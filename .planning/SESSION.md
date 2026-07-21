@@ -55,9 +55,37 @@ Après application : régénérer les types. NB `scripts/gen-types.py` **n'écri
 encore le fichier** (il ne fait qu'afficher) ; `apps/web/lib/supabase/types.ts`
 est maintenu À LA MAIN en attendant — soit finir le script, soit continuer à la main.
 
-## RIEN N'EST VÉRIFIÉ AU RUNTIME
-Toute la vérification est **pgTAP local (conteneur `ocean_rev2`) + typecheck**.
-Le runtime Playwright n'est possible qu'après application en ligne des migrations.
+## ✅ VÉRIFIÉ AU RUNTIME (2026-07-21, Étienne a appliqué 03→08 + 10 + le seed 09)
+Migrations 010→016 EN LIGNE + `deploy/09_seed_demo.sql` appliqué. Playwright sur
+le serveur dev (port 3010) connecté au vrai projet `hgdeopkmkwyoumsfggrm`, session
+linda@socean.com :
+- **Dashboard** : rend les 3 clients seedés + « Client de demo », les 4 échecs,
+  le compte à reconnecter, 3 notifications réelles (badge 2 non-lues). **Mon
+  extraction jsonb de `last_error` rend le message propre** (« Jeton Instagram
+  expire… »), pas `[object Object]`.
+- **Détail contenu** (Recette express, Maison Verde) : format Reel, statut
+  « Partiellement publié », légende + hashtags réels, **« Cibles (1) : TikTok
+  @maisonverde · 2,4 k abonnés »** → `loadTargets` + résolution du compte social
+  + `followers_count` fonctionnent ensemble en ligne. « Aucun média » (attendu,
+  pas de fichier seedé). Compteurs discussion + mode de validation réels.
+- **Zéro erreur serveur** ; les 2 erreurs console sont des warnings Base UI
+  `nativeButton` préexistants, sans rapport avec le câblage.
+
+**Reste vérifié uniquement par pgTAP (pas de compte au runtime)** : le portail
+Reviewer (aucun compte reviewer seedé — auth.users + client_members requis). La
+suite 090 couvre l'isolation portail de façon rigoureuse.
+
+### Cosmétiques constatés au runtime (pas des bugs de câblage)
+- Dashboard : « À publier aujourd'hui = 0 » et « Journée libre » alors que le seed
+  date des contenus pour aujourd'hui → **gel de l'horloge** (`lib/clock.ts`
+  MOCK_NOW = 11 juin ; le seed date par rapport au vrai `now()` = 21 juil). Se
+  résout au dégel de la Phase 8.
+- « Bonjour linda@socean.com » : `profiles.full_name` est NULL en ligne. `deploy/02`
+  pose `full_name='Linda'` en `on conflict do nothing`, mais le trigger
+  `handle_new_user` avait déjà créé la ligne (full_name null) → le seed n'écrase
+  pas. Corriger à la main en ligne si voulu : `update profiles set full_name='Linda'
+  where email='linda@socean.com';`
+- Bandeau « Mode démo » (DemoBanner) : statique, à retirer au passage réel.
 
 ## Décisions en attente
 - **D2** — chemin Storage `{org}/{client}/{media_asset_id}/` **sans**
