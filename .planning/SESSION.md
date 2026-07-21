@@ -1,11 +1,11 @@
-# Session State — 2026-07-21 (câblage Supabase : Phases 1→6 + lectures CŒUR)
+# Session State — 2026-07-21 (câblage Supabase : Phases 1→7 + lectures CŒUR)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `1e1eab1`. Working tree propre sauf
+`feat/cablage-supabase` @ `8f0c791`. Working tree propre sauf
 `apps/web/__tz_repro.mjs` (débug non commité, à supprimer en Phase 8).
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
-## Fait (8 commits)
+## Fait (11 commits)
 | Phase | Commit | Migration | pgTAP |
 |---|---|---|---|
 | 1 — config éditoriale | f2cb402 | 011 (7 tables + `client_settings` D4) | 33/33 |
@@ -16,9 +16,10 @@ Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 | fix — deploy 010 idempotent | a401103 | — | — |
 | **lectures CŒUR + seed** | **5bcdced** | — (tables 004→007) | **16/16** (090) |
 | **6 — transitions** | **1e1eab1** | **016** (matrice + 2 RPC) | **19/19** |
+| **7 — aplatissement i18n** | **300fc7a** (T1-3) + **8f0c791** (T4) | — | — |
 
 **Suite pgTAP complète 003→016 + 090 : 218/218, plan == émis sur les 15 fichiers.**
-**`pnpm --filter web exec tsc --noEmit` : 0 erreur, AVEC `lib/data/mock.ts` supprimé.**
+**`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
 
 ## ÉTAT DE L'APPLICATION EN LIGNE (projet hgdeopkmkwyoumsfggrm)
 
@@ -123,30 +124,40 @@ comptes sociaux, 16 contenus couvrant les 5 types de tâches du dashboard).
 (sans fichier Storage réel = vignettes cassées), NI imported_posts/post_metrics
 (écriture service_role exclusive, migration 014), NI calendriers (OAuth).
 
+## ✅ PHASE 7 FAITE — aplatissement i18n (commits 300fc7a + 8f0c791)
+Contenu client MONOLINGUE (D1). `L<string>` → `string` (34 champs), `pick` et
+le type `L` SUPPRIMÉS, `pick(x, locale)` → `x` (147 appels), `loc` réduit à
+`loc(fr,_en)=>fr` et **gardé UNIQUEMENT pour les mocks** (`lib/mocks/**`, ~200
+appels) qui meurent en Phase 8 — le code permanent (data layer) en est découplé
+(`loc(x,x)` → `x`). 40 `locale` morts + no-op maps nettoyés.
+
+**Levier qui a rendu ça sûr** : `pick` rendu tolérant (`L<T> | T`) en T1 → les
+147 consommateurs ont compilé à chaque étape ; seuls ~12 fichiers (types +
+producteurs) ont dû changer pour basculer. T4 (retrait de pick) = cosmétique.
+
+**Piège payé — NE PAS refaire** : `biome check --write` sur tout le repo
+REFORMATE 319 fichiers (virgules traînantes, reflow). Toujours cibler les
+fichiers, et pour retirer des imports morts utiliser un script, jamais le
+formateur global (`--formatter-enabled=false` bloque aussi le retrait d'imports).
+
+**VÉRIFIÉ RUNTIME** : toggle EN sur /dashboard → l'UI bascule (Dashboard,
+Overview, Awaiting approval, Free day…), le contenu reste FR (Maison Verde,
+« Recette express en 30 secondes », « Jeton Instagram expire… »). D1 exact.
+
 ## Reste à faire, dans cet ordre suggéré
-1. **Phase 7** — aplatissement `L<string>` → `text`. Périmètre MESURÉ :
-   **71 fichiers / 147 `pick(`**, 24 fichiers avec `L<`, 23 avec `loc(`.
+1. **Phase 8** (dernière) — **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
+   5 composants qui importent fromNow/hours/days ; côté runtime c'est ce gel qui
+   fait « 0 à publier aujourd'hui » sur le dashboard seedé). Relocaliser
+   `lib/mocks/types` → `lib/domain` (les types domaine ne doivent plus vivre
+   sous `mocks`). **Supprimer `lib/mocks/**`** : au passage `loc` disparaît (son
+   seul appelant restant après la Phase 7) — le retirer de `lib/i18n`. Reste
+   aussi à passer `perf-data`/`perf-breakdown`/`report-data` en async+orgId (ils
+   importent `@/lib/mocks` en synchrone) et retirer `Client.theme` +
+   `lib/mocks/images` (dérivé par hash aujourd'hui). `get_advisors` clean (à
+   faire faire par Étienne, MCP sur autre compte), vérif visuelle post-dégel.
 
-   **Levier trouvé, à exploiter (évite 23 fichiers de réécriture)** : le corpus
-   mock produit du `L<string>` uniquement via `loc(fr, en)`. Faire renvoyer à
-   `loc()` **le seul `fr`** (une `string`) bascule TOUT le corpus en monolingue
-   FR d'un seul fichier — ce qui EST la décision D1. Vérifié : les dictionnaires
-   `lib/i18n/**` n'utilisent PAS `loc()` (aucun risque de les emporter), et
-   `loc()` n'est jamais appelé sur autre chose que des chaînes.
-
-   Ordre conseillé : T1 shim `pick()` tolérant (`L<T> | T`) + `loc()` renvoie
-   `fr` → build vert sans toucher aux 147 appels ; T2 bascule des types
-   (`L<string>` → `string`) ; T3 cas SYSTÈME (notifications type+payload,
-   content_activity kind+payload, last_error jsonb — gabarits i18n des 11
-   `activity_kind` à écrire, ils n'existent pas) ; T4 retrait des 147 `pick()`
-   puis de `L`/`loc`/`pick`.
-
-   ⚠️ NE PAS commencer sans pouvoir finir T1→T2 d'affilée : un aplatissement à
-   moitié appliqué laisse le build rouge sur des dizaines de fichiers.
-2. **Phase 8** — réduite à : **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
-   5 composants), relocalisation `lib/mocks/types` → `lib/domain`, suppression
-   du reste de `lib/mocks/**` (constantes encore lues par `use-library-assets`
-   et `perf-data`), `get_advisors` clean, vérif visuelle post-dégel.
+   NB câblage restant hors Phase 8 (déjà noté en dettes) : les 2 RPC de la
+   Phase 6 dans l'UI, l'upload TUS, l'UI portail, les emails Brevo.
 
 ## Dettes connues
 - **Phase 6 : les 2 RPC ne sont pas encore appelées par des composants.** Les

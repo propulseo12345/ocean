@@ -184,7 +184,19 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
 - ⚠️ Reste : câbler les 2 RPC dans l'UI (bouton « j'ai publié », bouton retry) —
   les actions existent, les composants appellent encore les stubs mockés.
 
-## À FAIRE — Phase 7 et suivantes
+## FAIT (Phase 7) ✅ — aplatissement i18n — commits 300fc7a (T1-3) + 8f0c791 (T4)
+- Contenu client MONOLINGUE (D1) : `L<string>` → `string` (34 champs), `pick`
+  et le type `L` supprimés, 147 `pick(x, locale)` → `x`. `loc` réduit à
+  `loc(fr,_en)=>fr`, GARDÉ pour le seul corpus mock (`lib/mocks/**`, ~200 appels,
+  supprimé en Phase 8) ; le data layer en est découplé (`loc(x,x)` → `x`).
+- **Levier** : `pick` tolérant (`L<T> | T`) en T1 → les 147 consommateurs
+  compilent à chaque étape ; seuls ~12 fichiers (types + producteurs) changent
+  pour la bascule. T4 = cosmétique (script ciblé, PAS `biome --write` global qui
+  reformate 319 fichiers — piège de SESSION).
+- **VÉRIFIÉ RUNTIME** (serveur dev 3010, vrai Supabase) : toggle EN → UI en
+  anglais, contenu resté FR. D1 exact. Build vert, typecheck 0.
+
+## À FAIRE — Phase 8 (dernière)
 Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
