@@ -85,7 +85,64 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   DANS content_items (getContentItems reste mock), upload TUS client + conversion
   JPEG/HEIC + vignette WebP, URL signées portail. media_deposit_links → migr 016.
 
-## À FAIRE — Phase 3 et suivantes
+## FAIT (Phase 3) ✅ — migration 013 (collaboration) — commit 4a92604
+- 8 tables : content_versions (org-only D5), approvals (immuable, version_label
+  dénormalisé, decided_by set null+snapshot), content_comments (client/internal,
+  annotation→content_media x/y 0..1, anti-fuite), content_activity (append-only
+  org-only), review_requests(+items+recipients FK client_members), client_invitations.
+- ALTER : client_members.last_active_at, content_items.client_comments_count,
+  content_targets (last_error, manual_published_*, retry_requested_at, skipped_reason).
+- Triggers : compteur commentaires client, approval_stale, garde transition
+  content_targets (bypass worker via request.jwt.claims). D7 (is_reviewer_visible
+  += publishing, failed). Enum activity_kind RÉALIGNÉ front dans 010 (deploy/03 regen).
+- 3 RPC : submit_review_decision (B1), touch_client_member_seen, emit_notification (B2).
+- **pgTAP 013 = 28/28** (les tests de fuite les plus critiques : internal, draft,
+  cross-client, no-op status, RPC, gardes, token_hash illisible, GUARD-05).
+- 6 lectures collab (pro.ts, façade basculée) + Server Actions collaboration.ts.
+- ⚠️ Non câblé : getReviewerContext réel, UI portail, Route Handler accept invit,
+  emails Brevo. label_ids matching (dette Phase 1) toujours ouverte.
+
+## POINT D'ÉTAPE (fin Phase 3) — pour Étienne
+- **Migrations à appliquer EN LIGNE, dans l'ordre** (SQL Editor, projet
+  hgdeopkmkwyoumsfggrm) : deploy/03 (010, régénéré), deploy/04 (011), deploy/05
+  (012 + **reconfirmer D2/D3**), deploy/06 (013). Puis `python scripts/gen-types.py`.
+- **Rien n'est vérifié au RUNTIME** (010+ pas en ligne) : vérif = pgTAP local
+  (33+27+28 verts) + typecheck 0. Le runtime Playwright suivra l'application.
+- **D2/D3** (Phase 2) tranchés par recommandation, à confirmer avant deploy/05.
+- Décisions à venir : D8/D9 (Phase 6/016), sélecteur client portail D10 (Phase 3 UI).
+
+## FAIT (Phase 4) ✅ — migration 014 (feed & performance) — commit 4ca1725
+- imported_posts (media_product_type, sans caption/media_count), post_metrics
+  (XOR content_target/imported_post, engagement_total généré, reach NULLABLE),
+  social_account_quota_usage (**PK composite (social_account_id, quota_kind)**).
+  ALTER social_accounts (avatar_url, following_count, feed_synced_at/error).
+- **Écriture service_role EXCLUSIVE** sur les 3 (falsification de rapport client
+  et remise à zéro de jauge sinon possibles). **pgTAP 12/12**.
+- Lectures : getImportedPosts, getPostMetrics, getTopPosts, getQuotaUsage.
+- ⚠️ Reste : perf-data/perf-breakdown/report-data en async+orgId, suppression de
+  PERIOD_FACTOR/DELTA_SHAPE (deltas inventés), N+1 grille.
+
+## FAIT (Phase 5) ✅ — migration 015 (agenda) — commit 2c050cf
+- calendar_accounts (user-scopé, FK composite vers organization_members) +
+  calendar_account_secrets DENY-ALL (même migration, règle 11), calendar_calendars
+  (external_calendar_id stable, color_slot, is_enabled), calendar_events (all-day
+  DATE vs timé timestamptz, CHECK strict). Vue `unified_agenda` security_invoker,
+  owner_user_id NULLABLE + filtre par branche (sinon les publications disparaissent).
+- **pgTAP 14/14** dont la régression du domaine : deux membres de la MÊME org ne
+  voient PAS leurs agendas. Lectures + Server Action `toggleCalendar`.
+- **Régression attrapée** : le test 003 (« un seul profil visible ») était faux
+  depuis la policy `profiles_select_shared` (010) — assertion corrigée.
+- **SUITE COMPLÈTE 003→015 : 183/183, tous plans cohérents.**
+
+## ÉCART À TRAITER — les lectures CŒUR sont encore mockées
+Les phases 1→5 ont câblé les domaines périphériques. Restent MOCKÉES (jamais
+affectées à une phase, alors qu'elles sont le prérequis de « zéro mock ») :
+getClients, getClient, getContentItems, getContentItem, getTrashedContent,
+getSocialAccounts, getCurrentUser, getNotifications, getUnreadCount,
+getDashboardTasks, getPortalContent, getUnifiedAgenda. Les tables existent déjà
+(004/005/006/007) — à câbler avec le seed SQL de la Phase 8.
+
+## À FAIRE — Phase 6 et suivantes
 Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
