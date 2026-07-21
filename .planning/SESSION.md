@@ -1,14 +1,24 @@
 # Session State — 2026-07-22 (câblage Supabase : Phases 1→8 faites)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `dcc5d0c`. Working tree propre.
+`feat/cablage-supabase` @ `bf6d8dc`. Working tree propre.
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
-## ⏭️ REPRISE — Phase 9 (plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
+## ⏭️ REPRISE — Phase 10 (plan `.planning/PLAN_NUIT_cablage-phases-8-11.md`)
 Exécution autonome des 4 dernières phases (8→11). Vérif runtime = « créer puis
-supprimer ». **Phase 8 (2/2) FAITE et vérifiée runtime** (commit `dcc5d0c`).
-Reprendre à la **Phase 9** (§ du plan) : Phase 6 RPC dans detail-manual-center,
-portail submitReviewDecision/postComment, media attach/delete/alt.
+supprimer ». **Phases 8 (2/2) + 9 FAITES et vérifiées** (commits `dcc5d0c`,
+`bf6d8dc`). Reprendre à la **Phase 10** : perf-data/perf-breakdown/report-data
+async+orgId, SUPPRIMER PERIOD_FACTOR/DELTA_SHAPE (deltas inventés), N+1 grille,
+saved_views labels par id.
+
+## ⚠️ RÉSIDUS DE TEST EN LIGNE (Client de demo — à purger SQL par Étienne)
+Deux contenus de test créés au runtime, non supprimables via l'UI :
+- `88c1a509…` / **« TEST NUIT 8 »** `c092f256-d215-4f7a-9a15-653d3371857d` —
+  soft-deleted (corbeille).
+- `88c1a509…` / **« TEST PUB 9 »** `f69aa705-d43d-4994-8792-8ec6d0f3ae9e` —
+  `published` (terminal, read-only) + 1 cible newsletter publiée manuellement.
+Purge : `delete from content_items where id in ('c092f256-d215-4f7a-9a15-653d3371857d','f69aa705-d43d-4994-8792-8ec6d0f3ae9e');`
+(les content_targets/content_media cascaderont).
 
 ## 🌙 FAIT CETTE NUIT (2026-07-21→22)
 ### Phase 8 (2/2) — câblage UI des écritures cœur — commit `dcc5d0c`
@@ -42,6 +52,26 @@ client « Client de demo ») :
   `mcp-chrome-<hash>` (via CommandLine LIKE `*mcp-chrome-*`), jamais le navigateur
   normal ni d'autres projets.
 
+### Phase 9 — câblage UI des actions déjà écrites — commit `bf6d8dc`
+- **markTargetPublishedManually** (detail-manual-center, bouton « Publié ») :
+  **VÉRIFIÉ RUNTIME** — contenu frais programmé → cible newsletter « Published »
+  → rechargement complet = statut agrégé `published`, permalink sauvé, centre
+  manuel disparu. RPC pose status='published' (interdit à authenticated) en
+  SECURITY DEFINER.
+- **requestTargetRetry** (content-targets retry, RÈGLE 15) : pose
+  retry_requested_at, ne remet PAS en file (worker seul). Override optimiste +
+  rollback. Wording corrigé (plus de « replacée en file »).
+- **submitReviewDecision** (portal review-actions) : approuver / demander modifs.
+  Vérif = typecheck + build + pgTAP 013 (pas de compte reviewer, pas de runtime).
+- **postComment** (detail-thread, réponse client owner, visibility='client') :
+  persisté, refresh lit la ligne canonique.
+- i18n fr+en nettoyée + clés d'erreur. Dead code `locale` du portail retiré.
+- **DIFFÉRÉ (documenté)** : composer commentaire/annotation PORTAIL (annotation-
+  viewer read-only, aucun composer) ; note interne du fil (getComments sans
+  `visibility` → note interne fuirait dans l'onglet client) ; média attach/delete/
+  alt (médiathèque vide, assets = mock/TUS exclu, ids non-uuid → l'action réelle
+  échoue). À câbler quand TUS + composer portail existeront (handoff Étienne).
+
 ## Fait (11 commits)
 | Phase | Commit | Migration | pgTAP |
 |---|---|---|---|
@@ -56,6 +86,7 @@ client « Client de demo ») :
 | **7 — aplatissement i18n** | **300fc7a** (T1-3) + **8f0c791** (T4) | — | — |
 | **8 (1/2) — actions écriture** | **1a8db10** | — | **13/13** (091) |
 | **8 (2/2) — câblage UI écritures** | **dcc5d0c** | — | — (UI-only, actions déjà testées) |
+| **9 — câblage RPC + portail + fil** | **bf6d8dc** | — | — (UI-only, RPC déjà testées 013/016) |
 
 **Suite pgTAP complète 003→016 + 090 + 091 : 231/231, plan == émis sur 16 fichiers.**
 **`pnpm --filter web exec tsc --noEmit` : 0 erreur. `pnpm --filter web build` : vert.**
@@ -186,13 +217,7 @@ Overview, Awaiting approval, Free day…), le contenu reste FR (Maison Verde,
 « Recette express en 30 secondes », « Jeton Instagram expire… »). D1 exact.
 
 ## Reste à faire — phases du plan de nuit (§ PLAN_NUIT), dans l'ordre
-- **Phase 9** (prochaine) — câbler les actions déjà écrites : Phase 6 RPC dans
-  `detail-manual-center` (bouton « Publié » → markTargetPublishedManually ;
-  retry → requestTargetRetry) ; portail (review-actions →
-  submitReviewDecision ; annotation/thread → postComment) — **vérif portail =
-  pgTAP only** (aucun compte reviewer seedé, ne PAS en créer sans Étienne) ;
-  médias (attach/delete/alt via `lib/actions/media.ts`, upload TUS exclu).
-- **Phase 10** — `perf-data`/`perf-breakdown`/`report-data` en async+orgId ;
+- **Phase 10** (prochaine) — `perf-data`/`perf-breakdown`/`report-data` en async+orgId ;
   **SUPPRIMER PERIOD_FACTOR/DELTA_SHAPE** (deltas inventés dans un rapport
   client) ; N+1 grille (`getPostMetricsBatch`) ; saved_views labels par id.
 - **Phase 11** (dernière) — **dégel `lib/clock.ts`** (vrai now()) ; relocaliser

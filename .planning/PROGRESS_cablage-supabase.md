@@ -211,8 +211,23 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   nettoyée des « (aperçu) » + clés d'erreur. Résidu de test « TEST NUIT 8 »
   soft-deleted (client demo, id c092f256…) — pas de purge UI, à supprimer SQL.
 
-## À FAIRE — Phases 9→11 (plan de nuit §)
-Reprendre à la **Phase 9**. Méthode par phase, INVARIANTE (pour toute migration) :
+## FAIT (Phase 9, plan de nuit) ✅ — RPC + portail + fil — commit bf6d8dc
+- **markTargetPublishedManually** (detail-manual-center) : **VÉRIFIÉ RUNTIME**
+  (contenu frais programmé → cible newsletter « Published » → statut agrégé
+  `published` après reload, permalink sauvé). **requestTargetRetry**
+  (content-targets, RÈGLE 15 : intention, pas de re-queue). **submitReviewDecision**
+  (portal review-actions ; vérif pgTAP 013 + typecheck/build, pas de reviewer).
+  **postComment** (detail-thread réponse client owner, visibility='client').
+- i18n fr+en nettoyée (« (aperçu) » → réel) + clés d'erreur. `locale` mort du
+  portail retiré. typecheck 0, build vert, biome ciblé OK.
+- **DIFFÉRÉ** : composer commentaire/annotation PORTAIL (annotation-viewer read-
+  only) ; note interne du fil (getComments sans `visibility`) ; média attach/
+  delete/alt (library vide, ids mock, TUS exclu). → handoff Étienne (TUS + UI).
+- Résidus test online : TEST NUIT 8 (corbeille) + TEST PUB 9 (published) sur
+  Client de demo, à purger SQL (ids dans SESSION.md).
+
+## À FAIRE — Phases 10→11 (plan de nuit §)
+Reprendre à la **Phase 10**. Méthode par phase, INVARIANTE (pour toute migration) :
 1. Écrire la migration `0XX_*.sql` (specs colonnes = audits JSON ; corrections
    verif du plan §2 : RLS reviewer `is_reviewer_visible_content`, `revoke all`
    GUARD-05, `on delete set null` + snapshot noms, `set null (col)` PG15).
