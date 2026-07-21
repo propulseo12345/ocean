@@ -21,8 +21,19 @@ Les migrations 010→015 ne sont PAS appliquées en ligne (le MCP Supabase est s
 un autre compte). Toute la vérification est donc : **pgTAP local (ocean_rev2) +
 typecheck**. Le runtime Playwright ne pourra être fait qu'après application.
 
+**⚠️ CONSTAT 2026-07-21 : la migration 010 était DÉJÀ appliquée en ligne** (erreur
+`type "media_source" already exists`). Donc l'enum `activity_kind` en ligne a
+probablement encore les ANCIENNES valeurs (`edited`/`status_changed`/
+`review_requested`), qui ne correspondent pas au type front `ActivityKind`.
+→ `deploy/00_diagnostic.sql` (lecture seule) dit l'état exact.
+→ `deploy/03_migration_010.sql` est désormais IDEMPOTENT et RÉPARE l'enum
+  (recréé si divergent ET non utilisé ; refuse proprement s'il est déjà utilisé).
+  4 scénarios vérifiés sur ocean_rev2 : vierge, rejoué, enum ancien, enum ancien
+  utilisé. Suite pgTAP 183/183 avec deploy/03 substitué à la migration 010.
+
 **À faire par Étienne, dans l'ordre, SQL Editor du projet hgdeopkmkwyoumsfggrm :**
-1. `deploy/03_migration_010.sql` (RÉGÉNÉRÉ : enum activity_kind réaligné)
+0. `deploy/00_diagnostic.sql` (ne modifie rien — dit ce qui est déjà en place)
+1. `deploy/03_migration_010.sql` (idempotent, rejouable sans risque)
 2. `deploy/04_migration_011.sql`
 3. `deploy/05_migration_012.sql` — **reconfirmer D2 et D3 avant** (voir en-tête)
 4. `deploy/06_migration_013.sql`

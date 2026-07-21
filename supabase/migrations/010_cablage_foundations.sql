@@ -6,6 +6,11 @@
 --
 -- Décisions actées : D1 (text monolingue), D4 (client_settings org-only, lot 011),
 -- auth mot de passe uniquement.
+--
+-- ⚠️ Pour l'application EN LIGNE, utiliser `deploy/03_migration_010.sql` : version
+-- IDEMPOTENTE (rejouable) qui répare en plus l'enum activity_kind si la première
+-- version de 010 est déjà passée avec les anciennes valeurs. Les deux produisent
+-- un schéma équivalent (vérifié : suite pgTAP 183/183 avec l'un ou l'autre).
 
 -- ===========================================================================
 -- 1. Enums transverses (consommés par les lots 011->016)
