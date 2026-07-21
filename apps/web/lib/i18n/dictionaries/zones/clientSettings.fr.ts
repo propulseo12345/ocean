@@ -238,7 +238,8 @@ export const clientSettingsFr = {
       retentionNote:
         "Les contenus supprimés sont conservés {days} jours avant la purge des médias.",
       restore: "Restaurer",
-      restoredToast: "Contenu restauré (aperçu)",
+      restoredToast: "Contenu restauré",
+      restoreError: "Restauration impossible. Réessayez.",
       purgedToast: "Contenu supprimé définitivement (aperçu)",
       deletedRelative: "· supprimé {when}",
       purgeAria: "Supprimer définitivement {title}",

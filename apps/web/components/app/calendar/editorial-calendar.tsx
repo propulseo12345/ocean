@@ -157,7 +157,7 @@ export function EditorialCalendar(props: CalendarData) {
         items={s.effectiveItems}
         tz={s.tz}
         onDrop={(item, dayKey) =>
-          performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride, t, locale)
+          performDrop(item, dayKey, s.todayKey, s.tz, s.setOverride, t, locale, props.client.id)
         }
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -194,6 +194,7 @@ export function EditorialCalendar(props: CalendarData) {
         selectedItems={selectedItems}
         todayKey={s.todayKey}
         tz={s.tz}
+        clientId={props.client.id}
         setOverridesBatch={s.setOverridesBatch}
       />
 
@@ -203,7 +204,7 @@ export function EditorialCalendar(props: CalendarData) {
         todayKey={s.todayKey}
         onClose={() => setRescheduleItem(null)}
         onConfirm={(item, dayKey, time) => {
-          performReschedule(item, dayKey, time, s.tz, s.setOverride, t, locale)
+          performReschedule(item, dayKey, time, s.tz, s.setOverride, t, locale, props.client.id)
           setRescheduleItem(null)
         }}
       />

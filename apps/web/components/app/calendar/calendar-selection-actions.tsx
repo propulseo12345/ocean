@@ -20,6 +20,7 @@ export function CalendarSelectionActions({
   selectedItems,
   todayKey,
   tz,
+  clientId,
   setOverridesBatch,
 }: {
   active: boolean
@@ -27,6 +28,7 @@ export function CalendarSelectionActions({
   selectedItems: ContentItem[]
   todayKey: DayKey
   tz: string
+  clientId: string
   setOverridesBatch: (entries: [string, string | null][]) => void
 }) {
   const t = useT()
@@ -61,7 +63,7 @@ export function CalendarSelectionActions({
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              performUnschedule(selectedItems, setOverridesBatch, t)
+              performUnschedule(selectedItems, setOverridesBatch, t, clientId)
               selection.clear()
             }}
           >
@@ -76,7 +78,7 @@ export function CalendarSelectionActions({
         lockedCount={selectedItems.length - movableSelected.length}
         onClose={() => setShiftOpen(false)}
         onConfirm={(days) => {
-          performShift(selectedItems, days, todayKey, tz, setOverridesBatch, t)
+          performShift(selectedItems, days, todayKey, tz, setOverridesBatch, t, clientId)
           setShiftOpen(false)
           selection.clear()
         }}

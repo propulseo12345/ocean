@@ -10,12 +10,15 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { canApplyIntent } from "@/lib/domain/content-status"
+import { scheduleContentItem } from "@/lib/actions/content"
+import { applyStatusIntent } from "@/lib/actions/content-status"
+import { canApplyIntent, type StatusIntent } from "@/lib/domain/content-status"
 import { useLabels, useT } from "@/lib/i18n"
 import { days, fromNow } from "@/lib/mocks/time"
-import type { Client, ContentItem } from "@/lib/mocks/types"
+import type { Client, ContentItem, ContentStatus } from "@/lib/mocks/types"
 import { KanbanCard, KanbanColumn } from "./board-kanban-card"
 import type { BoardState } from "./board-state"
 import { KANBAN_COLUMNS, type KanbanColumnId, kanbanColumnOf } from "./board-types"
@@ -48,6 +51,7 @@ export function BoardKanban({
 }) {
   const t = useT()
   const lbl = useLabels()
+  const router = useRouter()
   const [activeId, setActiveId] = useState<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: POINTER_DISTANCE_PX } }),
@@ -56,8 +60,43 @@ export function BoardKanban({
     })
   )
 
+  // Persistance optimiste : l'override local est déjà appliqué (UX fluide) ; on
+  // écrit en arrière-plan et on ROLLBACK vers le statut d'origine si la Server
+  // Action échoue. La garde 008/016 est revérifiée côté serveur.
+  function persistStatus(item: ContentItem, intent: StatusIntent, prev: ContentStatus) {
+    applyStatusIntent({ clientId: client.id, contentId: item.id, intent }).then((res) => {
+      if (!res.ok) {
+        board.setStatusBatch([item.id], prev)
+        toast.error(t("studio.kanban.statusError"))
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  // Programmation depuis une date par défaut : bascule le statut (schedule) PUIS
+  // fixe la date. Deux écritures distinctes, cohérentes avec les Server Actions.
+  function persistSchedule(item: ContentItem, iso: string, prev: ContentStatus) {
+    applyStatusIntent({ clientId: client.id, contentId: item.id, intent: "schedule" }).then(
+      (res) => {
+        if (!res.ok) {
+          board.setStatusBatch([item.id], prev)
+          toast.error(t("studio.kanban.statusError"))
+          return
+        }
+        scheduleContentItem({ clientId: client.id, contentId: item.id, scheduledAt: iso }).then(
+          (r2) => {
+            if (!r2.ok) toast.error(t("studio.kanban.statusError"))
+            router.refresh()
+          }
+        )
+      }
+    )
+  }
+
   function move(item: ContentItem, target: KanbanColumnId) {
     if (kanbanColumnOf(item.status) === target) return
+    const prev = item.status
     if (target === "published") {
       toast.info(t("studio.kanban.cannotDropPublished"), {
         description: t("studio.kanban.cannotDropPublishedDesc"),
@@ -65,6 +104,7 @@ export function BoardKanban({
     } else if (target === "approved") {
       if (client.approvalMode === "auto" && canApplyIntent("approve", item.status)) {
         board.setStatusBatch([item.id], "approved")
+        persistStatus(item, "approve", prev)
         toast.success(t("studio.kanban.markedApproved"), {
           description: t("studio.kanban.markedApprovedDesc", { name: client.name }),
         })
@@ -79,6 +119,7 @@ export function BoardKanban({
     } else if (target === "in_review") {
       if (canApplyIntent("send_to_review", item.status)) {
         board.setStatusBatch([item.id], "in_review")
+        persistStatus(item, "send_to_review", prev)
         toast.success(t("studio.kanban.sentToReview"))
       } else {
         toast.info(t("studio.kanban.cannotReview"), {
@@ -88,6 +129,7 @@ export function BoardKanban({
     } else if (target === "draft") {
       if (canApplyIntent("back_to_draft", item.status)) {
         board.setStatusBatch([item.id], "draft")
+        persistStatus(item, "back_to_draft", prev)
         toast.success(t("studio.kanban.backToDraft"), {
           description: item.status === "approved" ? t("studio.kanban.backToDraftDesc") : undefined,
         })
@@ -95,6 +137,7 @@ export function BoardKanban({
     } else if (target === "idea") {
       if (canApplyIntent("back_to_idea", item.status)) {
         board.setStatusBatch([item.id], "idea")
+        persistStatus(item, "back_to_idea", prev)
         toast.success(t("studio.kanban.backToIdea"))
       } else {
         toast.info(t("studio.kanban.onlyDraftToIdea"))
@@ -108,14 +151,13 @@ export function BoardKanban({
       }
       if (item.scheduledAt && item.scheduledAt > fromNow(0)) {
         board.setStatusBatch([item.id], "scheduled")
+        persistStatus(item, "schedule", prev)
         toast.success(t("studio.kanban.scheduled"))
       } else {
         const wc = wallClockIn(fromNow(days(1)), client.timezone)
-        board.scheduleBatch(
-          [item.id],
-          zonedToUtcIso(wc.year, wc.month, wc.day, 9, 0, client.timezone),
-          0
-        )
+        const iso = zonedToUtcIso(wc.year, wc.month, wc.day, 9, 0, client.timezone)
+        board.scheduleBatch([item.id], iso, 0)
+        persistSchedule(item, iso, prev)
         toast.success(t("studio.kanban.scheduledTomorrow"), {
           description: t("studio.kanban.scheduledTomorrowDesc"),
         })

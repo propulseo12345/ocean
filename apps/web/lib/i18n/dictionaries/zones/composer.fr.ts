@@ -262,9 +262,12 @@ export const composerFr = {
         "En réel, seule la date reste modifiable sans annuler la programmation (règle PRD §5.B).",
       extraMediaRemoved: "Visuels supplémentaires retirés",
       extraMediaRemovedDesc: "Le format {format} n'accepte qu'un seul média (aperçu).",
-      savedScheduled: "Contenu programmé (aperçu)",
-      savedDraft: "Brouillon enregistré (aperçu)",
-      savedDesc: "Aucune donnée n'est réellement écrite pendant la preview.",
+      savedScheduled: "Contenu programmé",
+      savedDraft: "Brouillon enregistré",
+      savedDesc: "Vos modifications ont été enregistrées.",
+      saveError: "Échec de l'enregistrement. Réessayez.",
+      mediaIgnored:
+        "{count, plural, one {# média non encore uploadé a été ignoré} other {# médias non encore uploadés ont été ignorés}}.",
     },
   },
 } as const

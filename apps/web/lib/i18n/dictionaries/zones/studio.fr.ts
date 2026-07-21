@@ -80,22 +80,23 @@ export const studioFr = {
       cannotDropPublished: "Impossible de déposer en « Publié »",
       cannotDropPublishedDesc:
         "La publication passe par le moteur Ocean ou le centre de publication manuelle.",
-      markedApproved: "Marqué validé (aperçu)",
+      markedApproved: "Marqué validé",
       markedApprovedDesc: "{name} est en publication directe — pas de validation client requise.",
       reviewRequired: "Validation client requise",
       reviewRequiredDesc: "{name} est en « {mode} » — passe par « Demander une validation ».",
-      sentToReview: "Envoyé en validation (aperçu)",
+      sentToReview: "Envoyé en validation",
       cannotReview: "Ce contenu ne peut pas partir en revue",
       cannotReviewDesc: "Seuls les idées, brouillons et contenus validés sont éligibles.",
-      backToDraft: "Repassé en brouillon (aperçu)",
+      backToDraft: "Repassé en brouillon",
       backToDraftDesc: "L'approbation client est invalidée.",
-      backToIdea: "Reversé à la banque d'idées (aperçu)",
+      backToIdea: "Reversé à la banque d'idées",
       onlyDraftToIdea: "Seul un brouillon peut repartir en idée",
       cannotSchedule: "Programmation impossible",
       cannotScheduleDesc: "Corrige d'abord les retours ou repasse le contenu en brouillon.",
-      scheduled: "Programmé (aperçu)",
-      scheduledTomorrow: "Programmé demain 9 h (aperçu)",
+      scheduled: "Programmé",
+      scheduledTomorrow: "Programmé demain 9 h",
       scheduledTomorrowDesc: "Ajuste le créneau depuis le détail ou le calendrier.",
+      statusError: "Le changement de statut n'a pas pu être enregistré.",
     },
     // étiquettes canoniques proposées par défaut
     canonical: {
@@ -256,6 +257,8 @@ export const studioFr = {
       toastDateChanged: "Date modifiée",
       toastFailedRescheduled: "Cibles en échec reprogrammées",
       toastScheduleCanceled: "Programmation annulée",
+      trashedToast: "Contenu déplacé dans la corbeille",
+      trashError: "Suppression impossible. Réessayez.",
     },
     // détail — duplication
     duplicate: {

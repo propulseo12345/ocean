@@ -264,9 +264,12 @@ export const composerEn: Widen<typeof composerFr> = {
         "In production, only the date stays editable without canceling the schedule (PRD rule §5.B).",
       extraMediaRemoved: "Extra visuals removed",
       extraMediaRemovedDesc: "The {format} format only accepts a single media item (preview).",
-      savedScheduled: "Content scheduled (preview)",
-      savedDraft: "Draft saved (preview)",
-      savedDesc: "No data is actually written during the preview.",
+      savedScheduled: "Content scheduled",
+      savedDraft: "Draft saved",
+      savedDesc: "Your changes have been saved.",
+      saveError: "Save failed. Please try again.",
+      mediaIgnored:
+        "{count, plural, one {# not-yet-uploaded media was skipped} other {# not-yet-uploaded media were skipped}}.",
     },
   },
 }

@@ -15,6 +15,7 @@ export function ComposerHeader({
   mode,
   scheduledAt,
   blocked,
+  saving,
   onSave,
   onOpenSchedule,
 }: {
@@ -23,6 +24,8 @@ export function ComposerHeader({
   scheduledAt: string | null
   /** Pré-flight bloquant : signalé sur le bouton Programmer. */
   blocked: boolean
+  /** Écriture en cours : désactive Enregistrer pour éviter un double envoi. */
+  saving: boolean
   onSave: () => void
   onOpenSchedule: () => void
 }) {
@@ -70,7 +73,7 @@ export function ComposerHeader({
             {blocked ? <TriangleAlert className="text-warning" /> : <CalendarClock />}
             {scheduledAt ? t("composer.header.reschedule") : t("composer.header.schedule")}
           </Button>
-          <Button onClick={onSave}>
+          <Button onClick={onSave} disabled={saving}>
             <Check />
             {t("composer.header.save")}
           </Button>

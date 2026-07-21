@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { type SaveContentPayload, saveContentItem } from "@/lib/actions/content"
 import { type Locale, useLabels, useLocale, useT } from "@/lib/i18n"
 import type {
   BrandKit,
@@ -95,6 +96,7 @@ export function ComposerScreen({
     initialDraft(data, initialContent, locale, prefill)
   )
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const patch = useCallback((partial: Partial<ComposerDraft>) => {
     setDraft((d) => ({ ...d, ...partial }))
@@ -132,12 +134,58 @@ export function ComposerScreen({
     patch({ format })
   }
 
-  function handleSave() {
+  async function handleSave() {
+    if (saving) return
+    setSaving(true)
+
+    // Seuls les médias adossés à un asset de médiathèque sont persistables :
+    // un fichier fraîchement déposé dans le composer n'existe pas encore en base
+    // (upload TUS non câblé). On les écarte et on prévient si au moins un l'est.
+    const mediaPayload = draft.media.flatMap((m) =>
+      m.libraryAssetId
+        ? [{ libraryAssetId: m.libraryAssetId, altText: m.altText, crop: m.crop }]
+        : []
+    )
+    const ignoredMedia = draft.media.length - mediaPayload.length
+
+    const payload: SaveContentPayload = {
+      clientId: data.client.id,
+      contentId: initialContent?.id,
+      title: draft.title,
+      format: draft.format,
+      state: draft.state,
+      pillarId: draft.pillarId,
+      caption: draft.caption,
+      captionOverrides: draft.captionOverrides,
+      firstComment: draft.firstComment,
+      media: mediaPayload,
+      accountIds: draft.accountIds,
+      manualPlatforms: draft.manualPlatforms.filter(
+        (p): p is "newsletter" | "custom" => p === "newsletter" || p === "custom"
+      ),
+      newsletterSubject: draft.newsletterSubject,
+      internalNotes: draft.internalNotes,
+      labels: draft.labels,
+      scheduledAt: draft.scheduledAt,
+      igLocation: draft.igLocation,
+      fbLink: draft.fbLink,
+    }
+
+    const res = await saveContentItem(payload)
+    if (!res.ok) {
+      setSaving(false)
+      toast.error(t("composer.screen.saveError"))
+      return
+    }
+    if (ignoredMedia > 0) {
+      toast.info(t("composer.screen.mediaIgnored", { count: ignoredMedia }))
+    }
     toast.success(
       draft.scheduledAt ? t("composer.screen.savedScheduled") : t("composer.screen.savedDraft"),
       { description: t("composer.screen.savedDesc") }
     )
     router.push(routes.clientContent(data.client.id))
+    router.refresh()
   }
 
   return (
@@ -147,6 +195,7 @@ export function ComposerScreen({
         mode={initialContent ? "edit" : "create"}
         scheduledAt={draft.scheduledAt}
         blocked={blocking}
+        saving={saving}
         onSave={handleSave}
         onOpenSchedule={() => setScheduleOpen(true)}
       />

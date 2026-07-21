@@ -182,19 +182,19 @@ export const calendarFr = {
     // calendar-actions toasts
     actions: {
       pastError: "Impossible de planifier dans le passé",
-      rescheduledApproved: "Replanifié au {date} (aperçu)",
+      persistError: "La planification n'a pas pu être enregistrée.",
+      rescheduledApproved: "Replanifié au {date}",
       rescheduledApprovedDesc:
         "La validation client reste valable — le client sera notifié du changement de date.",
-      moved: "{state, select, scheduled {Planifié} other {Replanifié}} au {date} (aperçu)",
-      movedDesc: "Aucune date n'est réellement modifiée pendant la preview.",
-      reschedulePrecise: "Replanifié au {date} à {time} (aperçu)",
+      moved: "{state, select, scheduled {Planifié} other {Replanifié}} au {date}",
+      movedDesc: "La nouvelle date a été enregistrée.",
+      reschedulePrecise: "Replanifié au {date} à {time}",
       reschedulePreciseApprovedDesc: "La validation client reste valable — le client sera notifié.",
       shifted:
-        "{dir, select, advance {{count, plural, one {# contenu avancé} other {# contenus avancés}}} other {{count, plural, one {# contenu décalé} other {# contenus décalés}}}} de {days, plural, one {# jour} other {# jours}} (aperçu)",
+        "{dir, select, advance {{count, plural, one {# contenu avancé} other {# contenus avancés}}} other {{count, plural, one {# contenu décalé} other {# contenus décalés}}}} de {days, plural, one {# jour} other {# jours}}",
       shiftedSkippedDesc:
         "{count, plural, one {# ignoré} other {# ignorés}} (statut verrouillé ou date passée).",
-      unscheduled:
-        "Planification annulée pour {count, plural, one {# contenu} other {# contenus}} (aperçu)",
+      unscheduled: "Planification annulée pour {count, plural, one {# contenu} other {# contenus}}",
       unscheduledSkippedDesc:
         "{count, plural, one {# ignoré} other {# ignorés}} (statut verrouillé ou déjà sans date). Les contenus repassent dans « À planifier ».",
       unscheduledDesc: "Les contenus repassent dans « À planifier ».",

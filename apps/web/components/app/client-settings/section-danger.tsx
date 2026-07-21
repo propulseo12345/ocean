@@ -82,7 +82,7 @@ export function SectionDanger({ client, trashed }: { client: Client; trashed: Co
 
       <div className="space-y-2.5">
         <p className="text-sm font-medium">{t("clientSettings.danger.trashTitle")}</p>
-        <TrashList items={trashed} />
+        <TrashList items={trashed} clientId={client.id} />
       </div>
 
       <Card className="border-destructive/30 bg-destructive/[0.03] ring-destructive/20">

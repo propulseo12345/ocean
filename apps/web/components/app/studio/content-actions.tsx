@@ -2,10 +2,12 @@
 
 import { CalendarClock, Copy, Lock, Pencil, Send, XCircle } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { trashContent } from "@/lib/actions/content"
 import { type MessageKey, useT } from "@/lib/i18n"
 import type { Client, ContentStatus } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -28,10 +30,28 @@ export function ContentActions({
   clients: Client[]
 }) {
   const t = useT()
+  const router = useRouter()
   const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [trashing, setTrashing] = useState(false)
   const isReadOnly = READ_ONLY.includes(status)
   const sim = (key: MessageKey) => () =>
     toast.success(t(key), { description: t("studio.actions.simulated") })
+
+  // Bouton destructif → corbeille (soft-delete restaurable). Après succès, on
+  // quitte le détail : le contenu n'est plus chargé par le loader (deleted_at).
+  async function handleTrash() {
+    if (trashing) return
+    setTrashing(true)
+    const res = await trashContent({ clientId, contentId })
+    if (!res.ok) {
+      setTrashing(false)
+      toast.error(t("studio.actions.trashError"))
+      return
+    }
+    toast.success(t("studio.actions.trashedToast"), { description: contentTitle })
+    router.push(routes.clientContent(clientId))
+    router.refresh()
+  }
 
   const duplicateDialog = (
     <DetailDuplicateDialog
@@ -76,7 +96,7 @@ export function ContentActions({
         {t("studio.actions.duplicate")}
       </Button>
 
-      <Button variant="destructive" onClick={sim("studio.actions.toastScheduleCanceled")}>
+      <Button variant="destructive" onClick={handleTrash} disabled={trashing}>
         <XCircle />
         {status === "scheduled" ? t("studio.actions.cancelSchedule") : t("studio.actions.abandon")}
       </Button>

@@ -1,29 +1,46 @@
 "use client"
 
 import { ImageOff, RotateCcw, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/shared/empty-state"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { Button } from "@/components/ui/button"
+import { restoreContent } from "@/lib/actions/content"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
 import type { ContentItem } from "@/lib/mocks/types"
 import { ConfirmDialog } from "./confirm-dialog"
 import { TRASH_GRACE_DAYS } from "./constants"
 
-export function TrashList({ items: initial }: { items: ContentItem[] }) {
+export function TrashList({
+  items: initial,
+  clientId,
+}: {
+  items: ContentItem[]
+  clientId: string
+}) {
   const t = useT()
   const f = useFormat()
   const lbl = useLabels()
+  const router = useRouter()
   const [items, setItems] = useState(initial)
   const [toPurge, setToPurge] = useState<ContentItem | null>(null)
 
-  function restore(item: ContentItem) {
+  async function restore(item: ContentItem) {
+    // Retrait optimiste ; on remet la ligne si l'écriture échoue.
     setItems((prev) => prev.filter((c) => c.id !== item.id))
+    const res = await restoreContent({ clientId, contentId: item.id })
+    if (!res.ok) {
+      setItems((prev) => [item, ...prev])
+      toast.error(t("clientSettings.trash.restoreError"))
+      return
+    }
     toast.success(t("clientSettings.trash.restoredToast"), {
       description: item.title,
     })
+    router.refresh()
   }
 
   function purge() {

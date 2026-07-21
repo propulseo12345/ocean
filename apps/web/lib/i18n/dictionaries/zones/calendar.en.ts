@@ -185,18 +185,19 @@ export const calendarEn: Widen<typeof calendarFr> = {
     // calendar-actions toasts
     actions: {
       pastError: "Can't schedule into the past",
-      rescheduledApproved: "Rescheduled to {date} (preview)",
+      persistError: "The scheduling could not be saved.",
+      rescheduledApproved: "Rescheduled to {date}",
       rescheduledApprovedDesc:
         "The client's approval stays valid — the client is notified of the date change.",
-      moved: "{state, select, scheduled {Scheduled} other {Rescheduled}} for {date} (preview)",
-      movedDesc: "No date is actually changed during the preview.",
-      reschedulePrecise: "Rescheduled to {date} at {time} (preview)",
+      moved: "{state, select, scheduled {Scheduled} other {Rescheduled}} for {date}",
+      movedDesc: "The new date has been saved.",
+      reschedulePrecise: "Rescheduled to {date} at {time}",
       reschedulePreciseApprovedDesc: "The client's approval stays valid — the client is notified.",
       shifted:
-        "{dir, select, advance {{count, plural, one {# item moved earlier} other {# items moved earlier}}} other {{count, plural, one {# item shifted} other {# items shifted}}}} by {days, plural, one {# day} other {# days}} (preview)",
+        "{dir, select, advance {{count, plural, one {# item moved earlier} other {# items moved earlier}}} other {{count, plural, one {# item shifted} other {# items shifted}}}} by {days, plural, one {# day} other {# days}}",
       shiftedSkippedDesc:
         "{count, plural, one {# skipped} other {# skipped}} (locked status or past date).",
-      unscheduled: "Unscheduled {count, plural, one {# item} other {# items}} (preview)",
+      unscheduled: "Unscheduled {count, plural, one {# item} other {# items}}",
       unscheduledSkippedDesc:
         '{count, plural, one {# skipped} other {# skipped}} (locked status or already undated). The content moves back to "To schedule".',
       unscheduledDesc: 'The content moves back to "To schedule".',
