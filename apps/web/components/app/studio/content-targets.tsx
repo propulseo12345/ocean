@@ -9,6 +9,7 @@ import { QuotaGauge } from "@/components/shared/quota-gauge"
 import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { requestTargetRetry } from "@/lib/actions/content-status"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
 import type {
   Client,
@@ -29,6 +30,8 @@ const UPCOMING: TargetStatus[] = ["pending", "queued", "publishing"]
 export function ContentTargets({
   targets,
   client,
+  clientId,
+  contentId,
   accounts,
   quotas,
   contentError,
@@ -36,6 +39,8 @@ export function ContentTargets({
 }: {
   targets: ContentTarget[]
   client: Client
+  clientId: string
+  contentId: string
   accounts: SocialAccount[]
   quotas: Record<string, QuotaUsage | null>
   contentError?: string
@@ -49,8 +54,22 @@ export function ContentTargets({
   const statusOf = (tg: ContentTarget): TargetStatus => overrides[tg.id] ?? tg.status
   const showIdempotence = targets.some((tg) => statusOf(tg) === "failed")
 
-  function retry(target: ContentTarget) {
+  // RÈGLE 15 : on POSE une intention (retry_requested_at), on ne remet PAS la
+  // cible en file — le worker seul republie (et interroge le container si
+  // publish_started_at est non nul). L'override "queued" est un indice optimiste
+  // de ce que le worker fera ; rollback si l'écriture de l'intention échoue.
+  async function retry(target: ContentTarget) {
     setOverrides((prev) => ({ ...prev, [target.id]: "queued" }))
+    const res = await requestTargetRetry({ clientId, contentId, targetId: target.id })
+    if (!res.ok) {
+      setOverrides((prev) => {
+        const next = { ...prev }
+        delete next[target.id]
+        return next
+      })
+      toast.error(t("studio.targets.retryError"))
+      return
+    }
     toast.success(t("studio.targets.retried"), {
       description: t("studio.targets.retriedDesc"),
     })

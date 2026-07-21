@@ -57,7 +57,8 @@ export const portalFr = {
     // components/portal/review-actions.tsx
     review: {
       decisionRecorded: "Décision enregistrée",
-      decisionDetail: "{label} — « {title} » (action simulée, preview).",
+      decisionDetail: "{label} — « {title} ».",
+      decisionError: "Votre décision n'a pas pu être enregistrée. Réessayez.",
       approved: "Contenu approuvé",
       changesRequested: "Modifications demandées",
       approve: "Approuver",

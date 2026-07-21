@@ -1,6 +1,7 @@
 "use client"
 
 import { BellRing, Check, CircleCheck, Copy, ExternalLink, Hand } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PlatformIcon } from "@/components/shared/platform-badge"
@@ -8,6 +9,7 @@ import { TargetStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { markTargetPublishedManually } from "@/lib/actions/content-status"
 import { type MessageKey, type Translator, useFormat, useT } from "@/lib/i18n"
 import { hours } from "@/lib/mocks/time"
 import type { ContentTarget, Platform, SocialAccount } from "@/lib/mocks/types"
@@ -51,31 +53,60 @@ function itemTitle(t: Translator, platform: Platform, status: ContentTarget["sta
 
 export function DetailManualCenter({
   items,
+  clientId,
+  contentId,
   caption,
   hashtags,
   scheduledAt,
   timezone,
 }: {
   items: ManualItem[]
+  clientId: string
+  contentId: string
   caption: string
   hashtags: string[]
   scheduledAt: string | null
   timezone: string
 }) {
   const t = useT()
+  const router = useRouter()
   const [steps, setSteps] = useState<Record<string, StepState>>({})
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
   const stateOf = (id: string): StepState =>
     steps[id] ?? { copied: false, done: false, permalink: "" }
   const patch = (id: string, partial: Partial<StepState>) =>
     setSteps((prev) => ({ ...prev, [id]: { ...stateOf(id), ...partial } }))
 
+  // Déclaration « publié manuellement » : passe par la RPC (status='published'
+  // interdit à authenticated). Le lien saisi est optionnel. Après succès, on
+  // rafraîchit pour refléter le statut agrégé (partiellement/entièrement publié).
+  async function markPublished(item: ManualItem) {
+    if (pendingId) return
+    setPendingId(item.target.id)
+    const link = stateOf(item.target.id).permalink.trim()
+    const res = await markTargetPublishedManually({
+      clientId,
+      contentId,
+      targetId: item.target.id,
+      permalink: link ? link : undefined,
+    })
+    setPendingId(null)
+    if (!res.ok) {
+      toast.error(t("studio.manual.markError"))
+      return
+    }
+    patch(item.target.id, { done: true })
+    toast.success(t("studio.manual.markedDone"), {
+      description: t("studio.manual.markedDoneDesc"),
+    })
+    router.refresh()
+  }
+
   async function copyCaption(item: ManualItem) {
     const tags = hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
     // La légende de base arrive résolue ; la déclinaison par cible reste string.
-    const captionText = item.target.captionOverride
-      ? item.target.captionOverride
-      : caption
+    const captionText = item.target.captionOverride ? item.target.captionOverride : caption
     const text = [captionText, tags].filter(Boolean).join("\n\n")
     try {
       await navigator.clipboard.writeText(text)
@@ -160,12 +191,8 @@ export function DetailManualCenter({
                       />
                       <Button
                         size="xs"
-                        onClick={() => {
-                          patch(item.target.id, { done: true })
-                          toast.success(t("studio.manual.markedDone"), {
-                            description: t("studio.manual.markedDoneDesc"),
-                          })
-                        }}
+                        onClick={() => markPublished(item)}
+                        disabled={pendingId === item.target.id}
                       >
                         <CircleCheck />
                         {t("studio.manual.markDone")}

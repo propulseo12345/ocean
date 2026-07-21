@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getApprovals, getClient, getComments, getPortalContentItem } from "@/lib/data"
-import type { Format, Locale } from "@/lib/i18n"
-import { getFormat, getLocale, getT } from "@/lib/i18n/server"
+import type { Format } from "@/lib/i18n"
+import { getFormat, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
 import type { Approval, Client } from "@/lib/mocks/types"
 import { routes } from "@/lib/routes"
@@ -36,7 +36,6 @@ export default async function PortalContentPage({
 
   const t = await getT()
   const f = await getFormat()
-  const locale = await getLocale()
   const client = (await getClient(reviewerCtx.orgId, content.clientId)) as Client
   const tz = client.timezone
   const comments = await getComments(reviewerCtx.orgId, content.clientId, contentId)
@@ -85,7 +84,7 @@ export default async function PortalContentPage({
                 <CardTitle>{t("portal.detail.yourDecision")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ReviewActions contentTitle={title} />
+                <ReviewActions contentId={contentId} contentTitle={title} />
               </CardContent>
             </Card>
           ) : (
@@ -97,7 +96,7 @@ export default async function PortalContentPage({
             </div>
           )}
 
-          <ApprovalHistory approvals={approvals} t={t} f={f} locale={locale} />
+          <ApprovalHistory approvals={approvals} t={t} f={f} />
         </aside>
       </div>
     </div>
@@ -127,17 +126,7 @@ function CaptionBlock({ caption, hashtags }: { caption: string; hashtags: string
   )
 }
 
-function ApprovalHistory({
-  approvals,
-  t,
-  f,
-  locale,
-}: {
-  approvals: Approval[]
-  t: Translator
-  f: Format
-  locale: Locale
-}) {
+function ApprovalHistory({ approvals, t, f }: { approvals: Approval[]; t: Translator; f: Format }) {
   if (approvals.length === 0) return null
   return (
     <div className="space-y-2.5">
@@ -166,9 +155,7 @@ function ApprovalHistory({
                       {a.versionLabel}
                     </span>
                   </p>
-                  {a.message ? (
-                    <p className="text-sm text-muted-foreground">{a.message}</p>
-                  ) : null}
+                  {a.message ? <p className="text-sm text-muted-foreground">{a.message}</p> : null}
                   <p className="mt-0.5 text-xs text-muted-foreground/70">
                     {f.relative(a.createdAt)}
                   </p>

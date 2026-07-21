@@ -51,7 +51,8 @@ export const portalEn: Widen<typeof portalFr> = {
     },
     review: {
       decisionRecorded: "Decision recorded",
-      decisionDetail: "{label} — “{title}” (simulated action, preview).",
+      decisionDetail: "{label} — “{title}”.",
+      decisionError: "Your decision could not be recorded. Please try again.",
       approved: "Content approved",
       changesRequested: "Changes requested",
       approve: "Approve",

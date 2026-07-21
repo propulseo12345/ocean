@@ -130,9 +130,7 @@ export default async function ContentDetailPage({
 
             {content.firstComment ? (
               <Field icon={MessageSquareText} label={t("clients.fieldFirstComment")}>
-                <p className="text-sm text-muted-foreground">
-                  {content.firstComment}
-                </p>
+                <p className="text-sm text-muted-foreground">{content.firstComment}</p>
               </Field>
             ) : null}
           </div>
@@ -178,6 +176,8 @@ export default async function ContentDetailPage({
               <ContentTargets
                 targets={content.targets}
                 client={client}
+                clientId={clientId}
+                contentId={contentId}
                 accounts={accounts}
                 quotas={quotas}
                 contentError={content.lastError ? content.lastError : undefined}
@@ -189,6 +189,8 @@ export default async function ContentDetailPage({
           {manualItems.length > 0 ? (
             <DetailManualCenter
               items={manualItems}
+              clientId={clientId}
+              contentId={contentId}
               caption={caption}
               hashtags={content.hashtags}
               scheduledAt={content.scheduledAt}
@@ -198,6 +200,7 @@ export default async function ContentDetailPage({
 
           <DetailThread
             comments={comments}
+            contentId={contentId}
             internalNotes={content.internalNotes ? content.internalNotes : undefined}
             reviewerName={reviewer?.name}
           />
