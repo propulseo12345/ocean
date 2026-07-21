@@ -1,7 +1,7 @@
-# Session State — 2026-07-21 (câblage Supabase : Phases 1→5 faites)
+# Session State — 2026-07-21 (câblage Supabase : Phases 1→5 + lectures CŒUR)
 
 ## Branch / Commit
-`feat/cablage-supabase` @ `a401103`. Working tree propre sauf
+`feat/cablage-supabase` @ `30d642b`. Working tree propre sauf
 `apps/web/__tz_repro.mjs` (débug non commité, à supprimer en Phase 8).
 Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 
@@ -14,9 +14,10 @@ Rien n'est poussé, aucune PR mergée (décision actée : on merge à la fin).
 | 4 — feed & performance | 4ca1725 | 014 (3 tables) | 12/12 |
 | 5 — agenda unifié | 2c050cf | 015 (4 tables + vue) | 14/14 |
 | fix — deploy 010 idempotent | a401103 | — | — |
+| **lectures CŒUR + seed** | **30d642b** | — (tables 004→007) | **16/16** (090) |
 
-**Suite pgTAP complète 003→015 : 183/183, tous les plans cohérents.**
-**`pnpm --filter web exec tsc --noEmit` : 0 erreur.**
+**Suite pgTAP complète 003→015 + 090 : 199/199, plan == émis sur les 14 fichiers.**
+**`pnpm --filter web exec tsc --noEmit` : 0 erreur, AVEC `lib/data/mock.ts` supprimé.**
 
 ## ÉTAT DE L'APPLICATION EN LIGNE (projet hgdeopkmkwyoumsfggrm)
 
@@ -32,6 +33,7 @@ casseraient au premier événement journalisé. `deploy/03` (idempotent) le rép
 automatiquement s'il n'est pas encore utilisé par une colonne.
 
 **Ordre d'application restant, SQL Editor :**
+(puis `deploy/09_seed_demo.sql` en dernier — il suppose 001→015 + `deploy/02`)
 0. `deploy/00_diagnostic.sql` — terminer la lecture (surtout la requête 2)
 1. `deploy/03_migration_010.sql` — idempotent, rejouable, répare l'enum
 2. `deploy/04_migration_011.sql`
@@ -61,29 +63,49 @@ Le runtime Playwright n'est possible qu'après application en ligne des migratio
 - **D8/D9** — reset mot de passe, lien de dépôt (Phase 6 / migration 016).
 - **D10** — sélecteur de client au portail (UI Phase 3, non câblé).
 
-## ⚠️ ÉCART STRUCTUREL — priorité n°1 du travail restant
-Les phases 1→5 ont câblé les domaines **périphériques**. Les lectures **cœur**
-n'ont jamais été affectées à une phase et restent MOCKÉES :
-`getClients`, `getClient`, `getContentItems`, `getContentItem`,
-`getTrashedContent`, `getSocialAccounts`, `getCurrentUser`, `getNotifications`,
-`getUnreadCount`, `getDashboardTasks`, `getShellSnapshot`, `getPortalContent`,
-`getPortalContentItem`, `getUnifiedAgenda`.
+## ✅ ÉCART STRUCTUREL RÉSORBÉ (commit 30d642b)
+Les 14 lectures cœur sont câblées sur Supabase, dans 5 modules :
+`lib/data/{clients,content,content-media,notifications,dashboard}.ts`.
+**`lib/data/mock.ts` est SUPPRIMÉ** et `export *` remplacé par des exports
+explicites dans `index.ts`.
 
-Conséquence : **la Phase 8 ne peut PAS s'exécuter telle qu'écrite** — supprimer
-`lib/data/mock.ts` casserait l'app tant que ces 14 lectures en dépendent. Les
-tables existent déjà (migrations 004/005/006/007) : il faut câbler ces lectures
-+ produire le seed SQL, avant ou pendant la Phase 8.
+Pourquoi la suppression maintenant plutôt qu'en Phase 8 : mock et réel avaient
+la **même signature** sur `getPortalContent` — seules les règles de shadowing ES
+les départageaient, et le typecheck ne pouvait plus dire laquelle gagnait. Un
+`export *` mal placé aurait servi des mocks en silence. Le typecheck vert AVEC
+`mock.ts` supprimé est la preuve qu'aucun consommateur n'en dépendait.
+
+**Décision de scope à ne pas « corriger »** : l'hydratation d'un ContentItem
+(cibles, médias, étiquettes) filtre sur **`client_id`, jamais `org_id`**. Motif :
+un Reviewer n'a pas d'org active et peut être invité par deux freelances, alors
+que `getReviewerContext().orgId` ne garde que la première appartenance — filtrer
+sur org_id lui masquerait silencieusement son second client. Un client
+appartient à une seule org (UNIQUE(id, org_id) + FK composites), donc le filtre
+client est au moins aussi fort. **Prouvé** par `090_core_reads.test.sql`.
+
+`deploy/09_seed_demo.sql` : seed de démonstration idempotent (3 clients, 7
+comptes sociaux, 16 contenus couvrant les 5 types de tâches du dashboard).
+**Vérifié en le jouant deux fois** — compteurs identiques. Il ne sème NI médias
+(sans fichier Storage réel = vignettes cassées), NI imported_posts/post_metrics
+(écriture service_role exclusive, migration 014), NI calendriers (OAuth).
 
 ## Reste à faire, dans cet ordre suggéré
-1. **Lectures cœur + seed SQL** (l'écart ci-dessus) — prérequis de « zéro mock ».
-2. **Phase 6** — complétude Server Actions & transitions : conflits C1/C2/C3 avec
+1. **Phase 6** — complétude Server Actions & transitions : conflits C1/C2/C3 avec
    la garde 008, RPC `mark_target_published_manually`, retry `content_targets`.
-3. **Phase 7** — aplatissement `L<string>` → `text` (~70 fichiers, stratégie 4
+2. **Phase 7** — aplatissement `L<string>` → `text` (~70 fichiers, stratégie 4
    temps du plan §6 : shim `pick()` → types → cas système → nettoyage).
-4. **Phase 8** — suppression des mocks, **dégel de l'horloge** (`lib/clock.ts`
-   MOCK_NOW + 5 composants), `get_advisors` clean, vérif visuelle post-dégel.
+3. **Phase 8** — réduite à : **dégel de l'horloge** (`lib/clock.ts` MOCK_NOW +
+   5 composants), relocalisation `lib/mocks/types` → `lib/domain`, suppression
+   du reste de `lib/mocks/**` (constantes encore lues par `use-library-assets`
+   et `perf-data`), `get_advisors` clean, vérif visuelle post-dégel.
 
 ## Dettes connues
+- `Client.theme` n'existe pas en base : dérivé de l'id (hash) dans
+  `lib/data/clients.ts` pour que `useLibraryAssets.addMockAssets` compile.
+  À retirer du type `Client` en Phase 8, avec `lib/mocks/images`.
+- Les contenus seedés n'ont AUCUN média tant que l'upload TUS n'est pas câblé :
+  la grille et le studio afficheront des tuiles vides. C'est voulu (cf. en-tête
+  de `deploy/09_seed_demo.sql`), pas un bug de câblage.
 - `saved_views.filters.labels` reçoit des `label_ids` (uuid) mais `board-utils`
   matche encore par NOM → filtre étiquettes inopérant jusqu'au refactor par id.
 - N+1 de la grille (un `getPostMetrics` par tuile) non corrigé.

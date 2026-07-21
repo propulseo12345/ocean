@@ -134,13 +134,28 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   depuis la policy `profiles_select_shared` (010) — assertion corrigée.
 - **SUITE COMPLÈTE 003→015 : 183/183, tous plans cohérents.**
 
-## ÉCART À TRAITER — les lectures CŒUR sont encore mockées
-Les phases 1→5 ont câblé les domaines périphériques. Restent MOCKÉES (jamais
-affectées à une phase, alors qu'elles sont le prérequis de « zéro mock ») :
-getClients, getClient, getContentItems, getContentItem, getTrashedContent,
-getSocialAccounts, getCurrentUser, getNotifications, getUnreadCount,
-getDashboardTasks, getPortalContent, getUnifiedAgenda. Les tables existent déjà
-(004/005/006/007) — à câbler avec le seed SQL de la Phase 8.
+## FAIT (lectures CŒUR) ✅ — commit 30d642b — pas de migration (tables 004→007)
+- 5 modules : `lib/data/{clients,content,content-media,notifications,dashboard}.ts`.
+  14 lectures câblées. Hydratation d'un ContentItem = **4 requêtes pour N
+  contenus** (cibles / liaisons médias + assets / étiquettes), jamais N requêtes.
+- **`lib/data/mock.ts` SUPPRIMÉ**, `export *` remplacé par des exports explicites :
+  mock et réel partageaient la signature de `getPortalContent`, donc seules les
+  règles de shadowing ES les départageaient — le typecheck ne pouvait plus dire
+  laquelle gagnait. Typecheck vert AVEC le fichier supprimé = preuve d'absence
+  de dépendance résiduelle.
+- **Scope = `client_id`, pas `org_id`**, pour les hydratations : un Reviewer n'a
+  pas d'org active et peut appartenir à des clients de deux orgs, alors que
+  `getReviewerContext().orgId` ne garde que la première appartenance. Le filtre
+  client est au moins aussi fort (UNIQUE(id, org_id) + FK composites).
+- **pgTAP `090_core_reads.test.sql` = 16/16** : org B ne lit rien de org A sur
+  les 7 tables lues ; reviewer du client A1 ne lit RIEN du client A2 de la MÊME
+  org (contenus, cibles, médias, assets, étiquettes) ni le brouillon de son
+  propre client (D7) ni aucune notification.
+- **Suite complète 003→015 + 090 : 199/199**, plan == émis sur 14 fichiers.
+- `deploy/09_seed_demo.sql` : seed idempotent **vérifié par double exécution**
+  (compteurs identiques). Couvre les 5 types de tâches du dashboard. Ne sème ni
+  médias (pas de fichier Storage réel), ni imported_posts/post_metrics
+  (service_role exclusif), ni calendriers (OAuth) — motifs en en-tête du fichier.
 
 ## À FAIRE — Phase 6 et suivantes
 Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE :
@@ -181,9 +196,11 @@ Suivre le plan §4 (migrations) et §6 (phases). Méthode par phase, INVARIANTE 
   C1/C2/C3 du plan §6), garde transition content_targets, manual publish.
 - **Phase 7** (M) : aplatir L<string>→text (shim pick T1 → types T2 → système T3 →
   nettoyage T4). Retirer le pont `dbClientToClient` d'org-context.
-- **Phase 8** (M) : supprimer mocks, DÉGELER l'horloge (`lib/clock.ts` MOCK_NOW +
-  5 composants important fromNow/hours/days), relocaliser lib/mocks/types→lib/domain,
-  seed SQL, `get_advisors` clean, tous pgTAP verts.
+- **Phase 8** (S — réduite) : la façade `lib/data` est déjà sans mock et le seed
+  SQL est écrit. Reste : DÉGELER l'horloge (`lib/clock.ts` MOCK_NOW + 5
+  composants important fromNow/hours/days), relocaliser lib/mocks/types→lib/domain,
+  supprimer le reste de `lib/mocks/**` (constantes encore lues par
+  `use-library-assets` et `perf-data`), `get_advisors` clean, vérif visuelle.
 
 ## Blocages / à faire faire par Étienne
 - **Appliquer migration 010 en ligne** : `deploy/03_migration_010.sql` dans le SQL
