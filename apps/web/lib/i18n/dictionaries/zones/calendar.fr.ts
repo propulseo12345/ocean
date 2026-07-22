@@ -199,7 +199,8 @@ export const calendarFr = {
         "{count, plural, one {# ignoré} other {# ignorés}} (statut verrouillé ou déjà sans date). Les contenus repassent dans « À planifier ».",
       unscheduledDesc: "Les contenus repassent dans « À planifier ».",
       sendToReview:
-        "Demande de validation envoyée pour {count, plural, one {# contenu} other {# contenus}} (aperçu)",
+        "Demande de validation envoyée pour {count, plural, one {# contenu} other {# contenus}}",
+      sendToReviewNone: "Aucun contenu de la sélection ne peut être envoyé en validation.",
       sendToReviewDesc: "Le client recevra un lien direct vers le portail de validation.",
       retry: "Nouvelle tentative programmée pour « {title} » (aperçu)",
       retryDesc:
@@ -227,7 +228,8 @@ export const calendarFr = {
       typeToggleTitle: "Basculer note / événement",
       add: "Ajouter",
       createPrefilled: "Créer un contenu — date préremplie",
-      noteAdded: "{kind, select, note {Note ajoutée} other {Événement ajouté}} (aperçu)",
+      noteAdded: "{kind, select, note {Note ajoutée} other {Événement ajouté}}",
+      noteError: "Impossible d'enregistrer. Réessaie.",
     },
     // day-sheet-row
     daySheetRow: {

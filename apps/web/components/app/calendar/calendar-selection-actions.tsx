@@ -52,7 +52,7 @@ export function CalendarSelectionActions({
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              performSendToReview(selection.count, t)
+              performSendToReview(selectedItems, clientId, t)
               selection.clear()
             }}
           >

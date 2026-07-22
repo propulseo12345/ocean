@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useMultiSelect } from "@/hooks/use-multi-select"
+import { addClientEvent } from "@/lib/actions/client-events"
 import type { ContentItem } from "@/lib/domain"
 import { useLocale, useT } from "@/lib/i18n"
 import { AutomationDialog } from "./automation-dialog"
@@ -183,8 +184,14 @@ export function EditorialCalendar(props: CalendarData) {
         ctx={ctx}
         onClose={() => setSheetDay(null)}
         onAddNote={(dayKey, title, kind) => {
+          // Ajout optimiste local, puis persistance réelle (client_events).
           s.addNote(dayKey, title, kind)
-          toast.success(t("calendar.daySheet.noteAdded", { kind }))
+          addClientEvent({ clientId: props.client.id, eventDate: dayKey, title, kind }).then(
+            (res) => {
+              if (res.ok) toast.success(t("calendar.daySheet.noteAdded", { kind }))
+              else toast.error(t("calendar.daySheet.noteError"))
+            }
+          )
         }}
       />
 

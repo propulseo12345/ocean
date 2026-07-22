@@ -202,7 +202,8 @@ export const calendarEn: Widen<typeof calendarFr> = {
         '{count, plural, one {# skipped} other {# skipped}} (locked status or already undated). The content moves back to "To schedule".',
       unscheduledDesc: 'The content moves back to "To schedule".',
       sendToReview:
-        "Approval request sent for {count, plural, one {# item} other {# items}} (preview)",
+        "Approval request sent for {count, plural, one {# item} other {# items}}",
+      sendToReviewNone: "None of the selected items can be sent for approval.",
       sendToReviewDesc: "The client will get a direct link to the approval portal.",
       retry: 'Retry scheduled for "{title}" (preview)',
       retryDesc:
@@ -230,7 +231,8 @@ export const calendarEn: Widen<typeof calendarFr> = {
       typeToggleTitle: "Toggle note / event",
       add: "Add",
       createPrefilled: "Create content — date prefilled",
-      noteAdded: "{kind, select, note {Note added} other {Event added}} (preview)",
+      noteAdded: "{kind, select, note {Note added} other {Event added}}",
+      noteError: "Could not save. Try again.",
     },
     // day-sheet-row
     daySheetRow: {

@@ -1,5 +1,6 @@
 import { toast } from "sonner"
 import { scheduleContentItem } from "@/lib/actions/content"
+import { applyStatusIntent } from "@/lib/actions/content-status"
 import type { ContentItem } from "@/lib/domain"
 import type { Locale, Translator } from "@/lib/i18n"
 import { isMovable, movedIso, zonedToUtcIso } from "./calendar-schedule"
@@ -195,12 +196,31 @@ export function performUnschedule(
   })
 }
 
-export function performSendToReview(count: number, t: Translator): void {
-  toast.info(t("calendar.actions.sendToReview", { count }), {
-    description: t("calendar.actions.sendToReviewDesc"),
+/**
+ * Envoie la sélection en validation : chaque item éligible passe par
+ * applyStatusIntent('send_to_review') (la garde 008/016 filtre les statuts non
+ * transitables). Le toast rapporte le nombre réellement envoyé.
+ */
+export function performSendToReview(items: ContentItem[], clientId: string, t: Translator): void {
+  Promise.all(
+    items.map((it) =>
+      applyStatusIntent({ clientId, contentId: it.id, intent: "send_to_review" }).then((r) => r.ok)
+    )
+  ).then((results) => {
+    const sent = results.filter(Boolean).length
+    if (sent === 0) {
+      toast.error(t("calendar.actions.sendToReviewNone"))
+      return
+    }
+    toast.success(t("calendar.actions.sendToReview", { count: sent }), {
+      description: t("calendar.actions.sendToReviewDesc"),
+    })
   })
 }
 
+// Retry (cibles en échec produites par le worker) et Remind (reviewRequestId) :
+// couplés au Tier D (worker de publication / invitations reviewer). Restent en
+// toast jusqu'à ce que ces données existent — voir todo « Couplés Tier D ».
 export function performRetry(item: ContentItem, t: Translator, _locale: Locale): void {
   toast.info(t("calendar.actions.retry", { title: item.title }), {
     description: t("calendar.actions.retryDesc"),
