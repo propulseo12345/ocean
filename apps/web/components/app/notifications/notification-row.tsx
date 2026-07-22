@@ -14,6 +14,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import Link from "next/link"
+import { markNotificationRead } from "@/lib/actions/notifications"
 import type { AppNotification, NotificationChannel } from "@/lib/domain"
 import type { MessageKey } from "@/lib/i18n"
 import { useFormat, useT } from "@/lib/i18n"
@@ -71,6 +72,10 @@ export function NotificationRow({ notification }: { notification: AppNotificatio
   return (
     <Link
       href={notification.href}
+      onClick={() => {
+        // Marque lu à l'ouverture, sans bloquer la navigation (fire-and-forget).
+        if (!notification.read) void markNotificationRead({ id: notification.id })
+      }}
       className={cn(
         "group flex gap-3 px-3 py-3 transition-colors hover:bg-muted/50 sm:px-4",
         !notification.read && "bg-primary/[0.04]"

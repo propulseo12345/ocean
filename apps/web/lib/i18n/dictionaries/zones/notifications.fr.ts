@@ -13,7 +13,8 @@ export const notificationsFr = {
     noneUnreadToast: "Aucune notification non lue.",
     markedReadToast:
       "{count, plural, one {# notification marquée comme lue} other {# notifications marquées comme lues}}",
-    markedReadToastDescription: "Action simulée (preview)",
+    markedReadToastDescription: "Elles n'apparaîtront plus comme non lues.",
+    markAllError: "Impossible de tout marquer comme lu. Réessaie.",
     emptyUnreadTitle: "Aucune notification non lue",
     emptyTitle: "Aucune notification",
     emptyUnreadDescription: "Tu es à jour — rien ne demande ton attention pour l'instant.",

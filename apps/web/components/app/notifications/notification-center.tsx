@@ -1,12 +1,13 @@
 "use client"
 
 import { BellOff, CheckCheck, Inbox } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { NotificationRow } from "@/components/app/notifications/notification-row"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { markAllNotificationsRead } from "@/lib/actions/notifications"
 import type { AppNotification } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 
@@ -19,6 +20,7 @@ function isFilter(value: unknown): value is Filter {
 export function NotificationCenter({ notifications }: { notifications: AppNotification[] }) {
   const t = useT()
   const [filter, setFilter] = useState<Filter>("all")
+  const [pending, startTransition] = useTransition()
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
 
@@ -32,8 +34,16 @@ export function NotificationCenter({ notifications }: { notifications: AppNotifi
       toast(t("notifications.noneUnreadToast"))
       return
     }
-    toast.success(t("notifications.markedReadToast", { count: unreadCount }), {
-      description: t("notifications.markedReadToastDescription"),
+    const count = unreadCount
+    startTransition(async () => {
+      const res = await markAllNotificationsRead()
+      if (!res.ok) {
+        toast.error(t("notifications.markAllError"))
+        return
+      }
+      toast.success(t("notifications.markedReadToast", { count }), {
+        description: t("notifications.markedReadToastDescription"),
+      })
     })
   }
 
@@ -63,7 +73,7 @@ export function NotificationCenter({ notifications }: { notifications: AppNotifi
           variant="outline"
           size="sm"
           onClick={handleMarkAllRead}
-          disabled={unreadCount === 0}
+          disabled={unreadCount === 0 || pending}
         >
           <CheckCheck className="size-4" />
           {t("notifications.markAllRead")}

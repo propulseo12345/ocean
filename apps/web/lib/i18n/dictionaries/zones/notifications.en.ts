@@ -16,7 +16,8 @@ export const notificationsEn: Widen<typeof notificationsFr> = {
     noneUnreadToast: "No unread notifications.",
     markedReadToast:
       "{count, plural, one {# notification marked as read} other {# notifications marked as read}}",
-    markedReadToastDescription: "Simulated action (preview)",
+    markedReadToastDescription: "They will no longer show as unread.",
+    markAllError: "Could not mark all as read. Try again.",
     emptyUnreadTitle: "No unread notifications",
     emptyTitle: "No notifications",
     emptyUnreadDescription: "You're all caught up — nothing needs your attention right now.",
