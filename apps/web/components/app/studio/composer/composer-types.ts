@@ -168,7 +168,7 @@ export function draftFromContent(content: ContentItem, locale: Locale): Composer
     internalNotes: content.internalNotes ? content.internalNotes : "",
     labels: content.labels ? content.labels : [],
     scheduledAt: content.scheduledAt,
-    igLocation: "",
-    fbLink: "",
+    igLocation: content.igLocation ?? "",
+    fbLink: content.fbLink ?? "",
   }
 }

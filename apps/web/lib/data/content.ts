@@ -20,7 +20,7 @@ import { loadContentMedia } from "./content-media"
 const ITEM_COLUMNS =
   "id, client_id, title, caption, hashtags, format, status, scheduled_at, newsletter_subject, " +
   "internal_notes, created_at, created_by, approval_stale, last_error, first_comment, pillar_id, " +
-  "pinned, exclude_from_grid, deleted_at, client_comments_count, cover_media_asset_id"
+  "pinned, exclude_from_grid, deleted_at, client_comments_count, cover_media_asset_id, platform_options"
 
 /**
  * Statuts d'un contenu visibles par un Reviewer. Copie EXACTE de
@@ -60,6 +60,16 @@ interface ItemRow {
   deleted_at: string | null
   client_comments_count: number
   cover_media_asset_id: string | null
+  platform_options: unknown
+}
+
+/** Extrait une valeur texte d'un champ de `platform_options` (jsonb non typé). */
+function platformOption(options: unknown, key: string): string | undefined {
+  if (options && typeof options === "object" && key in options) {
+    const value = (options as Record<string, unknown>)[key]
+    if (typeof value === "string" && value) return value
+  }
+  return undefined
 }
 
 /**
@@ -194,6 +204,8 @@ async function hydrate(rows: ItemRow[]): Promise<ContentItem[]> {
       coverUrl: media.coverByItem.get(row.id),
       deletedAt: row.deleted_at ?? undefined,
       labels: itemLabels?.length ? itemLabels : undefined,
+      igLocation: platformOption(row.platform_options, "ig_location"),
+      fbLink: platformOption(row.platform_options, "fb_link"),
     }
   })
 }

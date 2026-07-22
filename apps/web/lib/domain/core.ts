@@ -171,6 +171,10 @@ export interface ContentItem {
   deletedAt?: string
   /** Étiquettes libres transverses (« Promo », « UGC », « Marronnier »…). */
   labels?: string[]
+  /** Options avancées (platform_options.ig_location) — lieu taggé Instagram. */
+  igLocation?: string
+  /** Options avancées (platform_options.fb_link) — lien joint au post Facebook. */
+  fbLink?: string
 }
 
 export interface CalendarAccount {
