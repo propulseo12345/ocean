@@ -1,5 +1,26 @@
 # Session State — 2026-07-22 (ter) — « tout doit fonctionner » : Tier A/B/C + 3 Tier D
 
+## ⚡⚡⚡ FAIT 2026-07-22 (quinquies) — POINT 2 : file publish_jobs + WORKER (commits `d084793`, `e097e90`)
+Le worker de publication + son socle DB. `tsc=0` (web + worker), **pgTAP 020 : 10/10**,
+**7 tests moteur verts** (idempotence règle 15 prouvée sans base ni réseau).
+- **Migration 020** (`deploy/15_migration_020.sql`, À VALIDER + APPLIQUER) : table
+  `publish_jobs` (exécution technique ; content_targets = état métier). Statuts
+  scheduled→claimed→publishing→succeeded/retrying/failed/dead_letter/canceled ;
+  claim/lease (r17), idempotence publish_started_at+external_container_id (r15),
+  index unique partiel/cible active (r16), backoff (r18). RLS lecture org, écritures
+  service_role. RPC `enqueue_publish_jobs`/`cancel_publish_jobs` (app-driven, idempotentes).
+- **Enfilement câblé** : `applyStatusIntent` (scheduled→enqueue, sinon cancel) +
+  `scheduleContentItem` (re-sync run_at). Les lots du board passent par là.
+- **`apps/worker`** (nouveau package pnpm, 2e app Coolify À CRÉER) : driver `pg`
+  Supavisor SESSION (env refuse 6543), tick 5s, reaper, claim SKIP LOCKED + lease,
+  machine à états (engine.ts, **règle 15 : jamais de double publication**), lecture
+  Vault, refresh sous advisory lock (scaffold). **Publishers IG/FB/TikTok = STUB
+  déterministe** (décision Étienne : schéma+boucle testés, appels réels différés aux creds).
+- **HANDOFF ÉTIENNE (point 2)** : (a) valider+appliquer `deploy/15` ; (b) créer la 2e
+  app Coolify « ocean-worker » (start `pnpm --filter worker start`), env `DATABASE_URL`
+  = Supavisor **SESSION port 5432** (JAMAIS 6543) + `SUPABASE`… ; (c) les publishers
+  restent en simulation tant que les creds Meta/TikTok + le flux réel ne sont pas branchés.
+
 ## ⚡⚡ FAIT 2026-07-22 (quater) — POINT 1 : Vault OAuth + persistConnection (commit `1988d21`)
 Le SEUL maillon manquant du flux OAuth est posé. `tsc=0`, build web vert, **pgTAP 019 : 6/6**.
 - **Migration 019** (`deploy/14_migration_019.sql`, À VALIDER + APPLIQUER par Étienne) :
@@ -72,12 +93,10 @@ Nouveaux fichiers clés : `lib/actions/labels.ts`, `lib/brevo/transactional.ts`,
 14. ~~**Helper Vault + persistConnection**~~ ✅ FAIT 2026-07-22 quater (commit `1988d21`).
     Migration 019 (deploy/14, À VALIDER/APPLIQUER), lib/oauth complet, boutons de connexion
     social+agenda, pgTAP 6/6. Voir en-tête « FAIT 2026-07-22 (quater) ».
-15. **`apps/worker`** (2e app Coolify) : nouveau package workspace + driver Postgres
-    (Supavisor SESSION port 5432, JAMAIS 6543), boucle tick 5 s, claim
-    FOR UPDATE SKIP LOCKED + lease 2 min + reaper, machine à états PublishJob,
-    publishers instagram/facebook/tiktok, refresh tokens sous advisory lock,
-    **idempotence règle 15** (publish_started_at avant media_publish). Le plus
-    safety-critical — à faire avec soin, build/tests propres.
+15. ~~**`apps/worker`**~~ ✅ FAIT 2026-07-22 quinquies (commits `d084793` + `e097e90`).
+    Migration 020 (deploy/15), enfilement câblé, worker complet (moteur testé, publishers
+    stub). pgTAP 10/10 + 7 tests moteur. Voir en-tête « FAIT 2026-07-22 (quinquies) ».
+    RESTE côté Étienne : appliquer deploy/15, créer l'app Coolify worker (DATABASE_URL SESSION).
 16. **Upload TUS** (tus-js-client, chunks 6 Mo) → media-originals privé, chemin
     `{org}/{client}/{media_asset_id}/…` + conversion JPEG/HEIC côté client +
     vignette WebP ~400px → media-thumbs. Débloque ensuite : attachMedia/deleteAsset/
