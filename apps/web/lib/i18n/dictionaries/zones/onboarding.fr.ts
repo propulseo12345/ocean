@@ -33,7 +33,7 @@ export const onboardingFr = {
       reviewerEmailFix: "Corrigez l'adresse email du valideur ou laissez le champ vide.",
       defaultClientName: "Le client",
       clientCreated: "{name} créé",
-      clientCreatedWithReviewer: "Invitez le valideur depuis les réglages du client.",
+      clientCreatedWithReviewer: "Invitation du relecteur enregistrée.",
       clientCreatedNoReviewer: "Client créé.",
       creating: "Création…",
       handleTaken: "Cet identifiant est déjà pris par un autre client.",

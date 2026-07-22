@@ -11,6 +11,7 @@ import { updateApprovalSettings } from "@/lib/actions/client-settings"
 import type { ApprovalMode, Client, Reviewer } from "@/lib/domain"
 import { type MessageKey, useFormat, useLabels, useT } from "@/lib/i18n"
 import { REMINDER_DELAY_BOUNDS, REMINDER_DELAY_DEFAULT } from "./constants"
+import { ReviewerInviteDialog } from "./reviewer-invite-dialog"
 import { SaveBar, SectionCard } from "./section-card"
 
 interface ModeOption {
@@ -60,6 +61,7 @@ export function SectionApproval({
   const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<ApprovalMode>(client.approvalMode)
   const [reminderDays, setReminderDays] = useState(initialReminderDays)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const reminderDisabled = mode === "auto"
 
   // Le délai de relance compte AUSSI dans dirty (bug corrigé : sans lui, modifier
@@ -76,12 +78,6 @@ export function SectionApproval({
       } else {
         toast.error(t("clientSettings.saveBar.error"))
       }
-    })
-  }
-
-  function invite() {
-    toast.info(t("clientSettings.approval.inviteToast"), {
-      description: t("clientSettings.approval.inviteToastDescription"),
     })
   }
 
@@ -137,7 +133,7 @@ export function SectionApproval({
               {t("clientSettings.approval.noReviewer")}
             </p>
           )}
-          <Button size="sm" variant="outline" onClick={invite}>
+          <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
             <UserPlus />
             <span className="hidden sm:inline">{t("clientSettings.approval.invite")}</span>
           </Button>
@@ -176,6 +172,8 @@ export function SectionApproval({
       </p>
 
       <SaveBar dirty={dirty && !pending} onSave={save} />
+
+      <ReviewerInviteDialog clientId={client.id} open={inviteOpen} onOpenChange={setInviteOpen} />
     </SectionCard>
   )
 }

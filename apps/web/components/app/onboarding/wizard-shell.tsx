@@ -123,6 +123,7 @@ export function WizardShell() {
         time: s.time,
         platforms: s.platforms.filter((p) => PUBLISHABLE.includes(p as (typeof PUBLISHABLE)[number])),
       })),
+      reviewerEmail: draft.reviewerEmail,
     })
 
     if (!res.ok || !res.data) {

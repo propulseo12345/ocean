@@ -34,7 +34,7 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       reviewerEmailFix: "Fix the reviewer's email address or leave the field empty.",
       defaultClientName: "The client",
       clientCreated: "{name} created",
-      clientCreatedWithReviewer: "Invite the reviewer from the client settings.",
+      clientCreatedWithReviewer: "Reviewer invitation saved.",
       clientCreatedNoReviewer: "Client created.",
       creating: "Creating…",
       handleTaken: "That handle is already used by another client.",

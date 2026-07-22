@@ -23,4 +23,6 @@ export const routes = {
   contentEdit: (clientId: string, contentId: string) =>
     `/clients/${clientId}/content/${contentId}/edit`,
   portalContent: (contentId: string) => `/portal/${contentId}`,
+  /** Lien d'acceptation d'invitation reviewer (token en clair, usage unique). */
+  acceptInvite: (token: string) => `/portal/accept?token=${encodeURIComponent(token)}`,
 } as const

@@ -133,10 +133,24 @@ export const clientSettingsFr = {
       reminderUnit: "jour(s)",
       lateNote:
         "Une approbation tardive ne déclenche jamais de publication automatique : passé l'heure, le contenu te revient pour reprogrammation.",
-      savedToast: "Niveau de validation enregistré (aperçu)",
-      inviteToast: "Invitation relecteur simulée (aperçu)",
-      inviteToastDescription:
-        "Un email d'invitation au portail partira via Brevo une fois le backend câblé.",
+      savedToast: "Niveau de validation enregistré",
+      inviteDialogTitle: "Inviter un relecteur",
+      inviteDialogDescription:
+        "Il recevra un accès en lecture au portail de validation de ce client.",
+      inviteEmailLabel: "Email du relecteur",
+      inviteEmailPlaceholder: "prenom@exemple.com",
+      inviteSubmit: "Créer l'invitation",
+      inviteSubmitting: "Création…",
+      inviteSuccessTitle: "Invitation enregistrée",
+      inviteSuccessDescription:
+        "L'email automatique (Brevo) arrive bientôt. En attendant, partage ce lien d'accès au portail :",
+      inviteLinkLabel: "Lien d'accès",
+      inviteCopy: "Copier le lien",
+      inviteCopied: "Lien copié",
+      inviteDone: "Terminé",
+      inviteAlreadyInvited: "Une invitation est déjà en attente pour cet email.",
+      inviteInvalid: "Adresse email invalide.",
+      inviteError: "L'invitation n'a pas pu être créée.",
     },
     cadence: {
       title: "Cadence & alertes",

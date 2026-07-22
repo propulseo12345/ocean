@@ -132,10 +132,24 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       reminderUnit: "day(s)",
       lateNote:
         "A late approval never triggers automatic publishing: past the deadline, the content comes back to you for rescheduling.",
-      savedToast: "Approval level saved (preview)",
-      inviteToast: "Reviewer invitation simulated (preview)",
-      inviteToastDescription:
-        "A portal invitation email will go out via Brevo once the backend is wired.",
+      savedToast: "Approval level saved",
+      inviteDialogTitle: "Invite a reviewer",
+      inviteDialogDescription:
+        "They'll get read-only access to this client's approval portal.",
+      inviteEmailLabel: "Reviewer email",
+      inviteEmailPlaceholder: "name@example.com",
+      inviteSubmit: "Create invitation",
+      inviteSubmitting: "Creating…",
+      inviteSuccessTitle: "Invitation saved",
+      inviteSuccessDescription:
+        "The automated email (Brevo) is coming soon. In the meantime, share this portal access link:",
+      inviteLinkLabel: "Access link",
+      inviteCopy: "Copy link",
+      inviteCopied: "Link copied",
+      inviteDone: "Done",
+      inviteAlreadyInvited: "An invitation is already pending for this email.",
+      inviteInvalid: "Invalid email address.",
+      inviteError: "The invitation could not be created.",
     },
     cadence: {
       title: "Cadence & alerts",

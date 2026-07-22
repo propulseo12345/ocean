@@ -6,6 +6,7 @@ import { z } from "zod"
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { createClient } from "@/lib/supabase/server"
 import { type ActionResult, requireClientInOrg } from "./_helpers"
+import { inviteReviewer } from "./collaboration"
 
 // Création d'un client (wizard d'onboarding). Contrairement aux autres actions,
 // le client n'existe pas encore : on ne passe donc pas par requireClientInOrg,
@@ -48,6 +49,7 @@ const draftSchema = z.object({
     )
     .max(50)
     .default([]),
+  reviewerEmail: z.string().trim().max(320).default(""),
 })
 
 // "var(--chart-3)" | "chart-3" -> "chart-3" (miroir du CHECK color_token chart-1..5).
@@ -155,6 +157,14 @@ export async function createClientAction(
       },
       { onConflict: "client_id" }
     )
+  }
+
+  // Invitation reviewer optionnelle (best-effort) : crée la ligne
+  // client_invitations via inviteReviewer. L'ENVOI de l'email est différé
+  // (Brevo, Tier D) ; ici on enregistre l'invitation (token hashé). Un email
+  // invalide ou une invitation en double n'annule pas la création du client.
+  if (d.reviewerEmail.trim()) {
+    await inviteReviewer({ clientId, email: d.reviewerEmail.trim() })
   }
 
   revalidatePath("/clients", "layout")
