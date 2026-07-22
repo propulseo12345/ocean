@@ -336,6 +336,38 @@ export async function trashContent(input: z.infer<typeof trashSchema>): Promise<
   return { ok: true }
 }
 
+/**
+ * Purge définitive d'un contenu déjà en corbeille (irréversible). La suppression
+ * cascade sur les cibles, liaisons médias, commentaires, étiquettes, approbations
+ * et versions (FK composites ON DELETE CASCADE). Les FICHIERS Storage ne sont PAS
+ * touchés ici (règle 23 : jamais de DELETE SQL sur storage.objects) — les
+ * liaisons content_media disparaissent, les originaux orphelins sont balayés par
+ * l'Edge Function media-cleanup.
+ *
+ * Garde : on ne purge QUE ce qui est déjà soft-deleted (`deleted_at not null`) —
+ * un contenu vivant passe d'abord par trashContent, jamais de hard-delete direct.
+ */
+export async function hardDeleteContent(
+  input: z.infer<typeof trashSchema>
+): Promise<ActionResult> {
+  const parsed = trashSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "INVALID_INPUT" }
+  const { clientId, contentId } = parsed.data
+
+  const { orgId, supabase } = await requireClientInOrg(clientId)
+  const { error } = await supabase
+    .from("content_items")
+    .delete()
+    .eq("org_id", orgId)
+    .eq("client_id", clientId)
+    .eq("id", contentId)
+    .not("deleted_at", "is", null)
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath(routes.clientContent(clientId))
+  return { ok: true }
+}
+
 /** Restaure un contenu depuis la corbeille. */
 export async function restoreContent(input: z.infer<typeof trashSchema>): Promise<ActionResult> {
   const parsed = trashSchema.safeParse(input)

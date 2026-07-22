@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { FormatIcon } from "@/components/shared/format-icon"
 import { MediaThumb } from "@/components/shared/media-thumb"
 import { Button } from "@/components/ui/button"
-import { restoreContent } from "@/lib/actions/content"
+import { hardDeleteContent, restoreContent } from "@/lib/actions/content"
 import type { ContentItem } from "@/lib/domain"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
 import { ConfirmDialog } from "./confirm-dialog"
@@ -43,13 +43,22 @@ export function TrashList({
     router.refresh()
   }
 
-  function purge() {
+  async function purge() {
     if (!toPurge) return
-    setItems((prev) => prev.filter((c) => c.id !== toPurge.id))
-    toast.warning(t("clientSettings.trash.purgedToast"), {
-      description: toPurge.title,
-    })
+    const target = toPurge
     setToPurge(null)
+    // Retrait optimiste ; on remet la ligne si la purge échoue.
+    setItems((prev) => prev.filter((c) => c.id !== target.id))
+    const res = await hardDeleteContent({ clientId, contentId: target.id })
+    if (!res.ok) {
+      setItems((prev) => [target, ...prev])
+      toast.error(t("clientSettings.trash.purgeError"))
+      return
+    }
+    toast.warning(t("clientSettings.trash.purgedToast"), {
+      description: target.title,
+    })
+    router.refresh()
   }
 
   if (items.length === 0) {

@@ -239,13 +239,14 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       restore: "Restore",
       restoredToast: "Content restored",
       restoreError: "Could not restore. Please try again.",
-      purgedToast: "Content permanently deleted (preview)",
+      purgedToast: "Content permanently deleted",
+      purgeError: "Could not delete. Please try again.",
       deletedRelative: "· deleted {when}",
       purgeAria: "Delete {title} permanently",
       purgeDialogTitle: "Delete permanently?",
       purgeDialogDescription:
-        '"{title}" will be removed from the trash with no way to restore it. In production, the attached media is purged.',
-      purgeConfirm: "Delete permanently (preview)",
+        '"{title}" will be removed from the trash with no way to restore it. The attached media will be purged.',
+      purgeConfirm: "Delete permanently",
     },
   },
 }

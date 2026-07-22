@@ -243,13 +243,14 @@ export const clientSettingsFr = {
       restore: "Restaurer",
       restoredToast: "Contenu restauré",
       restoreError: "Restauration impossible. Réessayez.",
-      purgedToast: "Contenu supprimé définitivement (aperçu)",
+      purgedToast: "Contenu supprimé définitivement",
+      purgeError: "Suppression impossible. Réessayez.",
       deletedRelative: "· supprimé {when}",
       purgeAria: "Supprimer définitivement {title}",
       purgeDialogTitle: "Supprimer définitivement ?",
       purgeDialogDescription:
-        "« {title} » sera retiré de la corbeille sans possibilité de restauration. En réel, les médias associés sont purgés.",
-      purgeConfirm: "Supprimer définitivement (aperçu)",
+        "« {title} » sera retiré de la corbeille sans possibilité de restauration. Les médias associés seront purgés.",
+      purgeConfirm: "Supprimer définitivement",
     },
   },
 } as const
