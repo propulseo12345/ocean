@@ -2,8 +2,11 @@
 
 import { createHash, randomBytes } from "node:crypto"
 import { revalidatePath } from "next/cache"
+import { headers } from "next/headers"
 import { z } from "zod"
 
+import { sendTransactional } from "@/lib/brevo/transactional"
+import { routes } from "@/lib/routes"
 import { createClient } from "@/lib/supabase/server"
 import { type ActionResult, requireClientInOrg } from "./_helpers"
 
@@ -294,6 +297,24 @@ export async function inviteReviewer(input: unknown): Promise<ActionResult<{ tok
     if (error) return { ok: false, error: error.code === "23505" ? "already_invited" : "db_error" }
   } catch {
     return { ok: false, error: "forbidden" }
+  }
+
+  // Email d'invitation — BEST-EFFORT (Tier D). Sans Brevo configuré,
+  // sendTransactional lève et on ignore : l'invitation reste valide et le lien
+  // d'acceptation est affiché dans l'UI. Auto-actif dès que Brevo est câblé.
+  try {
+    const h = await headers()
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+      `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`
+    await sendTransactional({
+      template: "reviewer-invitation",
+      to: normalizedEmail,
+      params: { accept_url: `${origin}${routes.acceptInvite(token)}` },
+      tags: ["reviewer-invitation"],
+    })
+  } catch {
+    // ignore (scaffolding inerte sans secrets)
   }
 
   revalidatePath(`/clients/${clientId}/settings`)
