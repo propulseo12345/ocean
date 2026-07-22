@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Lightbulb, PenLine, Plus } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -14,22 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { nowIso } from "@/lib/clock"
+import { saveContentItem } from "@/lib/actions/content"
 import type { Client, ContentItem, ContentPillar } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 
-// Banque d'idées du client : capture rapide (état local), tri par pilier
-// éditorial et transformation d'une idée en brouillon via le composer.
+// Banque d'idées du client : capture rapide (contenu réel status='idea'), tri
+// par pilier éditorial et transformation d'une idée en brouillon via le composer.
 
 const NO_PILLAR = "none"
-
-// Identifiant local stable (jamais Date.now() : déterministe, SSR-safe).
-let ideaSeq = 0
-function nextIdeaId(): string {
-  ideaSeq += 1
-  return `idea_local_${ideaSeq}`
-}
 
 interface IdeaEntry {
   id: string
@@ -37,8 +31,8 @@ interface IdeaEntry {
   caption: string
   pillarId?: string
   createdAt: string
-  /** Présent pour les idées mockées — lien vers le détail studio. */
-  contentId?: string
+  /** Lien vers le détail studio (toute idée est un content_item persisté). */
+  contentId: string
 }
 
 function IdeaCard({ idea, client }: { idea: IdeaEntry; client: Client }) {
@@ -65,7 +59,11 @@ function IdeaCard({ idea, client }: { idea: IdeaEntry; client: Client }) {
         <span className="text-[11px] text-muted-foreground">
           {t("studio.ideaBank.noted", { ago: f.relative(idea.createdAt) })}
         </span>
-        <Button variant="outline" size="xs" render={<Link href={routes.contentNew(client.id)} />}>
+        <Button
+          variant="outline"
+          size="xs"
+          render={<Link href={routes.contentEdit(client.id, idea.contentId)} />}
+        >
           <PenLine />
           {t("studio.ideaBank.transform")}
         </Button>
@@ -84,39 +82,46 @@ export function BoardIdeaBank({
   pillars: ContentPillar[]
 }) {
   const t = useT()
-  const [captured, setCaptured] = useState<IdeaEntry[]>([])
+  const router = useRouter()
   const [draft, setDraft] = useState("")
   const [pillarId, setPillarId] = useState<string>(NO_PILLAR)
+  const [saving, setSaving] = useState(false)
 
-  const entries: IdeaEntry[] = [
-    ...captured,
-    ...ideas.map((it) => ({
-      id: it.id,
-      title: it.title,
-      caption: it.caption,
-      pillarId: it.pillarId,
-      createdAt: it.createdAt,
-      contentId: it.id,
-    })),
-  ]
+  const entries: IdeaEntry[] = ideas.map((it) => ({
+    id: it.id,
+    title: it.title,
+    caption: it.caption,
+    pillarId: it.pillarId,
+    createdAt: it.createdAt,
+    contentId: it.id,
+  }))
 
-  function capture() {
+  // Capture réelle : crée un content_item status='idea' (saveContentItem). Pas
+  // d'optimiste local — on rafraîchit pour lire la ligne canonique (l'idée
+  // réapparaît dans `ideas`, filtré status='idea' côté serveur).
+  async function capture() {
     const title = draft.trim()
-    if (title.length === 0) return
-    setCaptured((prev) => [
-      {
-        id: nextIdeaId(),
-        title,
-        caption: "",
-        pillarId: pillarId === NO_PILLAR ? undefined : pillarId,
-        createdAt: nowIso(),
-      },
-      ...prev,
-    ])
+    if (title.length === 0 || saving) return
+    setSaving(true)
+    const res = await saveContentItem({
+      clientId: client.id,
+      title,
+      format: "post",
+      state: "idea",
+      caption: "",
+      pillarId: pillarId === NO_PILLAR ? null : pillarId,
+    })
+    setSaving(false)
+    if (!res.ok) {
+      toast.error(t("studio.ideaBank.captureError"))
+      return
+    }
     setDraft("")
+    setPillarId(NO_PILLAR)
     toast.success(t("studio.ideaBank.captured"), {
       description: t("studio.ideaBank.capturedDesc"),
     })
+    router.refresh()
   }
 
   const known = new Set(pillars.map((p) => p.id))
@@ -169,7 +174,7 @@ export function BoardIdeaBank({
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={capture} disabled={draft.trim().length === 0}>
+          <Button size="sm" onClick={capture} disabled={draft.trim().length === 0 || saving}>
             <Plus />
             {t("studio.ideaBank.capture")}
           </Button>
