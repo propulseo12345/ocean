@@ -1,67 +1,96 @@
-# Session State — 2026-07-22 (bis) — DÉPLOYÉ + programme « tout doit fonctionner »
+# Session State — 2026-07-22 (ter) — « tout doit fonctionner » : Tier A/B/C + 3 Tier D
 
 ## ⚡ ÉTAT ACTUEL (reprise ici)
-- **Branche `main` @ `d08996d`, POUSSÉE sur GitHub + DÉPLOYÉE sur Coolify.**
-  App live : **https://socean.54-36-180-115.sslip.io** (`/api/health` = 200).
-- **Objectif Étienne** : plus AUCUNE feature mockée — tout doit fonctionner avec de
-  vraies données. Stratégie actée : **câblage sans migration d'abord (Tier A+B)**,
-  puis Tier C (migrations), + **scaffolding Tier D** (OAuth/worker/Brevo) en parallèle.
-- **Cartographie complète** : `.planning/` (workflow) — 147 findings, 13 domaines.
-  49 déjà réels, 46 stubs câblables, 19 needs-backend, 33 différés. P0=fait.
+- **Branche `main` @ `670cc38`** (14 commits ajoutés cette session, TOUS typecheck 0
+  + build vert). **PAS ENCORE POUSSÉE** (push GitHub + redeploy Coolify = demander
+  des tokens FRAIS à Étienne, les anciens sont révoqués).
+  App live actuelle : **https://socean.54-36-180-115.sslip.io** (`/api/health` = 200).
+- **Objectif** : plus AUCUNE feature mockée. Fait : TOUT le Tier A/B (données
+  vivantes), les 2 refactos de hub (board + grille), TOUT le Tier C (dont la
+  migration 018 partage de rapport), et 3/5 scaffolds Tier D.
 
-### ✅ FAIT cette session (6 commits, tous typecheck+build verts, déployés)
+### ✅ FAIT cette session (14 commits)
 | Commit | Feature réelle |
 |---|---|
-| `480bd5a` | check final câblage + durcissement advisor 017 (appliqué en ligne) |
-| `8f18955` | **Création de client** (P0 — fin du 404 « cl_brulerie ») + piliers/créneaux/brand-kit |
-| `a5bfb68` | Notifications — marquer lu / tout marquer lu (RPC 009) |
-| `890a94c` | Calendrier — envoi en validation (applyStatusIntent) + note/événement (addClientEvent) |
-| `2ae76e9` | Board — enregistrement de vue (saveView) |
-| `d08996d` | Gestion client — updateClientProfile + setClientArchived + deleteClientAction |
+| `14795ca` | **Note interne** (postComment visibility='internal') + **toggleResolved** d'un retour (action `toggleCommentResolved`, colonnes resolved_at/by de 013). getComments lit visibility+resolved_at ; DetailThread sépare les couches. |
+| `f790f25` | Composer : **lecture** des options avancées (ig_location/fb_link depuis platform_options) — écriture déjà OK. |
+| `7aa3ca7` | Banque d'idées : **capture réelle** (content_item status='idea' via saveContentItem). |
+| `0a01c64` | Corbeille : **purge définitive** (`hardDeleteContent`, DELETE gardé à deleted_at not null). |
+| `3befc60` | **Invitation reviewer** (onboarding + réglages) via `inviteReviewer` + dialog affichant le lien. |
+| `cd1317f` | Board : **actions en lot réelles** (archiveBatch/cancelBatch/scheduleBatchCommit/sendReviewRequest → Server Actions, optimiste+rollback). |
+| `b1bcf41` | Grille : **drag reschedule + dépôt étagère + lots** (scheduleContentItem/applyStatusIntent). Filtre grille inclut les brouillons datés. |
+| `43d47c3` | Grille : **exclude_from_grid** persisté (`setExcludeFromGrid`). |
+| `5eb01a1` | Studio : **duplication de contenu** réelle (`duplicateContent`, same/cross-client). |
+| `b5ac7f6` | Auth : **reset mot de passe** complet (/forgot-password, /auth/callback, /reset-password). |
+| `1f78a2a` | Board : **étiquetage réel** (`setContentLabels` + `addLabelsToContents`, `lib/actions/labels.ts`). |
+| `573b329` | Rapport : **partage public snapshot** + route `/r/[token]` + RPC. **⚠️ dépend migration 018.** |
+| `0eceb0c` | **Acceptation invitation** (`/api/invitations/accept`, service_role) + scaffold Brevo (best-effort). |
+| `670cc38` | **Scaffold OAuth** custom (lib/oauth + /api/oauth/[provider] + callback). |
 
-Nouvelle action : `apps/web/lib/actions/clients.ts` (createClientAction, updateClientProfile,
-setClientArchived, deleteClientAction). Nouvelle action : `lib/actions/notifications.ts`.
-Correction `types.ts` : Insert `clients` (colonnes à default rendues optionnelles).
+Nouveaux fichiers clés : `lib/actions/labels.ts`, `lib/brevo/transactional.ts`,
+`lib/oauth/{config,state,index,tokens}.ts`, `components/app/client-settings/reviewer-invite-dialog.tsx`,
+`components/app/performance/report-share-actions.ts`, routes `/r/[token]`,
+`/forgot-password`, `/reset-password`, `/auth/callback`, `/api/invitations/accept`,
+`/api/oauth/[provider](/callback)`.
 
-### ⏳ RESTE À FAIRE (par ordre, pour la prochaine session)
-**Tier A/B câblables SUR DONNÉES VIVANTES (à finir en premier) :**
-1. Composer/detail : note interne (`postComment` visibility='internal', detail-thread onglet Interne).
-2. Options avancées composer (lieu IG + lien FB) : write OK, compléter la LECTURE dans getContentItem(s).
-3. Banque d'idées : capture via `saveContentItem` (state:'idea') — remplacer le state local `captured`.
-4. Corbeille : purge définitive d'un contenu (créer `hardDeleteContent`, backing OK).
-5. toggleResolved d'un retour reviewer (créer l'action, backing DB prêt — colonnes+policy).
-6. Invitation reviewer (wizard step-review + réglages section-approval) via `inviteReviewer`
-   (EXISTE, crée la ligne client_invitations ; l'ENVOI email est Tier D/Brevo).
+### 🤝 ACTIONS ÉTIENNE (débloquer / déployer)
+1. **Appliquer la migration 018** (SQL Editor) : `deploy/13_migration_018.sql`
+   (report_shares + RPC get_report_share). **À VALIDER** (en-tête du fichier) : la
+   RPC est SECURITY DEFINER exposée à anon À DESSEIN (lien public) — `get_advisors`
+   la signalera (0028/0029), exception voulue. **Sans elle, le partage de rapport
+   (bouton « Copier le lien ») échoue** (report_shares absent).
+2. **Push + redeploy** (tokens frais) : `git push` via URL tokenisée, puis
+   `curl … /api/v1/deploy?uuid=eiennb096iitmlnyn6smbc9x`, vérifier `/api/health`=200.
+3. **Config Supabase Auth (reset mot de passe)** : ajouter `<origin>/auth/callback`
+   aux **Redirect URLs** autorisées. Sinon le lien de réinit ne revient pas.
+4. **Config optionnelle Tier D** (fait fonctionner ce qui est scaffoldé) :
+   - Brevo : `BREVO_API_KEY` + `BREVO_TEMPLATE_*` (les 9 templates) + `BREVO_SENDER_EMAIL`.
+     → les emails d'invitation partent automatiquement (déjà câblé best-effort).
+   - OAuth : `OAUTH_STATE_SECRET` + `OAUTH_<PROVIDER>_CLIENT_ID/_SECRET`, MAIS il
+     manque encore le **helper Vault** (voir RESTE À FAIRE #15) pour stocker les tokens.
 
-**Refacto de hub (plus lourd) :**
-7. Board batch actions + envoi en revue groupé (`board-state.ts` : setStatusBatch/scheduleBatch/
-   archiveBatch/sendReviewRequest → vraies actions applyStatusIntent/scheduleContentItem/trashContent/
-   sendReviewRequest). ⚠️ sendReviewRequest exige des `recipientUserIds` = reviewers invités (dépend #6).
-8. Grille : `use-grid-tiles.ts` (drag reschedule, dépôt étagère, batch) → scheduleContentItem/applyStatusIntent.
+### ⏳ RESTE À FAIRE (prochaine session — 2 gros scaffolds Tier D)
+14. **Helper Vault + persistConnection** : migration `private.store_integration_secret`
+    (SECURITY DEFINER, service_role, wrappe vault.create_secret) → compléter
+    `lib/oauth/tokens.ts::persistConnection` (upsert platform_connections +
+    platform_connection_secrets). C'est le SEUL maillon manquant du flux OAuth
+    (le reste est fonctionnel). Puis résoudre l'identité de compte via l'API provider
+    (me/pages…) et brancher les boutons de connexion (settings/accounts + agenda).
+15. **`apps/worker`** (2e app Coolify) : nouveau package workspace + driver Postgres
+    (Supavisor SESSION port 5432, JAMAIS 6543), boucle tick 5 s, claim
+    FOR UPDATE SKIP LOCKED + lease 2 min + reaper, machine à états PublishJob,
+    publishers instagram/facebook/tiktok, refresh tokens sous advisory lock,
+    **idempotence règle 15** (publish_started_at avant media_publish). Le plus
+    safety-critical — à faire avec soin, build/tests propres.
+16. **Upload TUS** (tus-js-client, chunks 6 Mo) → media-originals privé, chemin
+    `{org}/{client}/{media_asset_id}/…` + conversion JPEG/HEIC côté client +
+    vignette WebP ~400px → media-thumbs. Débloque ensuite : attachMedia/deleteAsset/
+    updateAssetAlt (actions prêtes), médias de contenu, composer portail.
 
-**Tier C (migrations — Étienne applique le SQL, MCP write bloqué côté Claude) :**
-9. Duplication de contenu (dupliquer item+targets+media). 10. Jetons de partage de rapport + route publique.
-11. exclude_from_grid (write). 12. Étiquettes rapides + batch tag. 13. Reset mot de passe (Supabase Auth).
-
-**Tier D scaffolding (demandé — écrire le code, inerte sans secrets) :**
-14. OAuth Route Handlers `/api/oauth/[provider]` + `lib/oauth/` (Meta/TikTok/Google/MS).
-15. `apps/worker` (claim FOR UPDATE SKIP LOCKED, publishers, tokens/refresh) — 2e app Coolify à créer.
-16. `lib/brevo/transactional.ts` + templates. 17. Upload TUS + conversion JPEG/HEIC + vignette WebP.
-18. Route Handler acceptation invitation reviewer (D8/D9).
-
-**Couplés Tier D (rien à câbler tant que l'externe n'existe pas) :** médiathèque alt/delete
-(updateAssetAlt/deleteAsset EXISTENT, à câbler quand upload TUS marchera), toggle agenda
-(toggleCalendar existe, besoin OAuth agenda + id calendrier dans la couche data), retry/remind
-(worker/reviewer), synchro feed (OAuth Meta).
+**Couplés (rien à câbler tant que 14–16 n'existent pas) :** toggle agenda (OAuth
+agenda), retry/remind (worker/reviewer), synchro feed (OAuth Meta), médiathèque
+(TUS). Le **calendrier reste mocké** de bout en bout (`calendar-actions.ts` =
+overrides locaux) — gros chantier hors du plan numéroté, à traiter séparément.
 
 ### Infra / accès (voir mémoire ocean-cablage-supabase)
-- GitHub : `github.com/propulseo12345/ocean` (push via PAT fourni — À RÉVOQUER, exposé en clair).
+- GitHub : `github.com/propulseo12345/ocean` (push via PAT FRAIS à demander).
 - Coolify : `http://54.36.180.115:8000`, app `ocean-web` uuid `eiennb096iitmlnyn6smbc9x`,
-  token API `9|…` (À RÉVOQUER). Redeploy = `GET /api/v1/deploy?uuid=<uuid>` (curl passe le classifieur).
+  token API frais à demander. Redeploy = `GET /api/v1/deploy?uuid=<uuid>`.
   Env posées (URL/ANON/SITE_URL build-time + SERVICE_ROLE runtime). Pas d'app worker.
-- **Classifieur de session** : écritures remote MCP (apply_migration/DELETE) + git push/commit
-  parfois bloqués. Push GitHub = via URL tokenisée. Migrations = fichiers `deploy/` appliqués par Étienne.
+- **Classifieur de session** : écritures remote MCP (apply_migration/DELETE) + git push
+  parfois bloqués. Migrations = fichiers `deploy/` appliqués par Étienne.
 - À activer par Étienne : Leaked Password Protection (Supabase Auth dashboard).
+
+### Dette / pièges confirmés cette session
+- `saved_views.filters.labels` matche par **label_id vs NOM** (board-utils) → filtre
+  étiquettes inopérant. Non corrigé (les écritures d'étiquettes, elles, sont réelles).
+- Grille : les hooks (`use-grid-tiles`/`use-grid-view`) ne re-synchronisent PAS depuis
+  les props au `router.refresh()` (state local optimiste conservé) — cohérent avec le
+  DB en cas de succès, remise à plat au remount. Aides fantômes (créneaux/emplacements)
+  + reprogrammation d'échec restent LOCALES (documenté, hors scope, couplé worker).
+- `content-actions.tsx` PrimaryAction (schedule/sendReview/… du DÉTAIL) reste `sim`
+  (toasts simulés) : transitions réelles dispo via le board/kanban ; le détail
+  ouvrirait des dialogs (date picker) — hors plan numéroté.
 
 ---
 ## (archive) Session câblage — Branch / Commit
