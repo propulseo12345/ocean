@@ -232,6 +232,10 @@ export const gridFr = {
       batchCancel:
         "Planification annulée pour {count, plural, one {# contenu} other {# contenus}}",
       cancelError: "L'annulation a échoué. Réessayez.",
+      excludeRemoved: "« {title} » retiré de la grille principale",
+      excludeRemovedDesc: "Le Reel reste visible dans l'onglet Reels et au calendrier.",
+      excludeRestored: "« {title} » réaffiché dans la grille",
+      excludeError: "La modification n'a pas pu être enregistrée. Réessayez.",
     },
   },
 } as const

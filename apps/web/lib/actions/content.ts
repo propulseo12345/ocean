@@ -311,6 +311,37 @@ export async function scheduleContentItem(
   return { ok: true }
 }
 
+const excludeSchema = z.object({
+  clientId: z.string().uuid(),
+  contentId: z.string().uuid(),
+  excluded: z.boolean(),
+})
+
+/**
+ * Retire (ou réintègre) un Reel de la grille du profil Instagram. Propriété
+ * réelle du contenu (`exclude_from_grid`), pas un état de bac à sable : un Reel
+ * publié hors grille reste visible dans l'onglet Reels et au calendrier.
+ */
+export async function setExcludeFromGrid(
+  input: z.infer<typeof excludeSchema>
+): Promise<ActionResult> {
+  const parsed = excludeSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "INVALID_INPUT" }
+  const { clientId, contentId, excluded } = parsed.data
+
+  const { orgId, supabase } = await requireClientInOrg(clientId)
+  const { error } = await supabase
+    .from("content_items")
+    .update({ exclude_from_grid: excluded })
+    .eq("org_id", orgId)
+    .eq("client_id", clientId)
+    .eq("id", contentId)
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath(routes.clientGrid(clientId))
+  return { ok: true }
+}
+
 const trashSchema = z.object({
   clientId: z.string().uuid(),
   contentId: z.string().uuid(),

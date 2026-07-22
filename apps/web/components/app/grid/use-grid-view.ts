@@ -1,16 +1,22 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { setExcludeFromGrid } from "@/lib/actions/content"
 import type { ContentFormat, ContentStatus } from "@/lib/domain"
+import { useT } from "@/lib/i18n"
 import type { GridRatio, GridTileData } from "./grid-types"
 
 // État de présentation de la grille : ratio, rendu final, filtres, bac à sable
-// (masquages, reels hors grille, covers), synchro mockée, mode démo prospect.
+// (masquages, covers), synchro mockée, mode démo prospect. Le retrait de grille
+// d'un Reel (exclude_from_grid) est une propriété RÉELLE persistée, pas du sandbox.
 
 const SYNC_DURATION_MS = 1000
 
-export function useGridView() {
+export function useGridView(clientId: string) {
+  const t = useT()
+  const router = useRouter()
   const [ratio, setRatio] = useState<GridRatio>("3:4")
   const [finalRender, setFinalRender] = useState(false)
   const [selectionMode, setSelectionModeState] = useState(false)
@@ -47,19 +53,22 @@ export function useGridView() {
     return excludedOverrides[tile.id] ?? tile.excludedFromGrid ?? false
   }
 
-  function toggleExcluded(tile: GridTileData) {
+  async function toggleExcluded(tile: GridTileData) {
     const next = !isExcluded(tile)
     setExcludedOverrides((prev) => ({ ...prev, [tile.id]: next }))
+    const res = await setExcludeFromGrid({ clientId, contentId: tile.id, excluded: next })
+    if (!res.ok) {
+      setExcludedOverrides((prev) => ({ ...prev, [tile.id]: !next }))
+      toast.error(t("grid.tiles.excludeError"))
+      return
+    }
     toast.info(
       next
-        ? `« ${tile.title} » retiré de la grille principale (aperçu)`
-        : `« ${tile.title} » réaffiché dans la grille (aperçu)`,
-      {
-        description: next
-          ? "Le Reel reste visible dans l'onglet Reels et au calendrier."
-          : undefined,
-      }
+        ? t("grid.tiles.excludeRemoved", { title: tile.title })
+        : t("grid.tiles.excludeRestored", { title: tile.title }),
+      { description: next ? t("grid.tiles.excludeRemovedDesc") : undefined }
     )
+    router.refresh()
   }
 
   function hideTile(tile: GridTileData) {
@@ -86,10 +95,10 @@ export function useGridView() {
     }, SYNC_DURATION_MS)
   }
 
-  /** Réinitialise le bac à sable : masquages, reels hors grille, covers testées. */
+  /** Réinitialise le bac à sable : masquages et covers testées. Le retrait de
+   *  grille (exclude_from_grid) est une propriété réelle persistée, pas touchée. */
   function resetSandbox() {
     setHiddenIds(new Set())
-    setExcludedOverrides({})
     setCoverOverrides({})
   }
 

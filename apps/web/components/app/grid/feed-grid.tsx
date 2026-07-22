@@ -63,7 +63,7 @@ export function FeedGrid({
 }) {
   const t = useT()
   const tiles = useGridTiles(scheduled, shelf, tz, clientId, routes.clientContent(clientId))
-  const view = useGridView()
+  const view = useGridView(clientId)
   const select = useMultiSelect()
   const [validateOpen, setValidateOpen] = useState(false)
   const [coverTarget, setCoverTarget] = useState<CoverCompareTarget | null>(null)

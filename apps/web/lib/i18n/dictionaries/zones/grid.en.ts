@@ -231,6 +231,10 @@ export const gridEn: Widen<typeof gridFr> = {
       reviewError: "Sending for approval failed. Please try again.",
       batchCancel: "Scheduling canceled for {count, plural, one {# item} other {# items}}",
       cancelError: "Cancellation failed. Please try again.",
+      excludeRemoved: "“{title}” removed from the main grid",
+      excludeRemovedDesc: "The Reel stays visible in the Reels tab and on the calendar.",
+      excludeRestored: "“{title}” shown in the grid again",
+      excludeError: "The change could not be saved. Please try again.",
     },
   },
 }
