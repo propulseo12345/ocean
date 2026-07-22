@@ -9,9 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch"
 import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
-import { createReportShare } from "./report-share-actions"
 import type { ReportSectionKey, ReportSections } from "./report-sections"
 import { SECTION_LABEL_KEYS } from "./report-sections"
+import { createReportShare } from "./report-share-actions"
 
 // Barre d'actions du rapport (sticky, masquée à l'impression) : génération d'un
 // lien de partage public (snapshot), export PDF via window.print(),

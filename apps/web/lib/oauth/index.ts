@@ -5,8 +5,8 @@ import { type OAuthProviderConfig, providerCredentials } from "./config"
 // Échanges OAuth (autorisation, code→token, refresh). Une seule implémentation
 // pour tous les providers ; les particularités vivent dans les configs.
 
-export { OAUTH_PROVIDERS, isOAuthProviderKey } from "./config"
 export type { OAuthProviderKey } from "./config"
+export { isOAuthProviderKey, OAUTH_PROVIDERS } from "./config"
 
 export interface OAuthTokens {
   accessToken: string
