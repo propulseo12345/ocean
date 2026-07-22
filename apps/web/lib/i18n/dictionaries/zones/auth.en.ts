@@ -38,6 +38,35 @@ export const authEn: Widen<typeof authFr> = {
       submitting: "Signing in…",
       invalidCredentialsTitle: "Unable to sign in",
       invalidCredentialsDetail: "Incorrect email address or password.",
+      forgotLink: "Forgot your password?",
+    },
+    // Reset request (email).
+    forgot: {
+      metaTitle: "Reset your password",
+      cardTitle: "Forgot your password",
+      cardDescription: "Enter your email address and we'll send you a reset link.",
+      emailLabel: "Email address",
+      emailPlaceholder: "you@studio.com",
+      submit: "Send the link",
+      submitting: "Sending…",
+      sentTitle: "Email sent",
+      sentDescription:
+        "If an account exists for this address, a reset link is on its way. Check your spam folder too.",
+      invalidEmail: "Invalid email address.",
+      backToLogin: "Back to sign in",
+    },
+    // Choosing a new password (after clicking the link).
+    reset: {
+      metaTitle: "New password",
+      cardTitle: "Choose a new password",
+      cardDescription: "Your new password must be at least 8 characters.",
+      passwordLabel: "New password",
+      passwordPlaceholder: "••••••••",
+      submit: "Update",
+      submitting: "Updating…",
+      errorTitle: "Update failed",
+      weakPasswordDetail: "The password must be at least 8 characters.",
+      genericDetail: "The link may have expired. Request a new reset email.",
     },
   },
 }

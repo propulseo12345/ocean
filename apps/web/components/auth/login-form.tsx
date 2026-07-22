@@ -1,11 +1,12 @@
 "use client"
 
 import { KeyRound, LogIn, Mail } from "lucide-react"
-import { useActionState } from "react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useActionState } from "react"
 import { toast } from "sonner"
 
-import { signInWithPassword, type AuthResult } from "@/app/(auth)/actions"
+import { type AuthResult, signInWithPassword } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,7 +54,15 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password">{t("auth.login.passwordLabel")}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">{t("auth.login.passwordLabel")}</Label>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {t("auth.login.forgotLink")}
+          </Link>
+        </div>
         <div className="relative">
           <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

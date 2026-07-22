@@ -35,6 +35,35 @@ export const authFr = {
       submitting: "Connexion…",
       invalidCredentialsTitle: "Connexion impossible",
       invalidCredentialsDetail: "Adresse e-mail ou mot de passe incorrect.",
+      forgotLink: "Mot de passe oublié ?",
+    },
+    // Demande de réinitialisation (email).
+    forgot: {
+      metaTitle: "Réinitialiser le mot de passe",
+      cardTitle: "Mot de passe oublié",
+      cardDescription: "Saisis ton adresse e-mail : on t'envoie un lien de réinitialisation.",
+      emailLabel: "Adresse e-mail",
+      emailPlaceholder: "toi@studio.fr",
+      submit: "Envoyer le lien",
+      submitting: "Envoi…",
+      sentTitle: "E-mail envoyé",
+      sentDescription:
+        "Si un compte existe pour cette adresse, un lien de réinitialisation vient de partir. Pense à vérifier tes spams.",
+      invalidEmail: "Adresse e-mail invalide.",
+      backToLogin: "Retour à la connexion",
+    },
+    // Choix d'un nouveau mot de passe (après clic sur le lien).
+    reset: {
+      metaTitle: "Nouveau mot de passe",
+      cardTitle: "Choisir un nouveau mot de passe",
+      cardDescription: "Ton nouveau mot de passe doit faire au moins 8 caractères.",
+      passwordLabel: "Nouveau mot de passe",
+      passwordPlaceholder: "••••••••",
+      submit: "Mettre à jour",
+      submitting: "Mise à jour…",
+      errorTitle: "Mise à jour impossible",
+      weakPasswordDetail: "Le mot de passe doit faire au moins 8 caractères.",
+      genericDetail: "Le lien a peut-être expiré. Redemande un e-mail de réinitialisation.",
     },
   },
 } as const

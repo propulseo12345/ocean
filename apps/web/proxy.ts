@@ -12,6 +12,7 @@ import { updateSession } from "@/lib/supabase/middleware"
 const PUBLIC_EXACT = new Set([
   "/",
   "/login",
+  "/forgot-password",
   "/api/health",
   "/manifest.webmanifest",
 ])
