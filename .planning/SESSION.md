@@ -1,5 +1,24 @@
 # Session State — 2026-07-22 (ter) — « tout doit fonctionner » : Tier A/B/C + 3 Tier D
 
+## ⚡⚡ FAIT 2026-07-22 (quater) — POINT 1 : Vault OAuth + persistConnection (commit `1988d21`)
+Le SEUL maillon manquant du flux OAuth est posé. `tsc=0`, build web vert, **pgTAP 019 : 6/6**.
+- **Migration 019** (`deploy/14_migration_019.sql`, À VALIDER + APPLIQUER par Étienne) :
+  `public.store_integration_secret` / `update_integration_secret` — SECURITY DEFINER,
+  service_role only (revoke public + grant service_role), wrappent `vault.create_secret/update_secret`.
+  Schéma `public` (pas `private`) car PostgREST ne peut RPC que le schéma exposé ; sûreté par les grants.
+  Vault confirmé présent en ligne. get_advisors signalera les 2 fn SECURITY DEFINER (exception voulue).
+- **lib/oauth** : `secrets.ts` (écriture Vault via RPC), `identity.ts` (résout me/pages Meta,
+  user/info TikTok, userinfo Google, /me Microsoft), `tokens.ts::persistConnection` COMPLET
+  (réseau→platform_connections + social_accounts avec token de page chiffré ; agenda→calendar_accounts ;
+  *_secrets deny-all ; reconnexion=update du secret, pas d'orphelin). `state` porte `userId`.
+- **UI** : bouton « Connecter un compte » par client (settings/accounts, tous les clients affichés),
+  agenda Google/Microsoft réel, reconnexion réelle, toasts `?connected/?error`. i18n fr+en, fin des « (aperçu) ».
+- **types.ts** : Insert des 4 tables comptes (migration 005) alignés sur les defaults DB.
+- **HANDOFF ÉTIENNE** : (a) valider+appliquer `deploy/14` ; (b) poser `OAUTH_STATE_SECRET` +
+  `OAUTH_<PROVIDER>_CLIENT_ID/_SECRET` (Meta/TikTok/Google/MS) pour rendre le flux vivant ;
+  (c) fournir tokens FRAIS (PAT GitHub + Coolify) pour déployer ce lot.
+- **RESTE** : point 2 (worker `publish_jobs` — table à créer, à concevoir avec Étienne) + point 3 (TUS).
+
 ## ⚡ ÉTAT ACTUEL (reprise ici)
 - **Branche `main` @ `8a0c081`, POUSSÉE sur GitHub + DÉPLOYÉE sur Coolify** (16
   commits cette session : 14 features + 1 style biome + 1 docs ; tous typecheck 0
@@ -50,12 +69,9 @@ Nouveaux fichiers clés : `lib/actions/labels.ts`, `lib/brevo/transactional.ts`,
      manque encore le **helper Vault** (voir RESTE À FAIRE #15) pour stocker les tokens.
 
 ### ⏳ RESTE À FAIRE (prochaine session — 2 gros scaffolds Tier D)
-14. **Helper Vault + persistConnection** : migration `private.store_integration_secret`
-    (SECURITY DEFINER, service_role, wrappe vault.create_secret) → compléter
-    `lib/oauth/tokens.ts::persistConnection` (upsert platform_connections +
-    platform_connection_secrets). C'est le SEUL maillon manquant du flux OAuth
-    (le reste est fonctionnel). Puis résoudre l'identité de compte via l'API provider
-    (me/pages…) et brancher les boutons de connexion (settings/accounts + agenda).
+14. ~~**Helper Vault + persistConnection**~~ ✅ FAIT 2026-07-22 quater (commit `1988d21`).
+    Migration 019 (deploy/14, À VALIDER/APPLIQUER), lib/oauth complet, boutons de connexion
+    social+agenda, pgTAP 6/6. Voir en-tête « FAIT 2026-07-22 (quater) ».
 15. **`apps/worker`** (2e app Coolify) : nouveau package workspace + driver Postgres
     (Supavisor SESSION port 5432, JAMAIS 6543), boucle tick 5 s, claim
     FOR UPDATE SKIP LOCKED + lease 2 min + reaper, machine à états PublishJob,
