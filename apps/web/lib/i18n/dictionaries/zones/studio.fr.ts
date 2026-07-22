@@ -269,15 +269,15 @@ export const studioFr = {
       destinationAria: "Client de destination",
       thisClient: " (ce client)",
       adaptHashtags: "Adapter les hashtags au client cible",
-      adaptHashtagsDesc: "Remplace les hashtags par les groupes du client de destination (aperçu).",
+      adaptHashtagsDesc: "Retire les hashtags du client source — à re-choisir pour le client cible.",
       crossClientWarning:
         "Les médias ne traversent jamais d'un client à l'autre : re-sélectionne les visuels dans la médiathèque de {name}.",
-      confirm: "Dupliquer (aperçu)",
+      confirm: "Dupliquer",
       done: "Contenu dupliqué vers {name}",
-      doneCross:
-        "Copie en brouillon{adapted} — médias à re-sélectionner dans sa médiathèque (aperçu).",
+      doneCross: "Copie en brouillon{adapted} — médias à re-sélectionner dans sa médiathèque.",
       doneCrossAdapted: ", hashtags adaptés au client cible",
-      doneSame: "Copie en brouillon, médias et légende inclus (aperçu).",
+      doneSame: "Copie en brouillon, médias et légende inclus.",
+      error: "La duplication a échoué. Réessayez.",
     },
     // détail — médias / annotations
     media: {

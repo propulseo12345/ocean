@@ -399,6 +399,119 @@ export async function hardDeleteContent(
   return { ok: true }
 }
 
+const duplicateSchema = z.object({
+  sourceClientId: z.string().uuid(),
+  contentId: z.string().uuid(),
+  targetClientId: z.string().uuid(),
+  adaptHashtags: z.boolean().default(true),
+})
+
+/**
+ * Duplique un contenu en brouillon. Même client : copie complète (cibles + liens
+ * médias, remis à zéro : status pending, pas d'external id/permalink). Autre
+ * client de la MÊME org : copie le texte seulement — ni médias ni cibles ne
+ * traversent la frontière tenant (les social_accounts et media_assets sont
+ * scoped par client), et le pilier (per-client) est retiré. La copie naît en
+ * 'draft', non programmée.
+ */
+export async function duplicateContent(
+  input: z.infer<typeof duplicateSchema>
+): Promise<ActionResult<{ id: string; clientId: string }>> {
+  const parsed = duplicateSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "INVALID_INPUT" }
+  const { sourceClientId, contentId, targetClientId, adaptHashtags } = parsed.data
+  const crossClient = targetClientId !== sourceClientId
+
+  const { orgId, userId, supabase } = await requireClientInOrg(sourceClientId)
+  if (crossClient) {
+    // Le client cible doit appartenir à la même org (défense en profondeur).
+    const { data: target } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", targetClientId)
+      .eq("org_id", orgId)
+      .maybeSingle()
+    if (!target) return { ok: false, error: "FORBIDDEN" }
+  }
+
+  const { data: src } = await supabase
+    .from("content_items")
+    .select(
+      "title, caption, hashtags, format, pillar_id, first_comment, newsletter_subject, internal_notes, platform_options"
+    )
+    .eq("org_id", orgId)
+    .eq("client_id", sourceClientId)
+    .eq("id", contentId)
+    .maybeSingle()
+  if (!src) return { ok: false, error: "NOT_FOUND" }
+
+  const { data: created, error } = await supabase
+    .from("content_items")
+    .insert({
+      org_id: orgId,
+      client_id: targetClientId,
+      status: "draft",
+      title: src.title ? `${src.title} (copie)` : null,
+      caption: src.caption,
+      hashtags: crossClient && adaptHashtags ? [] : src.hashtags,
+      format: src.format,
+      pillar_id: crossClient ? null : src.pillar_id,
+      first_comment: src.first_comment,
+      newsletter_subject: src.newsletter_subject,
+      internal_notes: src.internal_notes,
+      platform_options: src.platform_options ?? {},
+      scheduled_at: null,
+      updated_by: userId,
+    })
+    .select("id")
+    .single()
+  if (error || !created) return { ok: false, error: error?.message ?? "INSERT_FAILED" }
+  const newId = created.id
+
+  if (!crossClient) {
+    const { data: targets } = await supabase
+      .from("content_targets")
+      .select("social_account_id, platform, caption_override")
+      .eq("org_id", orgId)
+      .eq("content_item_id", contentId)
+    if (targets?.length) {
+      await supabase.from("content_targets").insert(
+        targets.map((tg) => ({
+          org_id: orgId,
+          client_id: targetClientId,
+          content_item_id: newId,
+          social_account_id: tg.social_account_id,
+          platform: tg.platform,
+          caption_override: tg.caption_override,
+        }))
+      )
+    }
+
+    const { data: media } = await supabase
+      .from("content_media")
+      .select("media_asset_id, position, alt_text_override, crop_preset")
+      .eq("org_id", orgId)
+      .eq("content_item_id", contentId)
+      .order("position", { ascending: true })
+    if (media?.length) {
+      await supabase.from("content_media").insert(
+        media.map((m) => ({
+          org_id: orgId,
+          client_id: targetClientId,
+          content_item_id: newId,
+          media_asset_id: m.media_asset_id,
+          position: m.position,
+          alt_text_override: m.alt_text_override,
+          crop_preset: m.crop_preset,
+        }))
+      )
+    }
+  }
+
+  revalidatePath(routes.clientContent(targetClientId))
+  return { ok: true, data: { id: newId, clientId: targetClientId } }
+}
+
 /** Restaure un contenu depuis la corbeille. */
 export async function restoreContent(input: z.infer<typeof trashSchema>): Promise<ActionResult> {
   const parsed = trashSchema.safeParse(input)

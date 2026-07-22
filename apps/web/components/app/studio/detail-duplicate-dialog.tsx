@@ -1,6 +1,7 @@
 "use client"
 
 import { TriangleAlert } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { ClientAvatar } from "@/components/shared/client-avatar"
@@ -16,8 +17,10 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { duplicateContent } from "@/lib/actions/content"
 import type { Client } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
+import { routes } from "@/lib/routes"
 
 // Duplication d'un contenu : copie pour le même client, ou vers un autre
 // client avec adaptation des hashtags. Les médias ne traversent JAMAIS d'un
@@ -29,23 +32,39 @@ export function DetailDuplicateDialog({
   onOpenChange,
   clients,
   currentClientId,
+  contentId,
   contentTitle,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   clients: Client[]
   currentClientId: string
+  contentId: string
   contentTitle: string
 }) {
   const t = useT()
+  const router = useRouter()
   const [targetId, setTargetId] = useState(currentClientId)
   const [adaptHashtags, setAdaptHashtags] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const target = clients.find((c) => c.id === targetId)
   const crossClient = targetId !== currentClientId
 
-  function confirm() {
-    if (!target) return
+  async function confirm() {
+    if (!target || saving) return
+    setSaving(true)
+    const res = await duplicateContent({
+      sourceClientId: currentClientId,
+      contentId,
+      targetClientId: targetId,
+      adaptHashtags,
+    })
+    setSaving(false)
+    if (!res.ok || !res.data) {
+      toast.error(t("studio.duplicate.error"))
+      return
+    }
     toast.success(t("studio.duplicate.done", { name: target.name }), {
       description: crossClient
         ? t("studio.duplicate.doneCross", {
@@ -54,6 +73,8 @@ export function DetailDuplicateDialog({
         : t("studio.duplicate.doneSame"),
     })
     onOpenChange(false)
+    // On ouvre la copie (brouillon) dans le composer pour finaliser.
+    router.push(routes.contentEdit(res.data.clientId, res.data.id))
   }
 
   return (
@@ -115,7 +136,9 @@ export function DetailDuplicateDialog({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={confirm}>{t("studio.duplicate.confirm")}</Button>
+          <Button onClick={confirm} disabled={saving}>
+            {t("studio.duplicate.confirm")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

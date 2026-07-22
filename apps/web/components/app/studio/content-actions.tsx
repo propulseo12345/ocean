@@ -59,6 +59,7 @@ export function ContentActions({
       onOpenChange={setDuplicateOpen}
       clients={clients}
       currentClientId={clientId}
+      contentId={contentId}
       contentTitle={contentTitle}
     />
   )
