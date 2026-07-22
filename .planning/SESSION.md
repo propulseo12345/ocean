@@ -1,13 +1,17 @@
 # Session State — 2026-07-22 (ter) — « tout doit fonctionner » : Tier A/B/C + 3 Tier D
 
 ## ⚡ ÉTAT ACTUEL (reprise ici)
-- **Branche `main` @ `670cc38`** (14 commits ajoutés cette session, TOUS typecheck 0
-  + build vert). **PAS ENCORE POUSSÉE** (push GitHub + redeploy Coolify = demander
-  des tokens FRAIS à Étienne, les anciens sont révoqués).
-  App live actuelle : **https://socean.54-36-180-115.sslip.io** (`/api/health` = 200).
+- **Branche `main` @ `8a0c081`, POUSSÉE sur GitHub + DÉPLOYÉE sur Coolify** (16
+  commits cette session : 14 features + 1 style biome + 1 docs ; tous typecheck 0
+  + build vert). App live : **https://socean.54-36-180-115.sslip.io** (`/api/health`
+  = 200). **Migration 018 APPLIQUÉE en ligne + vérifiée** (report_shares 9 colonnes
+  + RPC get_report_share + 4 policies ; `/r/<token>` répond 404 sur token bogus =
+  chemin RPC anon OK). Routes neuves vérifiées live : /forgot-password=200,
+  /reset-password=307, /api/invitations/accept=307, /r/[token]=404.
 - **Objectif** : plus AUCUNE feature mockée. Fait : TOUT le Tier A/B (données
   vivantes), les 2 refactos de hub (board + grille), TOUT le Tier C (dont la
-  migration 018 partage de rapport), et 3/5 scaffolds Tier D.
+  migration 018 partage de rapport), et 3/5 scaffolds Tier D. Reste : 2 gros
+  scaffolds Tier D (worker, TUS) + helper Vault OAuth.
 
 ### ✅ FAIT cette session (14 commits)
 | Commit | Feature réelle |
@@ -33,16 +37,12 @@ Nouveaux fichiers clés : `lib/actions/labels.ts`, `lib/brevo/transactional.ts`,
 `/forgot-password`, `/reset-password`, `/auth/callback`, `/api/invitations/accept`,
 `/api/oauth/[provider](/callback)`.
 
-### 🤝 ACTIONS ÉTIENNE (débloquer / déployer)
-1. **Appliquer la migration 018** (SQL Editor) : `deploy/13_migration_018.sql`
-   (report_shares + RPC get_report_share). **À VALIDER** (en-tête du fichier) : la
-   RPC est SECURITY DEFINER exposée à anon À DESSEIN (lien public) — `get_advisors`
-   la signalera (0028/0029), exception voulue. **Sans elle, le partage de rapport
-   (bouton « Copier le lien ») échoue** (report_shares absent).
-2. **Push + redeploy** (tokens frais) : `git push` via URL tokenisée, puis
-   `curl … /api/v1/deploy?uuid=eiennb096iitmlnyn6smbc9x`, vérifier `/api/health`=200.
-3. **Config Supabase Auth (reset mot de passe)** : ajouter `<origin>/auth/callback`
-   aux **Redirect URLs** autorisées. Sinon le lien de réinit ne revient pas.
+### 🤝 ACTIONS ÉTIENNE
+1. ✅ FAIT — migration 018 appliquée + push + redeploy (2026-07-22 ter).
+2. **Config Supabase Auth (reset mot de passe)** : ajouter
+   `https://socean.54-36-180-115.sslip.io/auth/callback` aux **Redirect URLs**
+   autorisées. Sinon le lien de réinit ne revient pas. (À vérifier — pas encore confirmé.)
+3. **Révoquer** les tokens partagés en clair dans le chat (PAT GitHub + token Coolify).
 4. **Config optionnelle Tier D** (fait fonctionner ce qui est scaffoldé) :
    - Brevo : `BREVO_API_KEY` + `BREVO_TEMPLATE_*` (les 9 templates) + `BREVO_SENDER_EMAIL`.
      → les emails d'invitation partent automatiquement (déjà câblé best-effort).
