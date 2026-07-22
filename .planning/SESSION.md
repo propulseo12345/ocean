@@ -1,5 +1,18 @@
 # Session State — 2026-07-22 (ter) — « tout doit fonctionner » : Tier A/B/C + 3 Tier D
 
+## 🚀 GO-LIVE points 1-2 EN COURS (2026-07-22 sexies)
+- **Migrations 019 + 020 + 021 APPLIQUÉES EN LIGNE + VÉRIFIÉES** (Étienne, SQL Editor).
+  Objets 020 tous présents (table/2 enums/2 RPC/RLS+policy/6 index). **get_advisors propre** :
+  delta = +2 warnings 0029 attendus (`enqueue`/`cancel_publish_jobs`, protégés is_org_member).
+- **⚠️ FAILLE trouvée + corrigée** (migration 021, commit `54ef94c`, `deploy/16`) : get_advisors
+  a révélé que `anon`/`authenticated` pouvaient exécuter `store/update_integration_secret`
+  (écriture Vault !) — les default privileges Supabase accordent EXECUTE à anon/authenticated
+  sur toute fn de `public` ; `revoke from public` seul ne suffit pas (invisible au pgTAP local).
+  Re-vérifié : anon/auth fermés sur les fn Vault, service_role only. Leçon en mémoire.
+- **RESTE go-live** (voir `deploy/GO-LIVE-points-1-2.md`) : (a) push+redeploy web — **tokens FRAIS
+  requis** ; (b) `OAUTH_*` env ; (c) créer l'app Coolify worker (`DATABASE_URL` SESSION 5432) ;
+  (d) smoke test `deploy/smoke_publish_jobs.sql`. **PUIS SEULEMENT** Point 3 (TUS).
+
 ## ⚡⚡⚡ FAIT 2026-07-22 (quinquies) — POINT 2 : file publish_jobs + WORKER (commits `d084793`, `e097e90`)
 Le worker de publication + son socle DB. `tsc=0` (web + worker), **pgTAP 020 : 10/10**,
 **7 tests moteur verts** (idempotence règle 15 prouvée sans base ni réseau).
