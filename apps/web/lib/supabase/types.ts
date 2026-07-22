@@ -1747,6 +1747,42 @@ export type Database = {
         }
         Relationships: []
       }
+      report_shares: {
+        Row: {
+          id: string
+          org_id: string
+          client_id: string
+          token_hash: string
+          payload: Json
+          expires_at: string | null
+          revoked_at: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          client_id: string
+          token_hash: string
+          payload: Json
+          expires_at?: string | null
+          revoked_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          client_id?: string
+          token_hash?: string
+          payload?: Json
+          expires_at?: string | null
+          revoked_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       unified_agenda: {
@@ -1804,6 +1840,11 @@ export type Database = {
       touch_client_member_seen: {
         Args: { _client: string }
         Returns: undefined
+      }
+      // Migration 018 — partage public de rapport (snapshot).
+      get_report_share: {
+        Args: { _token_hash: string }
+        Returns: Json
       }
       emit_notification: {
         Args: {

@@ -2,33 +2,44 @@
 
 import { ArrowLeft, Link2, Printer, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
 import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
+import { createReportShare } from "./report-share-actions"
 import type { ReportSectionKey, ReportSections } from "./report-sections"
 import { SECTION_LABEL_KEYS } from "./report-sections"
 
-// Barre d'actions du rapport (sticky, masquée à l'impression) : copie de lien
-// d'aperçu mock, export PDF via window.print(), personnalisation des sections.
+// Barre d'actions du rapport (sticky, masquée à l'impression) : génération d'un
+// lien de partage public (snapshot), export PDF via window.print(),
+// personnalisation des sections.
 
 export function ReportActions({
   clientId,
-  handle,
   sections,
   onToggleSection,
 }: {
   clientId: string
-  handle: string
   sections: ReportSections
   onToggleSection: (key: ReportSectionKey, value: boolean) => void
 }) {
   const t = useT()
+  const [sharing, setSharing] = useState(false)
 
+  // Crée un partage réel (report_shares) puis copie l'URL publique /r/{token}.
   async function copyLink() {
-    const url = `${routes.clientReport(clientId)}?share=apercu-${handle}`
+    if (sharing) return
+    setSharing(true)
+    const res = await createReportShare({ clientId })
+    setSharing(false)
+    if (!res.ok || !res.data) {
+      toast.error(t("report.actions.shareError"))
+      return
+    }
+    const url = `${window.location.origin}/r/${res.data.token}`
     try {
       await navigator.clipboard.writeText(url)
       toast.success(t("report.actions.copiedTitle"), {
@@ -79,7 +90,7 @@ export function ReportActions({
             </ul>
           </PopoverContent>
         </Popover>
-        <Button variant="outline" size="sm" onClick={copyLink}>
+        <Button variant="outline" size="sm" onClick={copyLink} disabled={sharing}>
           <Link2 />
           {t("report.actions.copyLink")}
         </Button>

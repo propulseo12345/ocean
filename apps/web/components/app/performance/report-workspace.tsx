@@ -13,7 +13,14 @@ import { ReportKpis } from "./report-kpis"
 import "./report-print.css"
 import { DEFAULT_SECTIONS, type ReportSectionKey } from "./report-sections"
 
-export function ReportWorkspace({ data }: { data: ReportData }) {
+export function ReportWorkspace({
+  data,
+  readOnly = false,
+}: {
+  data: ReportData
+  /** Vue publique partagée : masque les outils owner (actions, édition de note). */
+  readOnly?: boolean
+}) {
   const t = useT()
   const { locale } = useLocale()
   const [sections, setSections] = useState(DEFAULT_SECTIONS)
@@ -35,12 +42,13 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
 
   return (
     <div className="space-y-4">
-      <ReportActions
-        clientId={data.client.id}
-        handle={data.client.handle}
-        sections={sections}
-        onToggleSection={toggle}
-      />
+      {readOnly ? null : (
+        <ReportActions
+          clientId={data.client.id}
+          sections={sections}
+          onToggleSection={toggle}
+        />
+      )}
 
       <article
         data-report-document
@@ -88,16 +96,22 @@ export function ReportWorkspace({ data }: { data: ReportData }) {
               <Quote className="size-4 text-muted-foreground" />
               {t("report.note.title")}
             </h2>
-            <Textarea
-              data-no-print
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              aria-label={t("report.note.ariaLabel")}
-              className="resize-none text-sm"
-            />
+            {readOnly ? null : (
+              <Textarea
+                data-no-print
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                aria-label={t("report.note.ariaLabel")}
+                className="resize-none text-sm"
+              />
+            )}
             <blockquote
-              className="hidden border-l-2 pl-3 text-sm italic leading-relaxed text-muted-foreground print:block"
+              className={
+                readOnly
+                  ? "border-l-2 pl-3 text-sm italic leading-relaxed text-muted-foreground"
+                  : "hidden border-l-2 pl-3 text-sm italic leading-relaxed text-muted-foreground print:block"
+              }
               style={{ borderLeftColor: data.accentColor }}
             >
               {note}

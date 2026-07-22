@@ -16,7 +16,8 @@ const PUBLIC_EXACT = new Set([
   "/api/health",
   "/manifest.webmanifest",
 ])
-const PUBLIC_PREFIXES = ["/api/oauth", "/api/invitations", "/auth"]
+// /r = liens publics de rapport (partage lecture seule, token signé).
+const PUBLIC_PREFIXES = ["/api/oauth", "/api/invitations", "/auth", "/r"]
 
 function isPublic(pathname: string): boolean {
   return (
