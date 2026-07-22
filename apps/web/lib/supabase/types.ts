@@ -439,9 +439,9 @@ export type Database = {
           vault_refresh_token_secret_id?: string | null
           token_expires_at?: string | null
           refresh_token_expires_at?: string | null
-          metadata: Json
-          created_at: string
-          updated_at: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           platform_connection_id?: string
@@ -473,19 +473,19 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           provider: string
           connected_by?: string | null
           provider_account_id: string
           provider_account_name?: string | null
-          status: string
-          scopes: string[]
-          metadata: Json
+          status?: string
+          scopes?: string[]
+          metadata?: Json
           last_health_checked_at?: string | null
           needs_reauth_at?: string | null
-          created_at: string
-          updated_at: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -600,9 +600,9 @@ export type Database = {
           vault_refresh_token_secret_id?: string | null
           token_expires_at?: string | null
           refresh_token_expires_at?: string | null
-          metadata: Json
-          created_at: string
-          updated_at: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           social_account_id?: string
@@ -640,7 +640,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           client_id: string
           platform_connection_id: string
@@ -648,16 +648,16 @@ export type Database = {
           provider_account_id: string
           username?: string | null
           display_name?: string | null
-          status: string
+          status?: string
           followers_count?: number | null
           external_url?: string | null
-          metadata: Json
+          metadata?: Json
           avatar_url?: string | null
           following_count?: number | null
           feed_synced_at?: string | null
           feed_sync_error?: string | null
-          created_at: string
-          updated_at: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -1860,6 +1860,15 @@ export type Database = {
           _payload?: Json
         }
         Returns: string
+      }
+      // Migration 019 — helpers Vault (service_role only, jamais côté client).
+      store_integration_secret: {
+        Args: { _secret: string; _description?: string }
+        Returns: string
+      }
+      update_integration_secret: {
+        Args: { _secret_id: string; _secret: string }
+        Returns: undefined
       }
     }
     Enums: {

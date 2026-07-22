@@ -7,28 +7,30 @@ export const settingsFr = {
       profile: "Profil",
     },
     accounts: {
-      emptyTitle: "Aucun compte social connecté",
+      emptyTitle: "Aucun espace client",
       emptyDescription:
-        "Connecte un compte Instagram, Facebook ou TikTok depuis un espace client pour commencer à publier.",
+        "Crée un espace client pour y connecter un compte Instagram, Facebook ou TikTok.",
       needsAttention:
         "{count, plural, one {# compte nécessite une reconnexion} other {# comptes nécessitent une reconnexion}}",
       healthDescription:
         "La santé des accès est surveillée en continu : un accès expiré est détecté avant l'heure de publication. Reconnecte les comptes signalés pour éviter tout échec.",
       followers: "{count} abonnés",
+      noAccountForClient: "Aucun compte connecté pour ce client.",
+      connect: "Connecter un compte",
+      connectPlatform: "Connecter {platform}",
       reconnect: "Reconnecter",
-      reconnectToast: "Reconnexion {platform}",
-      reconnectToastDescription: "Action simulée (preview) — l'authentification s'ouvrira ici.",
+      connectedToast: "Compte {provider} connecté",
+      connectErrorTitle: "Connexion impossible",
+      errorUnconfigured: "L'intégration n'est pas encore configurée (identifiants manquants).",
+      errorDenied: "Autorisation refusée sur la plateforme.",
+      errorGeneric: "La connexion a échoué. Réessaie dans un instant.",
     },
     calendars: {
       readOnlyTitle: "Connexion en lecture seule",
       readOnlyDescription:
         "Ocean lit tes événements pour composer l'agenda unifié (Google + Outlook) dans ton fuseau. Aucun rendez-vous n'est créé ni modifié sur tes calendriers.",
       connect: "Connecter un calendrier",
-      connectToast: "Connexion {provider}",
-      connectToastDescription: "Action simulée (preview) — l'autorisation s'ouvrira ici.",
       reconnect: "Reconnecter",
-      reconnectToast: "Reconnexion {provider}",
-      reconnectToastDescription: "Action simulée (preview) — l'autorisation s'ouvrira ici.",
       providerGoogle: "Google Agenda",
       providerMicrosoft: "Microsoft Outlook",
     },

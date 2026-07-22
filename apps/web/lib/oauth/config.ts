@@ -10,6 +10,9 @@
 /** Clé d'un fournisseur OAuth. Meta couvre Instagram ET Facebook. */
 export type OAuthProviderKey = "meta" | "tiktok" | "google" | "microsoft"
 
+/** Valeurs de l'enum SQL public.integration_provider. */
+export type IntegrationProvider = "instagram" | "facebook" | "tiktok" | "google" | "microsoft"
+
 export interface OAuthProviderConfig {
   key: OAuthProviderKey
   authorizeUrl: string
@@ -17,7 +20,16 @@ export interface OAuthProviderConfig {
   /** Scopes demandés (adapter aux permissions réellement approuvées côté plateforme). */
   scopes: string[]
   /** integration_provider(s) Ocean couverts par cette connexion. */
-  providers: Array<"instagram" | "facebook" | "tiktok" | "google" | "microsoft">
+  providers: IntegrationProvider[]
+  /**
+   * Valeur `integration_provider` posée sur la ligne de connexion
+   * (platform_connections / calendar_accounts). Meta se connecte via Facebook
+   * Login (le token est détenu par un utilisateur Facebook) → 'facebook' ; les
+   * comptes IG rattachés vivent en social_accounts.platform = 'instagram'.
+   */
+  connectionProvider: IntegrationProvider
+  /** true = connexion d'agenda (calendar_accounts, scopé user) ; false = réseau social. */
+  isCalendar: boolean
   /** PKCE (TikTok, Microsoft, Google le supportent ; Meta non). */
   usePkce: boolean
   clientIdEnv: string
@@ -37,6 +49,8 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
       "business_management",
     ],
     providers: ["instagram", "facebook"],
+    connectionProvider: "facebook",
+    isCalendar: false,
     usePkce: false,
     clientIdEnv: "OAUTH_META_CLIENT_ID",
     clientSecretEnv: "OAUTH_META_CLIENT_SECRET",
@@ -48,6 +62,8 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     // video.upload = brouillon (CLAUDE.md §5, TikTok = draft). Pas de publication directe.
     scopes: ["user.info.basic", "video.upload"],
     providers: ["tiktok"],
+    connectionProvider: "tiktok",
+    isCalendar: false,
     usePkce: true,
     clientIdEnv: "OAUTH_TIKTOK_CLIENT_KEY",
     clientSecretEnv: "OAUTH_TIKTOK_CLIENT_SECRET",
@@ -58,6 +74,8 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     tokenUrl: "https://oauth2.googleapis.com/token",
     scopes: ["https://www.googleapis.com/auth/calendar.readonly", "openid", "email"],
     providers: ["google"],
+    connectionProvider: "google",
+    isCalendar: true,
     usePkce: true,
     clientIdEnv: "OAUTH_GOOGLE_CLIENT_ID",
     clientSecretEnv: "OAUTH_GOOGLE_CLIENT_SECRET",
@@ -68,6 +86,8 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
     scopes: ["Calendars.Read", "offline_access", "openid", "email"],
     providers: ["microsoft"],
+    connectionProvider: "microsoft",
+    isCalendar: true,
     usePkce: true,
     clientIdEnv: "OAUTH_MICROSOFT_CLIENT_ID",
     clientSecretEnv: "OAUTH_MICROSOFT_CLIENT_SECRET",

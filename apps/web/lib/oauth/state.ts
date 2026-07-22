@@ -10,6 +10,8 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 export interface OAuthState {
   provider: string
   orgId: string
+  /** Utilisateur initiateur (calendar_accounts.user_id, connected_by). */
+  userId: string
   /** Client cible (comptes sociaux) — absent pour un agenda org-level. */
   clientId?: string
   /** Vérifieur PKCE (renvoyé au callback pour l'échange). */

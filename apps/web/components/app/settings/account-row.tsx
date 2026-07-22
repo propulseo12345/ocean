@@ -1,12 +1,19 @@
 "use client"
 
 import { RefreshCw } from "lucide-react"
-import { toast } from "sonner"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
-import type { SocialAccount } from "@/lib/domain"
+import type { Platform, SocialAccount } from "@/lib/domain"
 import { useFormat, useLabels, useT } from "@/lib/i18n"
+
+// Instagram + Facebook se reconnectent via Meta (Facebook Login) ; TikTok a son
+// propre provider. La reconnexion relance le MÊME flux OAuth pour le client.
+function providerFor(platform: Platform): "meta" | "tiktok" | null {
+  if (platform === "instagram" || platform === "facebook") return "meta"
+  if (platform === "tiktok") return "tiktok"
+  return null
+}
 
 export function AccountRow({ account }: { account: SocialAccount }) {
   const t = useT()
@@ -14,12 +21,8 @@ export function AccountRow({ account }: { account: SocialAccount }) {
   const lbl = useLabels()
   const needsAttention = account.status !== "connected"
   const platformLabel = lbl.platform(account.platform)
-
-  function handleReconnect() {
-    toast.warning(t("settings.accounts.reconnectToast", { platform: platformLabel }), {
-      description: t("settings.accounts.reconnectToastDescription"),
-    })
-  }
+  const provider = providerFor(account.platform)
+  const reconnectHref = provider ? `/api/oauth/${provider}?clientId=${account.clientId}` : undefined
 
   return (
     <li className="flex items-center gap-3 px-3 py-3 sm:px-4">
@@ -39,8 +42,8 @@ export function AccountRow({ account }: { account: SocialAccount }) {
 
       <div className="flex shrink-0 items-center gap-2">
         <AccountStatusBadge status={account.status} className="hidden sm:inline-flex" />
-        {needsAttention ? (
-          <Button size="sm" variant="outline" onClick={handleReconnect}>
+        {needsAttention && reconnectHref ? (
+          <Button size="sm" variant="outline" render={<a href={reconnectHref} />}>
             <RefreshCw />
             {t("settings.accounts.reconnect")}
           </Button>

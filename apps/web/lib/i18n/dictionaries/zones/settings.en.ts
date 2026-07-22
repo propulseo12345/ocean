@@ -10,28 +10,30 @@ export const settingsEn: Widen<typeof settingsFr> = {
       profile: "Profile",
     },
     accounts: {
-      emptyTitle: "No social account connected",
+      emptyTitle: "No client workspace",
       emptyDescription:
-        "Connect an Instagram, Facebook or TikTok account from a client workspace to start publishing.",
+        "Create a client workspace to connect an Instagram, Facebook or TikTok account to it.",
       needsAttention:
         "{count, plural, one {# account needs reconnecting} other {# accounts need reconnecting}}",
       healthDescription:
         "Access health is monitored continuously: an expired connection is caught before publishing time. Reconnect the flagged accounts to avoid any failure.",
       followers: "{count} followers",
+      noAccountForClient: "No account connected for this client.",
+      connect: "Connect an account",
+      connectPlatform: "Connect {platform}",
       reconnect: "Reconnect",
-      reconnectToast: "Reconnecting {platform}",
-      reconnectToastDescription: "Simulated action (preview) — authentication will open here.",
+      connectedToast: "{provider} account connected",
+      connectErrorTitle: "Connection failed",
+      errorUnconfigured: "This integration isn't configured yet (missing credentials).",
+      errorDenied: "Authorization was denied on the platform.",
+      errorGeneric: "The connection failed. Please try again in a moment.",
     },
     calendars: {
       readOnlyTitle: "Read-only connection",
       readOnlyDescription:
         "Ocean reads your events to build the unified agenda (Google + Outlook) in your timezone. No event is created or changed on your calendars.",
       connect: "Connect a calendar",
-      connectToast: "Connecting {provider}",
-      connectToastDescription: "Simulated action (preview) — authorization will open here.",
       reconnect: "Reconnect",
-      reconnectToast: "Reconnecting {provider}",
-      reconnectToastDescription: "Simulated action (preview) — authorization will open here.",
       providerGoogle: "Google Calendar",
       providerMicrosoft: "Microsoft Outlook",
     },

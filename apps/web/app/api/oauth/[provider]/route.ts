@@ -34,7 +34,13 @@ export async function GET(
 
   try {
     const codeVerifier = config.usePkce ? createCodeVerifier() : undefined
-    const state = signState({ provider, orgId: ctx.org.id, clientId, codeVerifier })
+    const state = signState({
+      provider,
+      orgId: ctx.org.id,
+      userId: ctx.user.id,
+      clientId,
+      codeVerifier,
+    })
     const authorizeUrl = buildAuthorizeUrl(config, {
       state,
       redirectUri,

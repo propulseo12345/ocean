@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Client, SocialAccount } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 import { AccountRow } from "./account-row"
+import { ConnectAccountMenu } from "./connect-account-menu"
 
 export interface ClientAccountsGroup {
   client: Client
@@ -22,9 +23,9 @@ export function AccountsTab({
   needsAttentionCount: number
 }) {
   const t = useT()
-  const hasAccounts = groups.some((g) => g.accounts.length > 0)
 
-  if (!hasAccounts) {
+  // Aucun client : rien à connecter tant qu'un espace client n'existe pas.
+  if (groups.length === 0) {
     return (
       <EmptyState
         icon={Link2Off}
@@ -48,18 +49,25 @@ export function AccountsTab({
 
       {groups.map(({ client, accounts }) => (
         <Card key={client.id}>
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2.5 text-sm">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 border-b">
+            <CardTitle className="flex min-w-0 items-center gap-2.5 text-sm">
               <ClientAvatar client={client} size={28} />
-              {client.name}
+              <span className="truncate">{client.name}</span>
             </CardTitle>
+            <ConnectAccountMenu clientId={client.id} />
           </CardHeader>
           <CardContent className="px-0">
-            <ul className="divide-y">
-              {accounts.map((account) => (
-                <AccountRow key={account.id} account={account} />
-              ))}
-            </ul>
+            {accounts.length > 0 ? (
+              <ul className="divide-y">
+                {accounts.map((account) => (
+                  <AccountRow key={account.id} account={account} />
+                ))}
+              </ul>
+            ) : (
+              <p className="px-3 py-3 text-sm text-muted-foreground sm:px-4">
+                {t("settings.accounts.noAccountForClient")}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}

@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 import { exchangeCode, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
+import { resolveIdentity } from "@/lib/oauth/identity"
 import { verifyState } from "@/lib/oauth/state"
 import { persistConnection } from "@/lib/oauth/tokens"
 
 // Callback OAuth : vérifie le state signé AVANT tout échange, échange le code
-// contre des tokens, puis persiste la connexion. La persistance des tokens passe
-// par Vault (règle 12) — point bloquant documenté (persistConnection lève tant
-// que le helper Vault n'est pas posé). Le reste du flux est complet.
+// contre des tokens, résout l'identité de compte via l'API provider (me/pages…),
+// puis persiste la connexion. Les tokens sont chiffrés dans Vault (règle 12) et
+// ne transitent jamais vers le navigateur.
 
 const SETTINGS = "/settings/accounts"
 
@@ -44,22 +45,22 @@ export async function GET(
       codeVerifier: state.codeVerifier,
     })
 
-    // Persistance (Vault) — LÈVE tant que le helper Vault n'existe pas (Tier D).
+    // Identité de compte réelle (titulaire du token + comptes publiables).
+    const resolved = await resolveIdentity(config, tokens)
+
+    // Persistance : connexion + tokens chiffrés dans Vault, tables *_secrets
+    // deny-all. userId vient du state signé (jamais du client untrusted).
     await persistConnection(
       config,
-      {
-        orgId: state.orgId,
-        clientId: state.clientId,
-        // L'identité de compte réelle se résout via l'API provider (me/pages…) :
-        // à compléter au câblage. Placeholder inerte ici.
-        providerAccountId: (tokens.raw.open_id as string) ?? "pending",
-        scopes: config.scopes,
-      },
+      { orgId: state.orgId, userId: state.userId, clientId: state.clientId },
+      resolved,
       tokens
     )
 
     return NextResponse.redirect(`${origin}${SETTINGS}?connected=${provider}`)
   } catch {
-    return NextResponse.redirect(`${origin}${SETTINGS}?error=oauth_pending`)
+    // Échange/identité/persistance échoués — pas d'écriture partielle de token en
+    // clair, on redirige avec une erreur générique (jamais de détail token).
+    return NextResponse.redirect(`${origin}${SETTINGS}?error=oauth_failed`)
   }
 }

@@ -1,24 +1,28 @@
 "use client"
 
 import { Eye, Plus, RefreshCw } from "lucide-react"
-import { toast } from "sonner"
 import { AccountStatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import type { CalendarAccount } from "@/lib/domain"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { CalendarAccount, CalendarProvider } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 import { CalendarProviderIcon, useCalendarProviderLabel } from "./calendar-provider-icon"
 
+// Les agendas sont scopés par utilisateur (calendar_accounts.user_id). La
+// connexion/reconnexion relance le flux OAuth Google/Microsoft — navigation
+// pleine page vers /api/oauth/<provider> (pas de clientId : agenda org/user-level).
+const CALENDAR_PROVIDERS: CalendarProvider[] = ["google", "microsoft"]
+
 export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {
   const t = useT()
-
-  function handleConnect() {
-    toast.info(
-      t("settings.calendars.connectToast", { provider: t("settings.calendars.providerGoogle") }),
-      { description: t("settings.calendars.connectToastDescription") }
-    )
-  }
+  const providerLabel = useCalendarProviderLabel()
 
   return (
     <div className="space-y-4">
@@ -28,35 +32,39 @@ export function CalendarsTab({ accounts }: { accounts: CalendarAccount[] }) {
         <AlertDescription>{t("settings.calendars.readOnlyDescription")}</AlertDescription>
       </Alert>
 
-      <Card>
-        <CardContent className="px-0">
-          <ul className="divide-y">
-            {accounts.map((account) => (
-              <CalendarRow key={account.id} account={account} />
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      {accounts.length > 0 ? (
+        <Card>
+          <CardContent className="px-0">
+            <ul className="divide-y">
+              {accounts.map((account) => (
+                <CalendarRow key={account.id} account={account} />
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <Button variant="outline" onClick={handleConnect}>
-        <Plus />
-        {t("settings.calendars.connect")}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          <Plus />
+          {t("settings.calendars.connect")}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          {CALENDAR_PROVIDERS.map((provider) => (
+            <DropdownMenuItem key={provider} render={<a href={`/api/oauth/${provider}`} />}>
+              <CalendarProviderIcon provider={provider} className="size-4" />
+              {providerLabel(provider)}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
 
 function CalendarRow({ account }: { account: CalendarAccount }) {
   const t = useT()
-  const providerLabel = useCalendarProviderLabel()
   const needsAttention = account.status !== "connected"
-
-  function handleReconnect() {
-    toast.warning(
-      t("settings.calendars.reconnectToast", { provider: providerLabel(account.provider) }),
-      { description: t("settings.calendars.reconnectToastDescription") }
-    )
-  }
 
   return (
     <li className="flex items-center gap-3 px-3 py-3 sm:px-4">
@@ -72,7 +80,11 @@ function CalendarRow({ account }: { account: CalendarAccount }) {
       <div className="flex shrink-0 items-center gap-2">
         <AccountStatusBadge status={account.status} className="hidden sm:inline-flex" />
         {needsAttention ? (
-          <Button size="sm" variant="outline" onClick={handleReconnect}>
+          <Button
+            size="sm"
+            variant="outline"
+            render={<a href={`/api/oauth/${account.provider}`} />}
+          >
             <RefreshCw />
             {t("settings.calendars.reconnect")}
           </Button>
