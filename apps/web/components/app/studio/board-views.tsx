@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { saveView } from "@/lib/actions/saved-views"
 import type { SavedView } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -51,11 +52,30 @@ export function BoardViews({ board, clientId }: { board: BoardState; clientId: s
   function save() {
     const trimmed = name.trim()
     if (trimmed.length === 0) return
-    board.saveCurrentView(trimmed, clientId)
+    // Optimiste puis persistance réelle (saved_views). Le filtre par étiquette
+    // reste matché par nom côté board (dette nom→id) : on ne persiste pas labelIds.
+    const localId = board.saveCurrentView(trimmed, clientId)
     setOpen(false)
     setName("")
-    toast.success(t("studio.views.saved", { name: trimmed }), {
-      description: t("studio.views.savedDesc"),
+    saveView({
+      clientId,
+      name: trimmed,
+      filters: {
+        search: board.filters.search || undefined,
+        statuses: board.filters.statuses,
+        platforms: board.filters.platforms,
+        formats: board.filters.formats,
+        pillarIds: board.filters.pillarIds,
+      },
+    }).then((res) => {
+      if (res.ok) {
+        toast.success(t("studio.views.saved", { name: trimmed }), {
+          description: t("studio.views.savedDesc"),
+        })
+      } else {
+        board.dropLocalView(localId)
+        toast.error(t("studio.views.saveError"))
+      }
     })
   }
 

@@ -62,7 +62,8 @@ export const studioFr = {
       namePlaceholder: "Ex. Reels en attente",
       save: "Enregistrer (aperçu)",
       saved: "Vue « {name} » enregistrée (aperçu)",
-      savedDesc: "Disponible dans les chips de vues — état local de la preview.",
+      savedDesc: "Disponible dans les chips de vues.",
+      saveError: "Impossible d'enregistrer la vue. Réessaie.",
     },
     // kanban
     kanban: {

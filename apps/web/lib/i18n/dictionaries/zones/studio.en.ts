@@ -60,7 +60,8 @@ export const studioEn: Widen<typeof studioFr> = {
       namePlaceholder: "e.g. Reels awaiting review",
       save: "Save (preview)",
       saved: "View “{name}” saved (preview)",
-      savedDesc: "Available in the view chips — local preview state.",
+      savedDesc: "Available in the view chips.",
+      saveError: "Could not save the view. Try again.",
     },
     kanban: {
       colIdea: "Idea",

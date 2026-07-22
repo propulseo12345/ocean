@@ -84,19 +84,22 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
   }, [])
 
   const saveCurrentView = useCallback(
-    (name: string, clientId: string) => {
-      const view: SavedView = {
-        id: nextLocalId("sv_local"),
-        clientId,
-        // Vue locale (aperçu) : nom saisi dans la locale active, dupliqué.
-        name: name,
-        filters: { ...filters },
-      }
+    (name: string, clientId: string): string => {
+      // Optimiste : la vue apparaît tout de suite (persistée par l'appelant, qui
+      // a accès à `t` pour les toasts). Renvoie l'id local pour un rollback.
+      const localId = nextLocalId("sv_local")
+      const view: SavedView = { id: localId, clientId, name, filters: { ...filters } }
       setLocalViews((prev) => [...prev, view])
-      setActiveViewId(view.id)
+      setActiveViewId(localId)
+      return localId
     },
     [filters]
   )
+
+  const dropLocalView = useCallback((localId: string) => {
+    setLocalViews((prev) => prev.filter((v) => v.id !== localId))
+    setActiveViewId((cur) => (cur === localId ? null : cur))
+  }, [])
 
   const setStatusBatch = useCallback((ids: string[], status: ContentStatus) => {
     setStatusOverrides((prev) => {
@@ -207,6 +210,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
     activeViewId,
     applyView,
     saveCurrentView,
+    dropLocalView,
     boardItems,
     filteredItems,
     request,
