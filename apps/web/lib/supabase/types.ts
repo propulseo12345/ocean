@@ -214,6 +214,7 @@ export type Database = {
           sort_order: number
           created_at: string
           updated_at: string
+          system_key: string | null
         }
         Insert: {
           id?: string
@@ -224,6 +225,7 @@ export type Database = {
           sort_order?: number
           created_at?: string
           updated_at?: string
+          system_key?: string | null
         }
         Update: {
           id?: string
@@ -234,6 +236,7 @@ export type Database = {
           sort_order?: number
           created_at?: string
           updated_at?: string
+          system_key?: string | null
         }
         Relationships: []
       }
