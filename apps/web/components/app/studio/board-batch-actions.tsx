@@ -70,15 +70,20 @@ export function BoardBatchActions({
     }
   }
 
-  function archive() {
-    board.archiveBatch(selection.selectedIds)
-    toast.success(t("studio.batch.archived", { count: selected.length }), {
+  async function archive() {
+    const ids = selection.selectedIds
+    selection.clear()
+    const res = await board.archiveBatch(ids)
+    if (res.failed > 0 && res.ok === 0) {
+      toast.error(t("studio.batch.archiveError"))
+      return
+    }
+    toast.success(t("studio.batch.archived", { count: res.ok }), {
       description: t("studio.batch.archivedDesc"),
     })
-    selection.clear()
   }
 
-  function cancel() {
+  async function cancel() {
     const ids = cancelable.map((it) => it.id)
     if (ids.length === 0) {
       toast.info(t("studio.batch.nothingToCancel"), {
@@ -86,14 +91,16 @@ export function BoardBatchActions({
       })
       return
     }
-    board.setStatusBatch(ids, "canceled")
-    toast.success(
-      t("studio.batch.canceled", {
-        count: ids.length,
-        ignored: ignoredSuffix(t, selected.length - ids.length),
-      })
-    )
+    const ignored = selected.length - ids.length
     selection.clear()
+    const res = await board.cancelBatch(ids)
+    if (res.failed > 0 && res.ok === 0) {
+      toast.error(t("studio.batch.cancelError"))
+      return
+    }
+    toast.success(
+      t("studio.batch.canceled", { count: res.ok, ignored: ignoredSuffix(t, ignored) })
+    )
   }
 
   return (
@@ -136,20 +143,19 @@ export function BoardBatchActions({
         onOpenChange={setScheduleOpen}
         count={schedulable.length}
         client={client}
-        onConfirm={(startIso, gapDays) => {
-          board.scheduleBatch(
-            schedulable.map((it) => it.id),
-            startIso,
-            gapDays
-          )
+        onConfirm={async (startIso, gapDays) => {
+          const ids = schedulable.map((it) => it.id)
+          const ignored = selected.length - schedulable.length
           setScheduleOpen(false)
-          toast.success(
-            t("studio.batch.scheduled", {
-              count: schedulable.length,
-              ignored: ignoredSuffix(t, selected.length - schedulable.length),
-            })
-          )
           selection.clear()
+          const res = await board.scheduleBatchCommit(ids, startIso, gapDays)
+          if (res.failed > 0 && res.ok === 0) {
+            toast.error(t("studio.batch.scheduleError"))
+            return
+          }
+          toast.success(
+            t("studio.batch.scheduled", { count: res.ok, ignored: ignoredSuffix(t, ignored) })
+          )
         }}
       />
 

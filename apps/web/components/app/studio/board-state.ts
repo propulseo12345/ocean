@@ -1,14 +1,22 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
+import { sendReviewRequest as sendReviewRequestAction } from "@/lib/actions/collaboration"
+import { scheduleContentItem, trashContent } from "@/lib/actions/content"
+import { applyStatusIntent } from "@/lib/actions/content-status"
 import { hours, nowIso } from "@/lib/clock"
 import type { ContentItem, ContentStatus, Reviewer, ReviewRequest, SavedView } from "@/lib/domain"
 import { useLocale } from "@/lib/i18n"
 import { type BoardFilters, type BoardViewMode, EMPTY_FILTERS, type SortKey } from "./board-types"
 import { matchesFilters, sortItems } from "./board-utils"
 
-// État local du board studio (preview UI-only) : filtres, vues, tri, mode
-// d'affichage et mutations mockées visibles (statuts, étiquettes, dates).
+// État du board studio : filtres, vues, tri, mode d'affichage + mutations en lot.
+// Les mutations par LOT (barre de sélection, envoi en revue groupé) persistent
+// réellement (Server Actions per-id, optimiste + rollback). Le kanban single-drag
+// garde sa propre persistance (board-kanban.tsx) et n'utilise que les setters
+// OPTIMISTES d'ici (setStatusBatch / scheduleBatch) — ne pas les faire persister,
+// sous peine de double écriture.
 
 const HOUR_GAP_MS = hours(1)
 const DAY_MS = hours(24)
@@ -20,7 +28,14 @@ function nextLocalId(prefix: string): string {
   return `${prefix}_${localSeq}`
 }
 
+/** Résultat d'une mutation en lot : combien de contenus ont abouti / échoué. */
+export interface BatchResult {
+  ok: number
+  failed: number
+}
+
 export interface BoardStateInput {
+  clientId: string
   items: ContentItem[]
   savedViews: SavedView[]
   reviewer: Reviewer | null
@@ -41,8 +56,15 @@ function viewToFilters(view: SavedView | null): BoardFilters {
   }
 }
 
-export function useBoardState({ items, savedViews, reviewer, initialRequest }: BoardStateInput) {
+export function useBoardState({
+  clientId,
+  items,
+  savedViews,
+  reviewer,
+  initialRequest,
+}: BoardStateInput) {
   const { locale } = useLocale()
+  const router = useRouter()
   // Vue par défaut : la colonne is_default (données réelles) ; repli sur l'ancien
   // match par nom pour les vues encore mockées, sans colonne is_default.
   const defaultView =
@@ -54,15 +76,15 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
   const [sort, setSort] = useState<SortKey>("priority")
   const [mode, setMode] = useState<BoardViewMode>("list")
 
-  // Mutations locales (aperçu) appliquées par-dessus les mocks.
-  // Les étiquettes saisies (déjà résolues dans la locale) sont stockées comme
-  // string via s pour rester compatibles avec le type ContentItem.
+  // Surcharges optimistes appliquées par-dessus les données serveur, réconciliées
+  // au router.refresh() qui suit chaque écriture.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, ContentStatus>>({})
   const [labelOverrides, setLabelOverrides] = useState<Record<string, string[]>>({})
   const [scheduleOverrides, setScheduleOverrides] = useState<Record<string, string>>({})
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set())
 
-  // Suivi de validation : demande mockée, remplacée par un envoi local.
+  // Suivi de validation : demande serveur (getReviewRequest) + surcouche locale
+  // optimiste posée à l'envoi groupé (quand un reviewer accepté existe).
   const [localRequest, setLocalRequest] = useState<ReviewRequest | null>(null)
   const [reminders, setReminders] = useState(0)
   const request = localRequest ?? initialRequest
@@ -84,11 +106,11 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
   }, [])
 
   const saveCurrentView = useCallback(
-    (name: string, clientId: string): string => {
+    (name: string, viewClientId: string): string => {
       // Optimiste : la vue apparaît tout de suite (persistée par l'appelant, qui
       // a accès à `t` pour les toasts). Renvoie l'id local pour un rollback.
       const localId = nextLocalId("sv_local")
-      const view: SavedView = { id: localId, clientId, name, filters: { ...filters } }
+      const view: SavedView = { id: localId, clientId: viewClientId, name, filters: { ...filters } }
       setLocalViews((prev) => [...prev, view])
       setActiveViewId(localId)
       return localId
@@ -100,6 +122,8 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
     setLocalViews((prev) => prev.filter((v) => v.id !== localId))
     setActiveViewId((cur) => (cur === localId ? null : cur))
   }, [])
+
+  // --- Setters OPTIMISTES purs (kanban single-drag + primitives internes) -----
 
   const setStatusBatch = useCallback((ids: string[], status: ContentStatus) => {
     setStatusOverrides((prev) => {
@@ -127,7 +151,7 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
     []
   )
 
-  /** Programmation échelonnée : start + i × gap (gap 0 = toutes les heures). */
+  /** Programmation échelonnée optimiste : start + i × gap (gap 0 = toutes les heures). */
   const scheduleBatch = useCallback(
     (ids: string[], startIso: string, gapDays: number) => {
       const start = new Date(startIso).getTime()
@@ -144,32 +168,136 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
     [setStatusBatch]
   )
 
-  const archiveBatch = useCallback((ids: string[]) => {
-    setHiddenIds((prev) => new Set([...prev, ...ids]))
-  }, [])
+  // --- Mutations en LOT persistées (barre de sélection, envoi en revue) --------
+  // Chaque contenu du client est ciblé par son id ; org_id/rôle sont revérifiés
+  // côté serveur (requireClientInOrg). Le statut de départ est relu en base par
+  // applyStatusIntent — jamais reçu du client.
 
+  /** Capture le statut effectif courant d'un lot (pour rollback). */
+  const snapshotStatus = useCallback(
+    (ids: string[]) => new Map(ids.map((id) => [id, statusOverrides[id]] as const)),
+    [statusOverrides]
+  )
+
+  const rollbackStatus = useCallback(
+    (snapshot: Map<string, ContentStatus | undefined>, failed: string[]) => {
+      setStatusOverrides((cur) => {
+        const next = { ...cur }
+        for (const id of failed) {
+          const prev = snapshot.get(id)
+          if (prev === undefined) delete next[id]
+          else next[id] = prev
+        }
+        return next
+      })
+    },
+    []
+  )
+
+  const archiveBatch = useCallback(
+    async (ids: string[]): Promise<BatchResult> => {
+      setHiddenIds((prev) => new Set([...prev, ...ids]))
+      const results = await Promise.all(
+        ids.map((id) => trashContent({ clientId, contentId: id }))
+      )
+      const failed = ids.filter((_, i) => !results[i].ok)
+      if (failed.length) {
+        setHiddenIds((prev) => {
+          const next = new Set(prev)
+          for (const id of failed) next.delete(id)
+          return next
+        })
+      }
+      router.refresh()
+      return { ok: ids.length - failed.length, failed: failed.length }
+    },
+    [clientId, router]
+  )
+
+  const cancelBatch = useCallback(
+    async (ids: string[]): Promise<BatchResult> => {
+      const snapshot = snapshotStatus(ids)
+      setStatusBatch(ids, "canceled")
+      const results = await Promise.all(
+        ids.map((id) => applyStatusIntent({ clientId, contentId: id, intent: "cancel" }))
+      )
+      const failed = ids.filter((_, i) => !results[i].ok)
+      rollbackStatus(snapshot, failed)
+      router.refresh()
+      return { ok: ids.length - failed.length, failed: failed.length }
+    },
+    [clientId, router, setStatusBatch, snapshotStatus, rollbackStatus]
+  )
+
+  const scheduleBatchCommit = useCallback(
+    async (ids: string[], startIso: string, gapDays: number): Promise<BatchResult> => {
+      const snapshot = snapshotStatus(ids)
+      scheduleBatch(ids, startIso, gapDays) // optimiste : dates échelonnées + statut
+      const start = new Date(startIso).getTime()
+      const step = gapDays === 0 ? HOUR_GAP_MS : gapDays * DAY_MS
+      const results = await Promise.all(
+        ids.map(async (id, i) => {
+          const s = await applyStatusIntent({ clientId, contentId: id, intent: "schedule" })
+          if (!s.ok) return s
+          const iso = new Date(start + i * step).toISOString()
+          return scheduleContentItem({ clientId, contentId: id, scheduledAt: iso })
+        })
+      )
+      const failed = ids.filter((_, i) => !results[i].ok)
+      rollbackStatus(snapshot, failed)
+      router.refresh()
+      return { ok: ids.length - failed.length, failed: failed.length }
+    },
+    [clientId, router, scheduleBatch, snapshotStatus, rollbackStatus]
+  )
+
+  /**
+   * Envoi en validation groupé. La TRANSITION (send_to_review) suffit à faire
+   * apparaître les contenus dans le portail (statut in_review, RLS reviewer).
+   * Le review_request (suivi + relances) n'est créé QUE si un reviewer accepté
+   * existe : l'action collaboration exige recipientUserIds ≥ 1 (dépend de
+   * l'acceptation d'invitation, Tier D). Sans reviewer, la transition est réelle,
+   * le suivi de relance simplement absent.
+   */
   const sendReviewRequest = useCallback(
-    (ids: string[], message: string, clientId: string) => {
+    async (ids: string[], message: string): Promise<BatchResult> => {
+      const snapshot = snapshotStatus(ids)
       setStatusBatch(ids, "in_review")
       const trimmed = message.trim()
-      setLocalRequest({
-        id: nextLocalId("rr_local"),
-        clientId,
-        contentIds: ids,
-        reviewerIds: reviewer ? [reviewer.id] : [],
-        // Message local (aperçu) saisi dans la locale active, dupliqué.
-        message: trimmed ? trimmed : undefined,
-        sentAt: nowIso(),
-        state: "pending",
-      })
-      setReminders(0)
+      const results = await Promise.all(
+        ids.map((id) => applyStatusIntent({ clientId, contentId: id, intent: "send_to_review" }))
+      )
+      const okIds = ids.filter((_, i) => results[i].ok)
+      const failed = ids.filter((_, i) => !results[i].ok)
+      rollbackStatus(snapshot, failed)
+
+      if (reviewer && okIds.length) {
+        await sendReviewRequestAction({
+          clientId,
+          contentItemIds: okIds,
+          recipientUserIds: [reviewer.id],
+          message: trimmed || null,
+        })
+        setLocalRequest({
+          id: nextLocalId("rr_local"),
+          clientId,
+          contentIds: okIds,
+          reviewerIds: [reviewer.id],
+          message: trimmed ? trimmed : undefined,
+          sentAt: nowIso(),
+          state: "pending",
+        })
+        setReminders(0)
+      }
+      router.refresh()
+      return { ok: okIds.length, failed: failed.length }
     },
-    [reviewer, setStatusBatch]
+    [clientId, reviewer, router, setStatusBatch, snapshotStatus, rollbackStatus]
   )
 
   const remind = useCallback(() => setReminders((n) => n + 1), [])
 
-  /** Contenus avec mutations locales appliquées (corbeille du board exclue). */
+  /** Contenus avec surcharges optimistes appliquées (archivés du board exclus). */
   const boardItems = useMemo(
     () =>
       items
@@ -221,6 +349,8 @@ export function useBoardState({ items, savedViews, reviewer, initialRequest }: B
     setItemLabels,
     addLabelsBatch,
     scheduleBatch,
+    cancelBatch,
+    scheduleBatchCommit,
     archiveBatch,
     sendReviewRequest,
   }

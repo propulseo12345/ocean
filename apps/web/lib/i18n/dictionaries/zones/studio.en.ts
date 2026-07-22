@@ -20,10 +20,10 @@ export const studioEn: Widen<typeof studioFr> = {
       remindSent: "Reminder sent for “{title}” (preview)",
       remindDescReviewer: "{name} would get a Brevo email with the direct portal link.",
       remindDescNoReviewer: "The reviewer would get a Brevo email with the direct portal link.",
-      reviewSent: "Approval request sent (preview)",
-      reviewSentTo: "Approval request sent to {name} (preview)",
-      reviewSentDesc:
-        "{count, plural, one {# item under review} other {# items under review}} · recap email mocked (Brevo).",
+      reviewSent: "Approval request sent",
+      reviewSentTo: "Approval request sent to {name}",
+      reviewSentDesc: "{count, plural, one {# item under review} other {# items under review}}.",
+      reviewError: "Sending for approval failed. Please try again.",
     },
     toolbar: {
       searchPlaceholder: "Search title, caption, label…",
@@ -123,14 +123,15 @@ export const studioEn: Widen<typeof studioFr> = {
       noReviewEligibleDesc: "Only drafts and addressed feedback can be sent for review.",
       noSchedulable: "No schedulable content",
       noSchedulableDesc: "Only ideas, drafts and approved content can be scheduled.",
-      archived: "{count, plural, one {# item archived} other {# items archived}} (preview)",
+      archived: "{count, plural, one {# item archived} other {# items archived}}",
       archivedDesc: "Removed from the studio — restorable from the client's trash.",
+      archiveError: "Archiving failed. Please try again.",
       nothingToCancel: "Nothing to cancel",
       nothingToCancelDesc: "Content that's already published or publishing is locked.",
-      canceled:
-        "{count, plural, one {# item canceled} other {# items canceled}} (preview){ignored}",
-      scheduled:
-        "{count, plural, one {# item scheduled} other {# items scheduled}} (preview){ignored}",
+      canceled: "{count, plural, one {# item canceled} other {# items canceled}}{ignored}",
+      cancelError: "Cancellation failed. Please try again.",
+      scheduled: "{count, plural, one {# item scheduled} other {# items scheduled}}{ignored}",
+      scheduleError: "Scheduling failed. Please try again.",
       tagDialogTitle: "Tag the selection",
       tagDialogDesc:
         "Checked labels are added to the {count, plural, one {# selected item} other {# selected items}}.",

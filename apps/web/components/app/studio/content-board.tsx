@@ -53,6 +53,7 @@ export function ContentBoard({
   const t = useT()
   const { locale } = useLocale()
   const board = useBoardState({
+    clientId: client.id,
     items,
     savedViews,
     reviewer,
@@ -87,16 +88,20 @@ export function ContentBoard({
     })
   }
 
-  function confirmReview(ids: string[], message: string) {
-    board.sendReviewRequest(ids, message, client.id)
+  async function confirmReview(ids: string[], message: string) {
     setReviewOpen(false)
     selection.clear()
+    const res = await board.sendReviewRequest(ids, message)
+    if (res.failed > 0 && res.ok === 0) {
+      toast.error(t("studio.board.reviewError"))
+      return
+    }
     toast.success(
       reviewer
         ? t("studio.board.reviewSentTo", { name: reviewer.name })
         : t("studio.board.reviewSent"),
       {
-        description: t("studio.board.reviewSentDesc", { count: ids.length }),
+        description: t("studio.board.reviewSentDesc", { count: res.ok }),
       }
     )
   }

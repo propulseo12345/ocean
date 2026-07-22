@@ -19,10 +19,10 @@ export const studioFr = {
       remindSent: "Relance envoyée pour « {title} » (aperçu)",
       remindDescReviewer: "{name} recevrait un email Brevo avec le lien direct du portail.",
       remindDescNoReviewer: "Le reviewer recevrait un email Brevo avec le lien direct du portail.",
-      reviewSent: "Demande de validation envoyée (aperçu)",
-      reviewSentTo: "Demande de validation envoyée à {name} (aperçu)",
-      reviewSentDesc:
-        "{count, plural, one {# contenu en revue} other {# contenus en revue}} · email récapitulatif mocké (Brevo).",
+      reviewSent: "Demande de validation envoyée",
+      reviewSentTo: "Demande de validation envoyée à {name}",
+      reviewSentDesc: "{count, plural, one {# contenu en revue} other {# contenus en revue}}.",
+      reviewError: "L'envoi en validation a échoué. Réessayez.",
     },
     // toolbar (recherche, tri, mode)
     toolbar: {
@@ -129,14 +129,15 @@ export const studioFr = {
       noReviewEligibleDesc: "Seuls les brouillons et retours corrigés peuvent partir en revue.",
       noSchedulable: "Aucun contenu programmable",
       noSchedulableDesc: "Seuls les idées, brouillons et contenus validés peuvent être programmés.",
-      archived: "{count, plural, one {# contenu archivé} other {# contenus archivés}} (aperçu)",
+      archived: "{count, plural, one {# contenu archivé} other {# contenus archivés}}",
       archivedDesc: "Retirés du studio — restaurables depuis la corbeille du client.",
+      archiveError: "L'archivage a échoué. Réessayez.",
       nothingToCancel: "Rien à annuler",
       nothingToCancelDesc: "Les contenus déjà publiés ou en cours de publication sont verrouillés.",
-      canceled:
-        "{count, plural, one {# contenu annulé} other {# contenus annulés}} (aperçu){ignored}",
-      scheduled:
-        "{count, plural, one {# contenu programmé} other {# contenus programmés}} (aperçu){ignored}",
+      canceled: "{count, plural, one {# contenu annulé} other {# contenus annulés}}{ignored}",
+      cancelError: "L'annulation a échoué. Réessayez.",
+      scheduled: "{count, plural, one {# contenu programmé} other {# contenus programmés}}{ignored}",
+      scheduleError: "La programmation a échoué. Réessayez.",
       tagDialogTitle: "Étiqueter la sélection",
       tagDialogDesc:
         "Les étiquettes cochées s'ajoutent aux {count, plural, one {# contenu sélectionné} other {# contenus sélectionnés}}.",
