@@ -60,19 +60,19 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           org_id: string
           name: string
           handle?: string | null
           brand_color?: string | null
-          timezone: string
-          approval_mode: string
+          timezone?: string
+          approval_mode?: string
           bio?: string | null
           category?: string | null
           notes?: string | null
           archived_at?: string | null
-          created_at: string
-          updated_at: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string

@@ -32,11 +32,12 @@ export const onboardingFr = {
       identityRequiredHint: "Le nom et l'identifiant sont requis pour passer à la suite.",
       reviewerEmailFix: "Corrigez l'adresse email du valideur ou laissez le champ vide.",
       defaultClientName: "Le client",
-      clientCreated: "{name} créé (aperçu)",
-      clientCreatedWithReviewer:
-        "Invitation du valideur envoyée (aperçu) — aucune donnée enregistrée en preview.",
-      clientCreatedNoReviewer:
-        "Aucune donnée n'est enregistrée en preview — câblage Supabase à venir.",
+      clientCreated: "{name} créé",
+      clientCreatedWithReviewer: "Invitez le valideur depuis les réglages du client.",
+      clientCreatedNoReviewer: "Client créé.",
+      creating: "Création…",
+      handleTaken: "Cet identifiant est déjà pris par un autre client.",
+      createError: "Création impossible. Réessayez.",
     },
     // Stepper
     stepper: {

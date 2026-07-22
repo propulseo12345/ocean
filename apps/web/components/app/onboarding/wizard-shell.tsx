@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { createClientAction } from "@/lib/actions/clients"
 import { useT } from "@/lib/i18n"
 import { routes } from "@/lib/routes"
 import { StepAccounts } from "./step-accounts"
@@ -24,7 +25,7 @@ import {
 } from "./wizard-types"
 
 const STEP_IDS: WizardStepId[] = ["identity", "accounts", "brand", "strategy", "review"]
-const PREVIEW_CREATED_CLIENT_ID = "cl_brulerie"
+const PUBLISHABLE = ["instagram", "facebook", "tiktok"] as const
 
 // Étapes 3 et 4 sont facultatives : on peut les passer (« Passer cette étape »).
 const SKIPPABLE: WizardStepId[] = ["brand", "strategy"]
@@ -41,6 +42,7 @@ export function WizardShell() {
   const [index, setIndex] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
   const [showIdentityError, setShowIdentityError] = useState(false)
+  const [saving, setSaving] = useState(false)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
@@ -89,18 +91,57 @@ export function WizardShell() {
     goTo(index + 1)
   }
 
-  function create() {
+  async function create() {
     if (!reviewerEmailOk) {
       toast.warning(t("onboarding.shell.reviewerEmailFix"))
       return
     }
+    if (saving) return
+    setSaving(true)
     const name = draft.name.trim() || t("onboarding.shell.defaultClientName")
-    toast.success(t("onboarding.shell.clientCreated", { name }), {
-      description: draft.reviewerEmail.trim()
-        ? t("onboarding.shell.clientCreatedWithReviewer")
-        : t("onboarding.shell.clientCreatedNoReviewer"),
+
+    const res = await createClientAction({
+      name: draft.name,
+      handle: draft.handle,
+      category: draft.category,
+      bio: draft.bio,
+      timezone: draft.timezone,
+      brandColor: draft.brandColor,
+      approvalMode: draft.approvalMode,
+      palette: draft.palette,
+      tone: draft.tone,
+      doList: draft.doList,
+      dontList: draft.dontList,
+      bannedWords: draft.bannedWords,
+      pillars: draft.pillars.map((p) => ({
+        name: p.name,
+        colorVar: p.colorVar,
+        targetShare: p.targetShare,
+      })),
+      slots: draft.slots.map((s) => ({
+        weekday: s.weekday,
+        time: s.time,
+        platforms: s.platforms.filter((p) => PUBLISHABLE.includes(p as (typeof PUBLISHABLE)[number])),
+      })),
     })
-    router.push(routes.clientGrid(PREVIEW_CREATED_CLIENT_ID))
+
+    if (!res.ok || !res.data) {
+      setSaving(false)
+      toast.error(
+        res.ok === false && res.error === "handle_taken"
+          ? t("onboarding.shell.handleTaken")
+          : t("onboarding.shell.createError")
+      )
+      return
+    }
+
+    toast.success(
+      t("onboarding.shell.clientCreated", { name }),
+      draft.reviewerEmail.trim()
+        ? { description: t("onboarding.shell.clientCreatedWithReviewer") }
+        : undefined
+    )
+    router.push(routes.clientGrid(res.data.id))
   }
 
   return (
@@ -166,9 +207,9 @@ export function WizardShell() {
             </Button>
           ) : null}
           {isLast ? (
-            <Button onClick={create} disabled={!reviewerEmailOk}>
+            <Button onClick={create} disabled={!reviewerEmailOk || saving}>
               <Check />
-              {t("onboarding.shell.createClient")}
+              {saving ? t("onboarding.shell.creating") : t("onboarding.shell.createClient")}
             </Button>
           ) : (
             <Button onClick={next} disabled={!canAdvance}>
