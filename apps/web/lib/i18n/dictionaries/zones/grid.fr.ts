@@ -206,5 +206,32 @@ export const gridFr = {
       resetToast: "Grille réinitialisée (aperçu)",
       resetToastDescription: "Masquages, covers testées, emplacements et permutations annulés.",
     },
+    tiles: {
+      permutePending: "Permutation en attente",
+      permutePendingDate:
+        "« {title} » passerait au {date}. Applique ou annule dans la barre sous la grille.",
+      permutePendingPlain: "Applique ou annule dans la barre sous la grille.",
+      dropOnPlanned: "Dépose la carte sur la zone planifiée de la grille",
+      locked: "Zone verrouillée — dépôt impossible",
+      lockedShelf: "Les publications publiées ou importées sont en lecture seule.",
+      lockedPermute:
+        "Publiés et importés ne bougent pas ; seules les tuiles planifiées se permutent.",
+      shelfScheduled: "Brouillon daté au {date}",
+      shelfScheduledDesc: "Il garde le statut brouillon, avec une date cible sur la grille.",
+      shelfError: "La planification du brouillon a échoué. Réessayez.",
+      permuteApplied: "Dates reprogrammées",
+      permuteAppliedDesc:
+        "{count, plural, one {# publication reprogrammée} other {# publications reprogrammées}}.",
+      permuteError: "La reprogrammation a échoué. Réessayez.",
+      batchShiftWeek:
+        "{count, plural, one {# publication décalée} other {# publications décalées}} d'une semaine",
+      shiftWeekError: "Le décalage a échoué. Réessayez.",
+      batchReview: "Validation demandée pour {count, plural, one {# contenu} other {# contenus}}",
+      batchReviewDesc: "Le client les retrouve dans son portail de validation.",
+      reviewError: "L'envoi en validation a échoué. Réessayez.",
+      batchCancel:
+        "Planification annulée pour {count, plural, one {# contenu} other {# contenus}}",
+      cancelError: "L'annulation a échoué. Réessayez.",
+    },
   },
 } as const

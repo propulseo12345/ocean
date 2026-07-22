@@ -1,9 +1,13 @@
 "use client"
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
+import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
+import { scheduleContentItem } from "@/lib/actions/content"
+import { applyStatusIntent } from "@/lib/actions/content-status"
 import { formatDateTime } from "@/lib/format"
+import { useT } from "@/lib/i18n"
 import { retryDate, shiftDays } from "./grid-date-utils"
 import { buildPlaceholder, insertFromShelf, insertSlot, permuteDates } from "./grid-mutations"
 import {
@@ -16,8 +20,13 @@ import {
 
 // État de la zone planifiée : permutations en attente (Appliquer / Annuler),
 // dépôt depuis l'étagère, créneaux, emplacements par pilier, actions par lot.
-// Les permutations par drag restent « en attente » ; toute autre mutation
-// est confirmée immédiatement par toast et remet le compteur à zéro.
+//
+// PERSISTANCE (Server Actions) : le dépôt étagère (scheduleContentItem), l'envoi
+// des permutations (scheduleContentItem par date modifiée), le décalage groupé
+// (scheduleContentItem) et les lots validation/annulation (applyStatusIntent)
+// écrivent réellement, optimiste + rollback + refresh. Les créneaux/emplacements
+// fantômes et la reprogrammation d'un échec restent des aides LOCALES (pas de
+// content_item réel / couplé au worker).
 
 interface Snapshot {
   planned: GridTileData[]
@@ -33,8 +42,11 @@ export function useGridTiles(
   initialPlanned: GridTileData[],
   initialShelf: GridTileData[],
   tz: string,
+  clientId: string,
   studioHref: string
 ) {
+  const t = useT()
+  const router = useRouter()
   const [planned, setPlanned] = useState(initialPlanned)
   const [shelf, setShelf] = useState(initialShelf)
   const [history, setHistory] = useState<Snapshot[]>([])
@@ -61,36 +73,51 @@ export function useGridTiles(
     if (!result) return
     setHistory((h) => [...h, { planned: plannedRef.current, shelf: shelfRef.current }])
     setPlanned(result.next)
-    toast.info("Permutation de dates en attente (aperçu)", {
+    toast.info(t("grid.tiles.permutePending"), {
       description: result.newDateIso
-        ? `« ${result.movedTitle} » passerait au ${formatDateTime(result.newDateIso, tz)}. Applique ou annule dans la barre sous la grille.`
-        : "Applique ou annule dans la barre sous la grille.",
+        ? t("grid.tiles.permutePendingDate", {
+            title: result.movedTitle,
+            date: formatDateTime(result.newDateIso, tz),
+          })
+        : t("grid.tiles.permutePendingPlain"),
     })
   }
 
-  function dropFromShelf(shelfId: string, over: DragEndEvent["over"]) {
+  // Dépôt étagère : date le brouillon (scheduleContentItem, statut inchangé) et
+  // le fait passer sur la grille. Optimiste + rollback si l'écriture échoue.
+  async function dropFromShelf(shelfId: string, over: DragEndEvent["over"]) {
     const tile = shelfRef.current.find((t) => t.id === shelfId)
     if (!tile) return
     if (!over) {
-      toast.warning("Dépose la carte sur la zone planifiée de la grille")
+      toast.warning(t("grid.tiles.dropOnPlanned"))
       return
     }
     if (over.data.current?.locked) {
-      toast.warning("Zone verrouillée — dépôt impossible", {
-        description: "Les publications publiées ou importées sont en lecture seule.",
-      })
+      toast.warning(t("grid.tiles.locked"), { description: t("grid.tiles.lockedShelf") })
       return
     }
-    const prev = plannedRef.current
-    const idx = over.id === GRID_DROP_ID ? prev.length : prev.findIndex((t) => t.id === over.id)
-    const { next, dateIso } = insertFromShelf(prev, tile, idx < 0 ? prev.length : idx, tz)
+    const prevPlanned = plannedRef.current
+    const prevShelf = shelfRef.current
+    const idx =
+      over.id === GRID_DROP_ID ? prevPlanned.length : prevPlanned.findIndex((t) => t.id === over.id)
+    const { next, dateIso } = insertFromShelf(prevPlanned, tile, idx < 0 ? prevPlanned.length : idx, tz)
     commit(
       next,
-      shelfRef.current.filter((t) => t.id !== shelfId)
+      prevShelf.filter((t) => t.id !== shelfId)
     )
-    toast.success(`Brouillon planifié au ${formatDateTime(dateIso, tz)} (aperçu)`, {
-      description: "Aucune date réelle n'est attribuée pendant la preview.",
+    const res = await scheduleContentItem({ clientId, contentId: shelfId, scheduledAt: dateIso })
+    if (!res.ok) {
+      setPlanned(prevPlanned)
+      setShelf(prevShelf)
+      baselineRef.current = { planned: prevPlanned, shelf: prevShelf }
+      setHistory([])
+      toast.error(t("grid.tiles.shelfError"))
+      return
+    }
+    toast.success(t("grid.tiles.shelfScheduled", { date: formatDateTime(dateIso, tz) }), {
+      description: t("grid.tiles.shelfScheduledDesc"),
     })
+    router.refresh()
   }
 
   function onDragStart(event: DragStartEvent) {
@@ -107,22 +134,41 @@ export function useGridTiles(
     }
     if (!over) return
     if (over.data.current?.locked) {
-      toast.warning("Zone verrouillée — dépôt impossible", {
-        description:
-          "Publiés et importés ne bougent pas ; seules les tuiles planifiées se permutent.",
-      })
+      toast.warning(t("grid.tiles.locked"), { description: t("grid.tiles.lockedPermute") })
       return
     }
     if (String(over.id) === id || over.id === GRID_DROP_ID) return
     permute(id, String(over.id))
   }
 
-  function applyPending() {
+  // Envoi des permutations en attente : persiste la nouvelle date de chaque tuile
+  // réelle dont la date a changé vs la baseline (scheduleContentItem). En cas
+  // d'échec, on restaure la baseline précédente pour que « Revenir » soit fiable.
+  async function applyPending() {
+    const prevBaseline = baselineRef.current
+    const base = new Map(prevBaseline.planned.map((tile) => [tile.id, tile.dateIso]))
+    const changed = plannedRef.current.filter(
+      (tile) => isSortableTile(tile) && !tile.ghost && tile.dateIso && base.get(tile.id) !== tile.dateIso
+    )
     baselineRef.current = { planned: plannedRef.current, shelf: shelfRef.current }
     setHistory([])
-    toast.success("Permutations appliquées (aperçu)", {
-      description: "Aucune date réelle n'est modifiée pendant la preview.",
+    if (changed.length === 0) return
+
+    const results = await Promise.all(
+      changed.map((tile) =>
+        scheduleContentItem({ clientId, contentId: tile.id, scheduledAt: tile.dateIso })
+      )
+    )
+    if (results.some((r) => !r.ok)) {
+      baselineRef.current = prevBaseline
+      toast.error(t("grid.tiles.permuteError"))
+      router.refresh()
+      return
+    }
+    toast.success(t("grid.tiles.permuteApplied"), {
+      description: t("grid.tiles.permuteAppliedDesc", { count: changed.length }),
     })
+    router.refresh()
   }
 
   function undoLast() {
@@ -183,27 +229,74 @@ export function useGridTiles(
     )
   }
 
-  function batchShiftWeek(ids: string[]) {
-    commit(
-      mapSelected(ids, (t) => (t.dateIso ? { ...t, dateIso: shiftDays(t.dateIso, 7) } : t)).sort(
-        byDateDesc
+  /** Cibles réelles d'un lot : tuiles sélectionnées, triables, non fantômes. */
+  function batchTargets(ids: string[]): GridTileData[] {
+    const set = new Set(ids)
+    return plannedRef.current.filter((t) => set.has(t.id) && isSortableTile(t) && !t.ghost)
+  }
+
+  // Décalage groupé d'une semaine : persiste la nouvelle date de chaque cible
+  // (scheduleContentItem). Optimiste + rollback global si une écriture échoue.
+  async function batchShiftWeek(ids: string[]) {
+    const prev = plannedRef.current
+    const next = mapSelected(ids, (t) => (t.dateIso ? { ...t, dateIso: shiftDays(t.dateIso, 7) } : t))
+    const targets = next.filter(
+      (t) => ids.includes(t.id) && isSortableTile(t) && !t.ghost && t.dateIso
+    )
+    if (targets.length === 0) return
+    commit(next.sort(byDateDesc))
+    const results = await Promise.all(
+      targets.map((t) => scheduleContentItem({ clientId, contentId: t.id, scheduledAt: t.dateIso }))
+    )
+    if (results.some((r) => !r.ok)) {
+      commit(prev)
+      toast.error(t("grid.tiles.shiftWeekError"))
+      return
+    }
+    toast.success(t("grid.tiles.batchShiftWeek", { count: targets.length }))
+    router.refresh()
+  }
+
+  // Envoi en validation groupé : transition send_to_review par cible. La
+  // transition suffit à faire apparaître les contenus dans le portail (statut
+  // in_review, RLS reviewer). Optimiste + rollback global.
+  async function batchSendReview(ids: string[]) {
+    const prev = plannedRef.current
+    const targets = batchTargets(ids)
+    if (targets.length === 0) return
+    commit(mapSelected(ids, (t) => ({ ...t, status: "in_review" as const })))
+    const results = await Promise.all(
+      targets.map((t) =>
+        applyStatusIntent({ clientId, contentId: t.id, intent: "send_to_review" })
       )
     )
-    toast.success(
-      `${ids.length} publication${plural(ids.length)} décalée${plural(ids.length)} d'une semaine (aperçu)`
-    )
-  }
-
-  function batchSendReview(ids: string[]) {
-    commit(mapSelected(ids, (t) => ({ ...t, status: "in_review" as const })))
-    toast.success(`Validation demandée pour ${ids.length} contenu${plural(ids.length)} (aperçu)`, {
-      description: "Le client les retrouverait dans son portail de validation.",
+    if (results.some((r) => !r.ok)) {
+      commit(prev)
+      toast.error(t("grid.tiles.reviewError"))
+      return
+    }
+    toast.success(t("grid.tiles.batchReview", { count: targets.length }), {
+      description: t("grid.tiles.batchReviewDesc"),
     })
+    router.refresh()
   }
 
-  function batchCancel(ids: string[]) {
+  // Annulation groupée : transition cancel par cible. Optimiste + rollback global.
+  async function batchCancel(ids: string[]) {
+    const prev = plannedRef.current
+    const targets = batchTargets(ids)
+    if (targets.length === 0) return
     commit(mapSelected(ids, (t) => ({ ...t, status: "canceled" as const })))
-    toast.success(`Planification annulée pour ${ids.length} contenu${plural(ids.length)} (aperçu)`)
+    const results = await Promise.all(
+      targets.map((t) => applyStatusIntent({ clientId, contentId: t.id, intent: "cancel" }))
+    )
+    if (results.some((r) => !r.ok)) {
+      commit(prev)
+      toast.error(t("grid.tiles.cancelError"))
+      return
+    }
+    toast.success(t("grid.tiles.batchCancel", { count: targets.length }))
+    router.refresh()
   }
 
   function resetTiles() {

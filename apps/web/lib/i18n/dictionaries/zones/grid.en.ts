@@ -207,5 +207,30 @@ export const gridEn: Widen<typeof gridFr> = {
       resetToast: "Grid reset (preview)",
       resetToastDescription: "Hidden tiles, tested covers, slots and swaps all reverted.",
     },
+    tiles: {
+      permutePending: "Swap pending",
+      permutePendingDate:
+        "“{title}” would move to {date}. Apply or cancel in the bar below the grid.",
+      permutePendingPlain: "Apply or cancel in the bar below the grid.",
+      dropOnPlanned: "Drop the card onto the grid's planned zone",
+      locked: "Locked zone — can't drop here",
+      lockedShelf: "Published and imported posts are read-only.",
+      lockedPermute: "Published and imported posts don't move; only planned tiles swap.",
+      shelfScheduled: "Draft dated {date}",
+      shelfScheduledDesc: "It stays a draft, with a target date on the grid.",
+      shelfError: "Scheduling the draft failed. Please try again.",
+      permuteApplied: "Dates rescheduled",
+      permuteAppliedDesc:
+        "{count, plural, one {# post rescheduled} other {# posts rescheduled}}.",
+      permuteError: "Rescheduling failed. Please try again.",
+      batchShiftWeek:
+        "{count, plural, one {# post moved} other {# posts moved}} by one week",
+      shiftWeekError: "The shift failed. Please try again.",
+      batchReview: "Approval requested for {count, plural, one {# item} other {# items}}",
+      batchReviewDesc: "The client will find them in their approval portal.",
+      reviewError: "Sending for approval failed. Please try again.",
+      batchCancel: "Scheduling canceled for {count, plural, one {# item} other {# items}}",
+      cancelError: "Cancellation failed. Please try again.",
+    },
   },
 }

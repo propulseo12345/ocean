@@ -159,8 +159,15 @@ export default async function ClientGridPage({
     items.map((item) => item.id)
   )
 
+  // Zone planifiée : tout ce qui porte une date. Un brouillon/idée DATÉ (déposé
+  // depuis l'étagère sur la grille) y figure aussi — sinon il disparaîtrait au
+  // rechargement (ni dans l'étagère, qui exige !scheduledAt, ni ici).
   const scheduled = items
-    .filter((c) => PLANNED_STATUSES.includes(c.status) && c.scheduledAt)
+    .filter(
+      (c) =>
+        c.scheduledAt &&
+        (PLANNED_STATUSES.includes(c.status) || SHELF_STATUSES.includes(c.status))
+    )
     .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, metrics))
     .sort(byDateDesc)
 
