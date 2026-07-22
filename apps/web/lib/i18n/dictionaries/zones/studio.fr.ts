@@ -141,8 +141,9 @@ export const studioFr = {
       tagDialogTitle: "Étiqueter la sélection",
       tagDialogDesc:
         "Les étiquettes cochées s'ajoutent aux {count, plural, one {# contenu sélectionné} other {# contenus sélectionnés}}.",
-      tagApply: "Ajouter aux contenus (aperçu)",
-      tagsAdded: "Étiquettes ajoutées (aperçu)",
+      tagApply: "Ajouter aux contenus",
+      tagsAdded: "Étiquettes ajoutées",
+      tagError: "L'étiquetage a échoué. Réessayez.",
     },
     // demande de validation (dialog)
     reviewDialog: {

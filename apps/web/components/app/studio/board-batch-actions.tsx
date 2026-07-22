@@ -172,19 +172,18 @@ export function BoardBatchActions({
             allLabels={allLabels}
             initial={[]}
             applyLabel={t("studio.batch.tagApply")}
-            onApply={(labels) => {
-              if (labels.length > 0) {
-                board.addLabelsBatch(
-                  selection.selectedIds,
-                  labels,
-                  new Map(selected.map((it) => [it.id, it.labels ?? []]))
-                )
-                toast.success(t("studio.batch.tagsAdded"), {
-                  description: labels.join(" · "),
-                })
-              }
+            onApply={async (labels) => {
+              const ids = selection.selectedIds
+              const current = new Map(selected.map((it) => [it.id, it.labels ?? []]))
               setLabelOpen(false)
               selection.clear()
+              if (labels.length === 0) return
+              const ok = await board.addLabelsBatch(ids, labels, current)
+              if (!ok) {
+                toast.error(t("studio.batch.tagError"))
+                return
+              }
+              toast.success(t("studio.batch.tagsAdded"), { description: labels.join(" · ") })
             }}
           />
         </DialogContent>

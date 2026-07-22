@@ -135,8 +135,9 @@ export const studioEn: Widen<typeof studioFr> = {
       tagDialogTitle: "Tag the selection",
       tagDialogDesc:
         "Checked labels are added to the {count, plural, one {# selected item} other {# selected items}}.",
-      tagApply: "Add to content (preview)",
-      tagsAdded: "Labels added (preview)",
+      tagApply: "Add to content",
+      tagsAdded: "Labels added",
+      tagError: "Tagging failed. Please try again.",
     },
     reviewDialog: {
       title: "Request approval",

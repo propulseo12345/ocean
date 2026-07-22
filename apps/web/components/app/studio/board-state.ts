@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react"
 import { sendReviewRequest as sendReviewRequestAction } from "@/lib/actions/collaboration"
 import { scheduleContentItem, trashContent } from "@/lib/actions/content"
 import { applyStatusIntent } from "@/lib/actions/content-status"
+import { addLabelsToContents, setContentLabels } from "@/lib/actions/labels"
 import { hours, nowIso } from "@/lib/clock"
 import type { ContentItem, ContentStatus, Reviewer, ReviewRequest, SavedView } from "@/lib/domain"
 import { useLocale } from "@/lib/i18n"
@@ -133,22 +134,56 @@ export function useBoardState({
     })
   }, [])
 
-  const setItemLabels = useCallback((id: string, labels: string[]) => {
-    setLabelOverrides((prev) => ({ ...prev, [id]: labels.map((l) => l) }))
-  }, [])
+  // Étiquettes d'une carte : optimiste + persistance (setContentLabels), rollback
+  // vers l'état antérieur (override existant ou étiquettes serveur) si échec.
+  const setItemLabels = useCallback(
+    async (id: string, labels: string[]): Promise<boolean> => {
+      const hadOverride = id in labelOverrides
+      const prev = labelOverrides[id]
+      setLabelOverrides((cur) => ({ ...cur, [id]: labels }))
+      const res = await setContentLabels({ clientId, contentId: id, labels })
+      if (!res.ok) {
+        setLabelOverrides((cur) => {
+          const next = { ...cur }
+          if (hadOverride) next[id] = prev
+          else delete next[id]
+          return next
+        })
+        return false
+      }
+      router.refresh()
+      return true
+    },
+    [clientId, labelOverrides, router]
+  )
 
+  // Étiquetage en lot : union optimiste + persistance (addLabelsToContents).
   const addLabelsBatch = useCallback(
-    (ids: string[], labels: string[], current: Map<string, string[]>) => {
+    async (ids: string[], labels: string[], current: Map<string, string[]>): Promise<boolean> => {
+      const snapshot = new Map(ids.map((id) => [id, labelOverrides[id]] as const))
       setLabelOverrides((prev) => {
         const next = { ...prev }
         for (const id of ids) {
-          const merged = [...new Set([...(current.get(id) ?? []), ...labels])]
-          next[id] = merged.map((l) => l)
+          next[id] = [...new Set([...(current.get(id) ?? []), ...labels])]
         }
         return next
       })
+      const res = await addLabelsToContents({ clientId, contentIds: ids, labels })
+      if (!res.ok) {
+        setLabelOverrides((cur) => {
+          const next = { ...cur }
+          for (const [id, prev] of snapshot) {
+            if (prev === undefined) delete next[id]
+            else next[id] = prev
+          }
+          return next
+        })
+        return false
+      }
+      router.refresh()
+      return true
     },
-    []
+    [clientId, labelOverrides, router]
   )
 
   /** Programmation échelonnée optimiste : start + i × gap (gap 0 = toutes les heures). */
