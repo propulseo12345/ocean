@@ -64,8 +64,10 @@ export const clientSettingsFr = {
       notesHint:
         "Visible uniquement par toi (forfait, délais, préférences) — jamais partagé au client.",
       notesPlaceholder: "Ex. : Forfait 12 posts/mois. Prévoir 48 h de validation.",
-      savedToast: "Profil enregistré (aperçu)",
-      savedToastDescription: "Aucune donnée n'est réellement modifiée pendant la preview.",
+      savedToast: "Profil enregistré",
+      savedToastDescription: "Les modifications sont enregistrées.",
+      handleTaken: "Cet identifiant est déjà pris par un autre client.",
+      saveError: "Enregistrement impossible. Réessaie.",
     },
     accounts: {
       title: "Comptes connectés",
@@ -192,13 +194,14 @@ export const clientSettingsFr = {
       archiveDialogTitle: "Archiver ce client ?",
       archiveDialogDescription:
         "Il disparaîtra des listes actives et du switcher. Ses contenus et son historique restent conservés, et tu pourras le réactiver à tout moment.",
-      archiveConfirm: "Archiver (aperçu)",
-      archivedToast: "Client archivé (aperçu)",
+      archiveConfirm: "Archiver",
+      archivedToast: "Client archivé",
       archivedToastDescription: "Il disparaît des listes actives ; ses contenus restent conservés.",
-      reactivatedToast: "Client réactivé (aperçu)",
+      reactivatedToast: "Client réactivé",
       reactivatedToastDescription: "Il réapparaît dans la liste active et le switcher.",
-      deletedToast: "Suppression définitive simulée (aperçu)",
-      deletedToastDescription: "Aucun client n'est réellement supprimé pendant la preview.",
+      deletedToast: "Client supprimé définitivement",
+      deletedToastDescription: "Le client et ses contenus ont été supprimés.",
+      actionError: "Action impossible. Réessaie.",
     },
     deleteDialog: {
       title: "Supprimer définitivement le client ?",

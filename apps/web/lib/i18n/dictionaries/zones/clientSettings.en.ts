@@ -67,8 +67,10 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       notesHint:
         "Visible only to you (plan, lead times, preferences) — never shared with the client.",
       notesPlaceholder: "e.g. 12 posts/month plan. Allow 48 h for approval.",
-      savedToast: "Profile saved (preview)",
-      savedToastDescription: "No data is actually changed during the preview.",
+      savedToast: "Profile saved",
+      savedToastDescription: "Your changes have been saved.",
+      handleTaken: "That handle is already used by another client.",
+      saveError: "Could not save. Try again.",
     },
     accounts: {
       title: "Connected accounts",
@@ -189,13 +191,14 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       archiveDialogTitle: "Archive this client?",
       archiveDialogDescription:
         "It will disappear from the active lists and the switcher. Its content and history are kept, and you can reactivate it at any time.",
-      archiveConfirm: "Archive (preview)",
-      archivedToast: "Client archived (preview)",
+      archiveConfirm: "Archive",
+      archivedToast: "Client archived",
       archivedToastDescription: "It disappears from the active lists; its content is kept.",
-      reactivatedToast: "Client reactivated (preview)",
+      reactivatedToast: "Client reactivated",
       reactivatedToastDescription: "It reappears in the active list and the switcher.",
-      deletedToast: "Permanent deletion simulated (preview)",
-      deletedToastDescription: "No client is actually deleted during the preview.",
+      deletedToast: "Client permanently deleted",
+      deletedToastDescription: "The client and its content have been deleted.",
+      actionError: "Action failed. Try again.",
     },
     deleteDialog: {
       title: "Delete the client permanently?",

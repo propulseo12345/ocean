@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { updateClientProfile } from "@/lib/actions/clients"
 import type { Client } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 import { BrandColorPalette } from "./brand-color-palette"
@@ -42,6 +43,7 @@ export function SectionProfile({ client }: { client: Client }) {
   const [timezone, setTimezone] = useState(client.timezone)
   const [brandColor, setBrandColor] = useState(client.brandColor)
   const [notes, setNotes] = useState(initialNotes)
+  const [saving, setSaving] = useState(false)
 
   const dirty =
     name !== client.name ||
@@ -52,10 +54,31 @@ export function SectionProfile({ client }: { client: Client }) {
     brandColor !== client.brandColor ||
     notes !== initialNotes
 
-  function save() {
-    toast.success(t("clientSettings.profile.savedToast"), {
-      description: t("clientSettings.profile.savedToastDescription"),
+  async function save() {
+    if (saving) return
+    setSaving(true)
+    const res = await updateClientProfile({
+      clientId: client.id,
+      name,
+      handle,
+      category,
+      bio,
+      timezone,
+      brandColor,
+      notes,
     })
+    setSaving(false)
+    if (res.ok) {
+      toast.success(t("clientSettings.profile.savedToast"), {
+        description: t("clientSettings.profile.savedToastDescription"),
+      })
+    } else {
+      toast.error(
+        res.ok === false && res.error === "handle_taken"
+          ? t("clientSettings.profile.handleTaken")
+          : t("clientSettings.profile.saveError")
+      )
+    }
   }
 
   const preview: Client = { ...client, name, brandColor }

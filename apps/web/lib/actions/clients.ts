@@ -5,7 +5,7 @@ import { z } from "zod"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { createClient } from "@/lib/supabase/server"
-import { type ActionResult } from "./_helpers"
+import { type ActionResult, requireClientInOrg } from "./_helpers"
 
 // Création d'un client (wizard d'onboarding). Contrairement aux autres actions,
 // le client n'existe pas encore : on ne passe donc pas par requireClientInOrg,
@@ -160,4 +160,101 @@ export async function createClientAction(
   revalidatePath("/clients", "layout")
   revalidatePath("/dashboard")
   return { ok: true, data: { id: clientId } }
+}
+
+const updateSchema = z.object({
+  clientId: z.string().uuid(),
+  name: z.string().trim().min(2).max(120),
+  handle: z.string().trim().max(80).default(""),
+  category: z.string().trim().max(80).default(""),
+  bio: z.string().trim().max(2000).default(""),
+  timezone: z.string().trim().min(1).max(64),
+  brandColor: z.string().trim().max(64).default(""),
+  notes: z.string().trim().max(4000).default(""),
+})
+
+/** Met à jour la fiche profil d'un client. */
+export async function updateClientProfile(input: unknown): Promise<ActionResult> {
+  const parsed = updateSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const d = parsed.data
+
+  try {
+    const { orgId, supabase } = await requireClientInOrg(d.clientId)
+    const { error } = await supabase
+      .from("clients")
+      .update({
+        name: d.name,
+        handle: normalizeHandle(d.handle),
+        brand_color: d.brandColor || null,
+        timezone: d.timezone,
+        bio: d.bio || null,
+        category: d.category || null,
+        notes: d.notes || null,
+      })
+      .eq("id", d.clientId)
+      .eq("org_id", orgId)
+    if (error) return { ok: false, error: error.code === "23505" ? "handle_taken" : "db_error" }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+
+  revalidatePath(`/clients/${d.clientId}/settings`)
+  revalidatePath("/clients", "layout")
+  return { ok: true }
+}
+
+const archiveSchema = z.object({
+  clientId: z.string().uuid(),
+  archived: z.boolean(),
+})
+
+/** Archive (archived_at = now()) ou réactive (null) un client. */
+export async function setClientArchived(input: unknown): Promise<ActionResult> {
+  const parsed = archiveSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { clientId, archived } = parsed.data
+
+  try {
+    const { orgId, supabase } = await requireClientInOrg(clientId)
+    const { error } = await supabase
+      .from("clients")
+      .update({ archived_at: archived ? new Date().toISOString() : null })
+      .eq("id", clientId)
+      .eq("org_id", orgId)
+    if (error) return { ok: false, error: "db_error" }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+
+  revalidatePath(`/clients/${clientId}/settings`)
+  revalidatePath("/clients", "layout")
+  revalidatePath("/dashboard")
+  return { ok: true }
+}
+
+const deleteClientSchema = z.object({ clientId: z.string().uuid() })
+
+/**
+ * Supprime définitivement un client (cascade sur les tables filles via FK).
+ * NB règle 23 : les fichiers Storage d'un client supprimé deviennent orphelins
+ * jusqu'au passage de l'Edge Function media-cleanup (différée, Tier D). En phase
+ * solo sur un client sans média, aucun orphelin.
+ */
+export async function deleteClientAction(input: unknown): Promise<ActionResult> {
+  const parsed = deleteClientSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { clientId } = parsed.data
+
+  try {
+    const { orgId, supabase } = await requireClientInOrg(clientId)
+    const { error } = await supabase.from("clients").delete().eq("id", clientId).eq("org_id", orgId)
+    if (error) return { ok: false, error: "db_error" }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+
+  revalidatePath("/clients", "layout")
+  revalidatePath("/dashboard")
+  return { ok: true }
 }

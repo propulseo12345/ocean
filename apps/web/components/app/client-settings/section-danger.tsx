@@ -1,13 +1,16 @@
 "use client"
 
 import { Archive, ArchiveRestore, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { deleteClientAction, setClientArchived } from "@/lib/actions/clients"
 import { nowIso } from "@/lib/clock"
 import type { Client, ContentItem } from "@/lib/domain"
 import { useFormat, useT } from "@/lib/i18n"
+import { routes } from "@/lib/routes"
 import { ConfirmDialog } from "./confirm-dialog"
 import { DeleteClientDialog } from "./delete-client-dialog"
 import { SectionCard } from "./section-card"
@@ -16,30 +19,54 @@ import { TrashList } from "./trash-list"
 export function SectionDanger({ client, trashed }: { client: Client; trashed: ContentItem[] }) {
   const t = useT()
   const f = useFormat()
+  const router = useRouter()
   const [archivedAt, setArchivedAt] = useState(client.archivedAt)
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const isArchived = archivedAt !== null
 
   function archive() {
-    setArchivedAt(nowIso())
+    const previous = archivedAt
+    setArchivedAt(nowIso()) // optimiste
     setConfirmArchive(false)
-    toast.success(t("clientSettings.danger.archivedToast"), {
-      description: t("clientSettings.danger.archivedToastDescription"),
+    setClientArchived({ clientId: client.id, archived: true }).then((res) => {
+      if (res.ok) {
+        toast.success(t("clientSettings.danger.archivedToast"), {
+          description: t("clientSettings.danger.archivedToastDescription"),
+        })
+      } else {
+        setArchivedAt(previous)
+        toast.error(t("clientSettings.danger.actionError"))
+      }
     })
   }
 
   function reactivate() {
-    setArchivedAt(null)
-    toast.success(t("clientSettings.danger.reactivatedToast"), {
-      description: t("clientSettings.danger.reactivatedToastDescription"),
+    const previous = archivedAt
+    setArchivedAt(null) // optimiste
+    setClientArchived({ clientId: client.id, archived: false }).then((res) => {
+      if (res.ok) {
+        toast.success(t("clientSettings.danger.reactivatedToast"), {
+          description: t("clientSettings.danger.reactivatedToastDescription"),
+        })
+      } else {
+        setArchivedAt(previous)
+        toast.error(t("clientSettings.danger.actionError"))
+      }
     })
   }
 
   function deleteClient() {
     setConfirmDelete(false)
-    toast.error(t("clientSettings.danger.deletedToast"), {
-      description: t("clientSettings.danger.deletedToastDescription"),
+    deleteClientAction({ clientId: client.id }).then((res) => {
+      if (res.ok) {
+        toast.success(t("clientSettings.danger.deletedToast"), {
+          description: t("clientSettings.danger.deletedToastDescription"),
+        })
+        router.push(routes.clients)
+      } else {
+        toast.error(t("clientSettings.danger.actionError"))
+      }
     })
   }
 
