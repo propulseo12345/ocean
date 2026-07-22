@@ -212,7 +212,9 @@ begin
 end;
 $$;
 
-revoke all on function public.enqueue_publish_jobs(uuid) from public;
+-- revoke depuis public ET anon (default privileges Supabase, cf. migration 021) ;
+-- authenticated est ré-accordé ci-dessous (l'app enfile, protégée par is_org_member).
+revoke all on function public.enqueue_publish_jobs(uuid) from public, anon, authenticated;
 grant execute on function public.enqueue_publish_jobs(uuid) to authenticated, service_role;
 
 -- ===========================================================================
@@ -251,7 +253,7 @@ begin
 end;
 $$;
 
-revoke all on function public.cancel_publish_jobs(uuid) from public;
+revoke all on function public.cancel_publish_jobs(uuid) from public, anon, authenticated;
 grant execute on function public.cancel_publish_jobs(uuid) to authenticated, service_role;
 
 comment on table public.publish_jobs is

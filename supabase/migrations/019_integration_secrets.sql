@@ -48,7 +48,10 @@ begin
 end;
 $$;
 
-revoke execute on function public.store_integration_secret(text, text) from public;
+-- revoke depuis public ET anon/authenticated : les default privileges Supabase
+-- accordent EXECUTE à anon/authenticated (revoke from public seul ne suffit pas —
+-- cf. migration 021). service_role UNIQUEMENT (règle 12 : jamais de navigateur).
+revoke execute on function public.store_integration_secret(text, text) from public, anon, authenticated;
 grant execute on function public.store_integration_secret(text, text) to service_role;
 
 -- Rotation d'un secret existant (refresh token TikTok/Microsoft — règle 14 :
@@ -74,5 +77,5 @@ begin
 end;
 $$;
 
-revoke execute on function public.update_integration_secret(uuid, text) from public;
+revoke execute on function public.update_integration_secret(uuid, text) from public, anon, authenticated;
 grant execute on function public.update_integration_secret(uuid, text) to service_role;
