@@ -128,6 +128,50 @@ export async function postComment(input: unknown): Promise<ActionResult<{ id: st
   return { ok: true, data: { id: data.id } }
 }
 
+const resolveSchema = z.object({
+  contentItemId: z.string().uuid(),
+  commentId: z.string().uuid(),
+  resolved: z.boolean(),
+})
+
+/**
+ * Marque (ou rouvre) un retour client comme « résolu ». Owner-only : la policy
+ * UPDATE de content_comments exige is_org_member, et le grant restreint les
+ * colonnes éditables à (resolved_at, resolved_by, deleted_at) — l'owner ne
+ * réécrit jamais le body d'un retour client. On vérifie l'appartenance org en
+ * amont pour renvoyer une erreur nette plutôt qu'un update silencieux à 0 ligne.
+ */
+export async function toggleCommentResolved(input: unknown): Promise<ActionResult> {
+  const parsed = resolveSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { contentItemId, commentId, resolved } = parsed.data
+
+  const ctx = await contentContext(contentItemId)
+  if (!ctx) return { ok: false, error: "forbidden" }
+
+  const { data: orgMember } = await ctx.supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("org_id", ctx.orgId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle()
+  if (!orgMember) return { ok: false, error: "forbidden" }
+
+  const { error } = await ctx.supabase
+    .from("content_comments")
+    .update({
+      resolved_at: resolved ? new Date().toISOString() : null,
+      resolved_by: resolved ? ctx.userId : null,
+    })
+    .eq("org_id", ctx.orgId)
+    .eq("client_id", ctx.clientId)
+    .eq("id", commentId)
+  if (error) return { ok: false, error: "db_error" }
+
+  revalidatePath(`/clients/${ctx.clientId}/content/${contentItemId}`)
+  return { ok: true }
+}
+
 const reviewRequestSchema = z.object({
   clientId: z.string().uuid(),
   contentItemIds: z.array(z.string().uuid()).min(1),

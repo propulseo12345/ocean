@@ -13,6 +13,7 @@ import type {
   CalendarProvider,
   ClientEvent,
   Comment as CommentType,
+  CommentVisibility,
   ContentPillar,
   ContentVersion,
   EngagementStats,
@@ -342,7 +343,7 @@ export const getComments = cache(
     const { data } = await supabase
       .from("content_comments")
       .select(
-        "id, content_item_id, author_name, author_role, body, created_at, annotation_content_media_id, annotation_x, annotation_y"
+        "id, content_item_id, author_name, author_role, visibility, resolved_at, body, created_at, annotation_content_media_id, annotation_x, annotation_y"
       )
       .eq("org_id", orgId)
       .eq("client_id", clientId)
@@ -377,6 +378,8 @@ export const getComments = cache(
         role: row.author_role as MemberRole,
         body: row.body,
         createdAt: row.created_at,
+        visibility: row.visibility as CommentVisibility,
+        resolvedAt: row.resolved_at,
         annotation:
           anchor && row.annotation_x !== null && row.annotation_y !== null
             ? {

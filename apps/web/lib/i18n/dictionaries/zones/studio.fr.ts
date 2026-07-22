@@ -442,7 +442,9 @@ export const studioFr = {
       noteHint: "Réservé à l'équipe — n'apparaît jamais sur le portail.",
       noteAdd: "Ajouter",
       noteAdded: "Note interne ajoutée",
-      noteAddedDesc: "Jamais visible par le client — interaction simulée (aperçu).",
+      noteAddedDesc: "Jamais visible par le client.",
+      noteError: "La note n'a pas pu être ajoutée.",
+      resolveError: "Le statut du retour n'a pas pu être mis à jour.",
       contentNote: "Note du contenu",
     },
     // détail — fil (sous-composants)

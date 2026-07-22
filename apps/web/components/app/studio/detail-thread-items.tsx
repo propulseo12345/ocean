@@ -77,12 +77,16 @@ export function NoteRow({
   body,
   createdAt,
   label,
+  author,
 }: {
   body: string
   createdAt: string | null
   label?: string
+  /** Auteur de la note interne (nom snapshot). Absent = note du contenu. */
+  author?: string
 }) {
   const f = useFormat()
+  const t = useT()
   return (
     <li className="flex gap-2.5">
       <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-warning/10 text-warning">
@@ -90,7 +94,7 @@ export function NoteRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Étienne Mercier</span>
+          <span className="text-sm font-medium">{author ?? t("studio.threadItems.me")}</span>
           {label ? (
             <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
               {label}

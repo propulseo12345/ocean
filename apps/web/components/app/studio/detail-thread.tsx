@@ -6,22 +6,17 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { postComment } from "@/lib/actions/collaboration"
-import { nowIso } from "@/lib/clock"
+import { postComment, toggleCommentResolved } from "@/lib/actions/collaboration"
 import type { Comment } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
 import { CommentRow, NoteRow, ThreadComposer } from "./detail-thread-items"
 
 // Fil de discussion du contenu, en deux couches étanches :
-// « Client » = miroir du portail (retours reviewer + réponses owner) ;
-// « Interne » = notes de travail jamais exposées au client.
-// Retours client marquables « Résolu » — état local (aperçu).
-
-interface InternalNote {
-  id: string
-  body: string
-  createdAt: string
-}
+// « Client » = miroir du portail (retours reviewer + réponses owner, persistés
+// visibility='client') ; « Interne » = notes de travail persistées
+// visibility='internal', jamais lisibles par le reviewer (RLS). Les deux couches
+// arrivent dans `comments` (l'owner est org member) et sont séparées ici par
+// leur visibilité. Retours client marquables « Résolu » (persisté resolved_at).
 
 export function DetailThread({
   comments,
@@ -36,17 +31,23 @@ export function DetailThread({
 }) {
   const t = useT()
   const router = useRouter()
-  const [notes, setNotes] = useState<InternalNote[]>([])
-  const [resolved, setResolved] = useState<Record<string, boolean>>({})
   const [clientDraft, setClientDraft] = useState("")
   const [internalDraft, setInternalDraft] = useState("")
   const [sending, setSending] = useState(false)
+  const [savingNote, setSavingNote] = useState(false)
+  // Surcharge optimiste de l'état résolu (id → résolu), au-dessus de resolvedAt
+  // serveur. Vidée par le refresh qui relit la ligne canonique.
+  const [resolvedOverride, setResolvedOverride] = useState<Record<string, boolean>>({})
+  const [resolving, setResolving] = useState<Record<string, boolean>>({})
 
-  const pinned = comments.filter((c) => c.annotation)
-  const clientThread = comments
-  const reviewerComments = comments.filter((c) => c.role === "reviewer")
-  const resolvedCount = reviewerComments.filter((c) => resolved[c.id]).length
-  const internalCount = notes.length + (internalNotes ? 1 : 0)
+  const clientThread = comments.filter((c) => c.visibility === "client")
+  const internalComments = comments.filter((c) => c.visibility === "internal")
+  const pinned = clientThread.filter((c) => c.annotation)
+  const reviewerComments = clientThread.filter((c) => c.role === "reviewer")
+
+  const isResolved = (c: Comment) => resolvedOverride[c.id] ?? Boolean(c.resolvedAt)
+  const resolvedCount = reviewerComments.filter(isResolved).length
+  const internalCount = internalComments.length + (internalNotes ? 1 : 0)
 
   // Réponse owner au client → commentaire persisté (visibility='client', visible
   // sur le portail). Pas d'ajout optimiste local : on rafraîchit pour lire la
@@ -68,14 +69,47 @@ export function DetailThread({
     router.refresh()
   }
 
-  function addNote() {
+  // Note interne → commentaire persisté (visibility='internal', jamais exposé au
+  // portail par la RLS). Même logique que la réponse : refresh, pas d'optimiste.
+  async function addNote() {
     const body = internalDraft.trim()
-    if (body.length === 0) return
-    setNotes((prev) => [...prev, { id: `note_local_${prev.length}`, body, createdAt: nowIso() }])
+    if (body.length === 0 || savingNote) return
+    setSavingNote(true)
+    const res = await postComment({ contentItemId: contentId, body, visibility: "internal" })
+    setSavingNote(false)
+    if (!res.ok) {
+      toast.error(t("studio.thread.noteError"))
+      return
+    }
     setInternalDraft("")
     toast.success(t("studio.thread.noteAdded"), {
       description: t("studio.thread.noteAddedDesc"),
     })
+    router.refresh()
+  }
+
+  // Marquer résolu / rouvrir un retour client (owner-only, persisté). Optimiste
+  // + rollback : l'UI reflète l'intention immédiatement, revient en cas d'échec.
+  async function toggleResolved(comment: Comment) {
+    if (resolving[comment.id]) return
+    const next = !isResolved(comment)
+    setResolvedOverride((prev) => ({ ...prev, [comment.id]: next }))
+    setResolving((prev) => ({ ...prev, [comment.id]: true }))
+    const res = await toggleCommentResolved({
+      contentItemId: contentId,
+      commentId: comment.id,
+      resolved: next,
+    })
+    setResolving((prev) => {
+      const { [comment.id]: _, ...rest } = prev
+      return rest
+    })
+    if (!res.ok) {
+      setResolvedOverride((prev) => ({ ...prev, [comment.id]: !next }))
+      toast.error(t("studio.thread.resolveError"))
+      return
+    }
+    router.refresh()
   }
 
   return (
@@ -114,12 +148,9 @@ export function DetailThread({
                     key={comment.id}
                     comment={comment}
                     pinOrder={pinOrderOf(pinned, comment.id)}
-                    isResolved={Boolean(resolved[comment.id])}
+                    isResolved={isResolved(comment)}
                     onToggleResolved={
-                      comment.role === "reviewer"
-                        ? () =>
-                            setResolved((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))
-                        : undefined
+                      comment.role === "reviewer" ? () => toggleResolved(comment) : undefined
                     }
                   />
                 ))}
@@ -159,8 +190,13 @@ export function DetailThread({
                     createdAt={null}
                   />
                 ) : null}
-                {notes.map((note) => (
-                  <NoteRow key={note.id} body={note.body} createdAt={note.createdAt} />
+                {internalComments.map((note) => (
+                  <NoteRow
+                    key={note.id}
+                    body={note.body}
+                    author={note.authorName || undefined}
+                    createdAt={note.createdAt}
+                  />
                 ))}
               </ul>
             ) : (

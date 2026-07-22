@@ -413,7 +413,9 @@ export const studioEn: Widen<typeof studioFr> = {
       noteHint: "Team-only — never shows on the portal.",
       noteAdd: "Add",
       noteAdded: "Internal note added",
-      noteAddedDesc: "Never visible to the client — simulated interaction (preview).",
+      noteAddedDesc: "Never visible to the client.",
+      noteError: "The note could not be added.",
+      resolveError: "The feedback status could not be updated.",
       contentNote: "Content note",
     },
     threadItems: {

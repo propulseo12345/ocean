@@ -31,6 +31,9 @@ export interface Annotation {
   y: number
 }
 
+/** Couche du fil : client (miroir portail) ou note interne (owner-only). */
+export type CommentVisibility = "client" | "internal"
+
 export interface Comment {
   id: string
   contentId: string
@@ -38,6 +41,9 @@ export interface Comment {
   role: MemberRole
   body: string
   createdAt: string
+  visibility: CommentVisibility
+  /** Retour client marqué « résolu » (owner-only). Null tant qu'ouvert. */
+  resolvedAt?: string | null
   annotation?: Annotation
 }
 
