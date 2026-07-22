@@ -1870,6 +1870,15 @@ export type Database = {
         Args: { _secret_id: string; _secret: string }
         Returns: undefined
       }
+      // Migration 020 — file de publication (enfilement app-driven, idempotent).
+      enqueue_publish_jobs: {
+        Args: { _content_item: string }
+        Returns: number
+      }
+      cancel_publish_jobs: {
+        Args: { _content_item: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

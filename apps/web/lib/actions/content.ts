@@ -306,6 +306,10 @@ export async function scheduleContentItem(
     .eq("id", contentId)
   if (error) return { ok: false, error: error.message }
 
+  // Reprogrammation : réaligne run_at des jobs si le contenu est déjà « scheduled »
+  // (l'RPC no-op sinon — un simple changement de date sur un brouillon n'enfile rien).
+  await supabase.rpc("enqueue_publish_jobs", { _content_item: contentId })
+
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
   return { ok: true }
@@ -378,9 +382,7 @@ export async function trashContent(input: z.infer<typeof trashSchema>): Promise<
  * Garde : on ne purge QUE ce qui est déjà soft-deleted (`deleted_at not null`) —
  * un contenu vivant passe d'abord par trashContent, jamais de hard-delete direct.
  */
-export async function hardDeleteContent(
-  input: z.infer<typeof trashSchema>
-): Promise<ActionResult> {
+export async function hardDeleteContent(input: z.infer<typeof trashSchema>): Promise<ActionResult> {
   const parsed = trashSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: "INVALID_INPUT" }
   const { clientId, contentId } = parsed.data

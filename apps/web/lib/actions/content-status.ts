@@ -86,9 +86,21 @@ export async function applyStatusIntent(
     if (error) return { ok: false, error: error.message }
   }
 
+  const finalStatus = path[path.length - 1]
+  // File de publication (règle 15/16) : un contenu qui ATTEINT « scheduled » enfile
+  // un job par cible API ; toute sortie de « scheduled » annule les jobs non
+  // démarrés. Les RPC sont idempotentes et no-op hors de ces cas — sûr à appeler
+  // sur toute transition. Un échec d'enfilement ne doit pas casser la transition
+  // (déjà persistée) : on ignore l'erreur RPC (le watchdog worker rattrapera).
+  if (finalStatus === "scheduled") {
+    await supabase.rpc("enqueue_publish_jobs", { _content_item: contentId })
+  } else {
+    await supabase.rpc("cancel_publish_jobs", { _content_item: contentId })
+  }
+
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
-  return { ok: true, data: { status: path[path.length - 1] } }
+  return { ok: true, data: { status: finalStatus } }
 }
 
 const targetSchema = z.object({
