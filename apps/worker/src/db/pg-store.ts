@@ -7,6 +7,7 @@ import {
   type PublishResult,
 } from "../domain"
 import { log } from "../log"
+import { LOCAL_QUOTAS } from "../quota"
 import type { JobStore, ReapResult } from "../store"
 
 // Implémentation Postgres de la file (Supavisor SESSION). L'horloge est now()
@@ -337,6 +338,7 @@ export class PgJobStore implements JobStore {
          where id = $1`,
         [job.contentTargetId, result.targetStatus, result.externalPostId, result.permalink ?? null]
       )
+      await bumpQuotaUsage(c, job)
       await recomputeParent(c, job.contentItemId)
     })
     log.info("job succeeded", {
@@ -437,16 +439,35 @@ export class PgJobStore implements JobStore {
     log.error("job dead_letter", { ...jobFields(job), reason, runAt: job.runAt.toISOString() })
   }
 
-  async deferForQuota(job: PublishJob, retryDelayMs: number): Promise<void> {
-    // Report auto (règle 19) : ni échec ni attempt++, on repousse simplement.
-    log.info("job reporte (quota plateforme atteint)", { ...jobFields(job), retryDelayMs })
+  async deferForQuota(job: PublishJob, retryDelayMs: number, reason: string): Promise<void> {
+    // Report auto (règle 19) : ni échec ni attempt++, on REDATE.
+    //
+    // `run_at` est décalé en même temps que `next_attempt_at`, et c'est tout
+    // l'objet du correctif : la fenêtre de grâce se mesure sur `run_at`
+    // (engine.ts). Un report de 6 h sur un `run_at` inchangé revenait à condamner
+    // le job — au réveil il avait plus de 2 h de retard, donc `dead_letter`. Le
+    // comportement acté (§5, §6) est un report au prochain créneau disponible,
+    // pas une publication perdue.
+    log.info("job reporte (quota plateforme atteint)", {
+      ...jobFields(job),
+      retryDelayMs,
+      reason,
+      previousRunAt: job.runAt.toISOString(),
+    })
     const { rowCount } = await this.pool.query(
       `update public.publish_jobs
        set status = 'retrying', step = 'check_quota',
            worker_id = null, claimed_at = null, lease_expires_at = null,
-           next_attempt_at = now() + make_interval(secs => $2::double precision / 1000)
+           run_at = now() + make_interval(secs => $2::double precision / 1000),
+           next_attempt_at = now() + make_interval(secs => $2::double precision / 1000),
+           last_error = $4::jsonb
        where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
-      [job.id, retryDelayMs, job.workerId]
+      [
+        job.id,
+        retryDelayMs,
+        job.workerId,
+        JSON.stringify({ error: "quota_deferred", detail: reason }),
+      ]
     )
     assertOwned(rowCount, "deferForQuota")
   }
@@ -489,6 +510,56 @@ export class PgJobStore implements JobStore {
       client.release()
     }
   }
+}
+
+/**
+ * Incrémente le compteur de quota LOCAL du compte social (règle 19), dans la
+ * même transaction que le succès — un compteur qui peut diverger du fait qu'il
+ * compte ne sert à rien.
+ *
+ * La table `social_account_quota_usage` (014) n'avait JAMAIS eu d'écrivain : ses
+ * seuls INSERT du dépôt étaient des fixtures pgTAP, et `getQuotaUsage` affichait
+ * donc 0/100 en permanence dans l'UI.
+ *
+ * La fenêtre est glissante et posée à la PREMIÈRE publication de la période :
+ * `window_resets_at` échu (ou absent) remet `used` à 1 et rouvre une fenêtre.
+ */
+async function bumpQuotaUsage(c: pg.PoolClient, job: PublishJob): Promise<void> {
+  const quota = LOCAL_QUOTAS[job.platform]
+  if (!quota) return
+  await c.query(
+    `insert into public.social_account_quota_usage
+       (social_account_id, quota_kind, org_id, client_id, platform,
+        used, quota_limit, window_seconds, window_resets_at, source, fetched_at)
+     values ($1, $2::public.quota_kind, $3, $4, $5::public.platform,
+             1, $6, $7, now() + make_interval(secs => $7), 'local', now())
+     on conflict (social_account_id, quota_kind) do update
+     set used = case
+           when public.social_account_quota_usage.window_resets_at is null
+             or public.social_account_quota_usage.window_resets_at <= now()
+           then 1
+           else public.social_account_quota_usage.used + 1
+         end,
+         window_resets_at = case
+           when public.social_account_quota_usage.window_resets_at is null
+             or public.social_account_quota_usage.window_resets_at <= now()
+           then now() + make_interval(secs => $7)
+           else public.social_account_quota_usage.window_resets_at
+         end,
+         quota_limit = $6,
+         window_seconds = $7,
+         source = 'local',
+         fetched_at = now()`,
+    [
+      job.socialAccountId,
+      quota.kind,
+      job.orgId,
+      job.clientId,
+      job.platform,
+      quota.limit,
+      quota.windowSeconds,
+    ]
+  )
 }
 
 /**

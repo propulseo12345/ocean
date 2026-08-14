@@ -80,8 +80,8 @@ class FakeStore implements JobStore {
   async deadLetter(_job: PublishJob, reason: string) {
     this.events.push(`deadLetter:${reason}`)
   }
-  async deferForQuota() {
-    this.events.push("deferForQuota")
+  async deferForQuota(_job: PublishJob, retryDelayMs: number, reason: string) {
+    this.events.push(`deferForQuota:${retryDelayMs}:${reason}`)
   }
 }
 
@@ -118,7 +118,7 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
     store,
     resolvePublisher: () => pub,
     prepare: async (): Promise<PublishContext> => ({ accessToken: "t" }),
-    checkQuota: async () => true,
+    checkQuota: async () => ({ ok: true }) as const,
     config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 60000 },
     now: NOW,
     random: () => 0,
@@ -315,13 +315,16 @@ test("job démarré : le quota n'est jamais consulté (interroger un conteneur n
     deps(store, pub, {
       checkQuota: async () => {
         quotaCalls++
-        return false
+        return { ok: false as const, retryAfterMs: 1000, reason: "test" }
       },
     })
   )
 
   assert.equal(quotaCalls, 0, "quota non consulté sur un job démarré")
-  assert.ok(!events.includes("deferForQuota"), "un job démarré n'est jamais reporté")
+  assert.ok(
+    !events.some((e) => e.startsWith("deferForQuota")),
+    "un job démarré n'est jamais reporté"
+  )
   assert.ok(events.some((e) => e.startsWith("succeed:")))
 })
 
@@ -477,4 +480,32 @@ test("timeout sur un publish DÉJÀ démarré => pas d'échec sec, l'ancre prot�
   // conteneur avant toute republication (règle 15). Un timeout ne dit PAS que
   // rien n'est parti — c'est précisément pourquoi on ne conclut pas.
   assert.ok(events.includes("retryOrFail"), "retry, et surtout pas une conclusion hâtive")
+})
+
+test("quota atteint => report au créneau annoncé, aucune publication, aucun échec", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events)
+
+  await processJob(
+    makeJob(),
+    deps(store, pub, {
+      checkQuota: async () => ({
+        ok: false as const,
+        retryAfterMs: 6 * 3_600_000,
+        reason: "quota ig_publish atteint (100/100)",
+      }),
+    })
+  )
+
+  assert.equal(pub.createCalls, 0, "pas même de conteneur créé")
+  assert.equal(pub.publishCalls, 0)
+  assert.ok(
+    events.some((e) => e.startsWith("deferForQuota:21600000:")),
+    "le délai annoncé par le quota est celui appliqué (6 h, pas 60 s)"
+  )
+  assert.ok(
+    !events.some((e) => e.startsWith("failPermanent") || e.startsWith("deadLetter")),
+    "un quota atteint n'est PAS un échec"
+  )
 })

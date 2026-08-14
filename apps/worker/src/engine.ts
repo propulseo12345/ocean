@@ -7,6 +7,7 @@ import {
   type PublishJob,
 } from "./domain"
 import type { PublishContext, Publisher } from "./publishers/types"
+import type { QuotaVerdict } from "./quota"
 import type { JobStore } from "./store"
 
 // Moteur de publication — machine à états d'UN job réclamé. C'est le cœur
@@ -22,8 +23,12 @@ export interface EngineDeps {
   resolvePublisher: (platform: PublishJob["platform"]) => Publisher
   /** Prépare le contexte : token frais (Vault) + URL signée du média. Peut lever NeedsReauth. */
   prepare: (job: PublishJob) => Promise<PublishContext>
-  /** Vérifie le quota AVANT publication (règle 19). false => report auto. */
-  checkQuota: (job: PublishJob) => Promise<boolean>
+  /**
+   * Vérifie le quota AVANT publication (règle 19). Un refus dit QUAND réessayer :
+   * reporter de 60 s en boucle jusqu'à épuiser la fenêtre de grâce transforme un
+   * quota atteint en publication perdue.
+   */
+  checkQuota: (job: PublishJob) => Promise<QuotaVerdict>
   config: { graceWindowMs: number; awaitMediaDelayMs: number; httpTimeoutMs: number }
   /** Horloge de référence = now() Postgres (fourni par le store au claim). */
   now: Date
@@ -104,10 +109,11 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
     return
   }
 
-  // 3. Quota plateforme (règle 19) : atteint => report auto + notification.
+  // 3. Quota plateforme (règle 19) : atteint => report au prochain créneau.
   try {
-    if (!(await checkQuota(job))) {
-      await store.deferForQuota(job, config.awaitMediaDelayMs)
+    const quota = await checkQuota(job)
+    if (!quota.ok) {
+      await store.deferForQuota(job, quota.retryAfterMs, quota.reason)
       return
     }
   } catch (err) {

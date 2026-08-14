@@ -81,6 +81,13 @@ export interface JobStore {
   /** Fenêtre de grâce dépassée : dead_letter + notification (§5). */
   deadLetter(job: PublishJob, reason: string): Promise<void>
 
-  /** Quota plateforme atteint : report auto au prochain créneau + notif (§5, règle 19). */
-  deferForQuota(job: PublishJob, retryDelayMs: number): Promise<void>
+  /**
+   * Quota plateforme atteint : report auto au PROCHAIN CRÉNEAU (§5, règle 19).
+   *
+   * `run_at` est décalé avec `next_attempt_at`, et c'est le cœur du geste : la
+   * fenêtre de grâce se mesure sur `run_at`, donc un report de plusieurs heures
+   * sans décalage condamnait le job à `dead_letter` au réveil. Reporter, c'est
+   * redater — sinon c'est perdre.
+   */
+  deferForQuota(job: PublishJob, retryDelayMs: number, reason: string): Promise<void>
 }
