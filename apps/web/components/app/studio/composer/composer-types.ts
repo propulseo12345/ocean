@@ -152,6 +152,22 @@ export function draftFromContent(content: ContentItem, locale: Locale): Composer
       .sort((a, b) => a.position - b.position)
       .map((m) => ({
         id: m.id,
+        // P5-2 — SANS cette ligne, rouvrir un contenu et l'enregistrer DÉTACHE
+        // tous ses médias. La chaîne : `handleSave` ne garde que les médias
+        // portant un `libraryAssetId` (composer-screen.tsx:145), parce qu'un
+        // fichier fraîchement déposé n'existe pas encore en base ; cette
+        // fonction n'en posait aucun ; donc `mediaPayload` sortait VIDE, et
+        // `reconcileMedia` faisait son `delete()` puis retournait sur un tableau
+        // vide (content.ts:219).
+        //
+        // Le coût réel dépasse les médias : `content_comments` porte
+        // `annotation_content_media_id … on delete cascade` (013:138). Supprimer
+        // les liaisons efface donc les COMMENTAIRES ANNOTÉS DU CLIENT — la ligne
+        // entière, pas seulement son ancre. Le retour de validation disparaît.
+        //
+        // `m.id` est bien l'id de l'ASSET (content-media.ts:118), c'est-à-dire
+        // exactement ce qu'attend `reconcileMedia` pour `media_asset_id`.
+        libraryAssetId: m.id,
         type: m.type,
         thumbUrl: m.thumbUrl,
         fullUrl: m.fullUrl,
