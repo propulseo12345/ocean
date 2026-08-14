@@ -38,8 +38,8 @@
 ## 1. STACK & VERSIONS
 
 ```yaml
-node: 20 LTS
-pkg_manager: pnpm 9+ (monorepo workspaces)
+node: 22 LTS (>=22.13 — exigé par pnpm 11 ; Dockerfile et CI alignés)
+pkg_manager: pnpm 11.1.2 (monorepo workspaces)
 monorepo:
   apps/web: Next.js 16 App Router (Turbopack)
   apps/worker: worker Node de publication programmée (file Postgres FOR UPDATE SKIP LOCKED — PAS de Redis/BullMQ)

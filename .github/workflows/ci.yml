@@ -130,9 +130,13 @@ jobs:
         with:
           version: 11.1.2
 
+      # Node 22, aligne sur le Dockerfile (node:22-alpine). En Node 20, pnpm
+      # 11.1.2 refuse de demarrer (« requires at least Node.js v22.13 ») puis
+      # casse sur ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite -- le step setup-node
+      # echouait, donc install, Biome, typecheck et build etaient tous skippes.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
