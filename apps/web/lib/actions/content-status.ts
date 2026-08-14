@@ -7,6 +7,7 @@ import { pathFor, type StatusIntent } from "@/lib/domain/content-status"
 import { routes } from "@/lib/routes"
 import type { ActionResult } from "./_helpers"
 import { requireClientInOrg } from "./_helpers"
+import { syncPublishQueue } from "./publish-queue"
 
 // Transitions de statut (Phase 6). Chaque action traduit une INTENTION d'UI en
 // une suite d'updates légaux au regard de la garde 008/016, appliqués un par un.
@@ -87,16 +88,11 @@ export async function applyStatusIntent(
   }
 
   const finalStatus = path[path.length - 1]
-  // File de publication (règle 15/16) : un contenu qui ATTEINT « scheduled » enfile
-  // un job par cible API ; toute sortie de « scheduled » annule les jobs non
-  // démarrés. Les RPC sont idempotentes et no-op hors de ces cas — sûr à appeler
-  // sur toute transition. Un échec d'enfilement ne doit pas casser la transition
-  // (déjà persistée) : on ignore l'erreur RPC (le watchdog worker rattrapera).
-  if (finalStatus === "scheduled") {
-    await supabase.rpc("enqueue_publish_jobs", { _content_item: contentId })
-  } else {
-    await supabase.rpc("cancel_publish_jobs", { _content_item: contentId })
-  }
+  // File de publication (règles 15/16). L'appelant ne CHOISIT plus entre enfiler
+  // et annuler : le helper relit l'état réel du contenu et en déduit ce que la
+  // file doit contenir. Le if/else d'avant était correct ici, mais c'est sa forme
+  // qui posait problème — chaque nouvelle surface d'édition devait le recopier.
+  await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))

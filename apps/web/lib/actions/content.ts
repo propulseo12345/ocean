@@ -7,6 +7,7 @@ import { extractHashtags } from "@/lib/caption"
 import { routes } from "@/lib/routes"
 import type { ActionResult } from "./_helpers"
 import { requireClientInOrg } from "./_helpers"
+import { syncPublishQueue } from "./publish-queue"
 
 // Écritures CŒUR du contenu (Phase 8) : création/édition depuis le composer,
 // programmation, corbeille. Le pendant « écriture » des lectures de content.ts.
@@ -153,6 +154,13 @@ export async function saveContentItem(
   }
   // Les étiquettes sont éditables à tout statut (métadonnée interne).
   await reconcileLabels(supabase, orgId, d.clientId, contentId, d.labels)
+
+  // `baseFields` contient `scheduled_at` et est appliqué à TOUS les statuts —
+  // le garde-fou RECONCILABLE_STATUSES ne protège que les cibles et les médias,
+  // pas la date. Rouvrir un post programmé vendredi 9 h, le reprogrammer à 17 h
+  // et enregistrer réécrivait donc `scheduled_at` sans réaligner `run_at` :
+  // calendrier, grille et kanban affichaient 17 h, le worker publiait à 9 h.
+  await syncPublishQueue(supabase, orgId, d.clientId, contentId)
 
   revalidatePath(routes.clientContent(d.clientId))
   revalidatePath(routes.content(d.clientId, contentId))
@@ -306,9 +314,11 @@ export async function scheduleContentItem(
     .eq("id", contentId)
   if (error) return { ok: false, error: error.message }
 
-  // Reprogrammation : réaligne run_at des jobs si le contenu est déjà « scheduled »
-  // (l'RPC no-op sinon — un simple changement de date sur un brouillon n'enfile rien).
-  await supabase.rpc("enqueue_publish_jobs", { _content_item: contentId })
+  // Reprogrammation ET dé-programmation. L'appel nu à `enqueue_publish_jobs` ne
+  // couvrait que la première : `scheduledAt: null` (retirer la date depuis le
+  // composer) laissait le job vivant, avec son ancienne `run_at` — le post
+  // partait à une date que plus personne n'affichait.
+  await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
@@ -366,6 +376,14 @@ export async function trashContent(input: z.infer<typeof trashSchema>): Promise<
     .eq("id", contentId)
     .is("deleted_at", null)
   if (error) return { ok: false, error: error.message }
+
+  // Mettre à la corbeille ne désenfilait RIEN. Le claim du worker ne joint
+  // jamais `content_items` et `deleted_at` n'apparaît nulle part dans
+  // apps/worker : le contenu supprimé partait quand même, à l'heure prévue, sur
+  // le vrai compte du client. Aggravant : le bouton s'intitule « annuler la
+  // programmation » quand le contenu est `scheduled` (content-actions.tsx:100)
+  // et appelle cette action.
+  await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.clientContent(clientId))
   return { ok: true }
