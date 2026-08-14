@@ -26,6 +26,22 @@ jobs:
         with:
           version: latest
 
+      # Le CLI derive la version des chiffres de tete du nom de fichier et l'insere
+      # en cle primaire de supabase_migrations.schema_migrations. Deux fichiers qui
+      # partagent ce prefixe tuent `supabase start` sur un duplicate key -- c'est ce
+      # qui a bloque ce job pendant 7 runs (012_media.sql + 012_media_storage.sql).
+      # Verifie AVANT de demarrer : le message est explicite, pas un SQLSTATE.
+      - name: Assert unique migration versions
+        run: |
+          DUPES=$(ls supabase/migrations/*.sql | xargs -n1 basename \
+            | sed -E 's/^([0-9]+)_.*/\1/' | sort | uniq -d)
+          if [ -n "$DUPES" ]; then
+            echo "::error::versions de migration en double : $(echo "$DUPES" | tr '\n' ' ')"
+            for v in $DUPES; do ls supabase/migrations/${v}_*.sql; done
+            exit 1
+          fi
+          echo "OK : $(ls supabase/migrations/*.sql | wc -l) migrations, versions toutes uniques"
+
       - name: Start Supabase (local, jamais db push ni link)
         run: supabase start
 
