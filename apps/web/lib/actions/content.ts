@@ -7,6 +7,8 @@ import { extractHashtags } from "@/lib/caption"
 import { routes } from "@/lib/routes"
 import type { ActionResult } from "./_helpers"
 import { requireClientInOrg } from "./_helpers"
+import { reconcileLabels, reconcileTargets } from "./content-reconcile"
+import { reconcileMedia } from "./content-reconcile-media"
 import { syncPublishQueue } from "./publish-queue"
 
 // Écritures CŒUR du contenu (Phase 8) : création/édition depuis le composer,
@@ -147,13 +149,29 @@ export async function saveContentItem(
     if (error) return { ok: false, error: error.message }
   }
 
-  // --- Cibles, médias, étiquettes (reconstruits en amont de la revue) ------
+  // --- Cibles, médias, étiquettes (réconciliés par diff, cf. content-reconcile)
+  //
+  // P5-3 : ces trois appels étaient en fire-and-forget, et l'action renvoyait
+  // `ok: true` même quand le DELETE passait et l'INSERT échouait — le contenu se
+  // retrouvait sans aucune cible, affiché normalement au calendrier, et ne
+  // partait jamais. Le premier échec interrompt maintenant et remonte.
   if (RECONCILABLE_STATUSES.includes(currentStatus)) {
-    await reconcileTargets(supabase, orgId, d.clientId, contentId, d.accountIds, d.manualPlatforms)
-    await reconcileMedia(supabase, orgId, d.clientId, contentId, d.media)
+    const targetsError = await reconcileTargets(
+      supabase,
+      orgId,
+      d.clientId,
+      contentId,
+      d.accountIds,
+      d.manualPlatforms
+    )
+    if (targetsError) return { ok: false, error: targetsError }
+
+    const mediaError = await reconcileMedia(supabase, orgId, d.clientId, contentId, d.media)
+    if (mediaError) return { ok: false, error: mediaError }
   }
   // Les étiquettes sont éditables à tout statut (métadonnée interne).
-  await reconcileLabels(supabase, orgId, d.clientId, contentId, d.labels)
+  const labelsError = await reconcileLabels(supabase, orgId, d.clientId, contentId, d.labels)
+  if (labelsError) return { ok: false, error: labelsError }
 
   // `baseFields` contient `scheduled_at` et est appliqué à TOUS les statuts —
   // le garde-fou RECONCILABLE_STATUSES ne protège que les cibles et les médias,
@@ -166,123 +184,6 @@ export async function saveContentItem(
   revalidatePath(routes.content(d.clientId, contentId))
   if (!queue.ok) return { ok: false, error: `QUEUE_${queue.error}` }
   return { ok: true, data: { id: contentId } }
-}
-
-type Db = Awaited<ReturnType<typeof requireClientInOrg>>["supabase"]
-
-/** Remplace les cibles : comptes sociaux + plateformes manuelles. */
-async function reconcileTargets(
-  supabase: Db,
-  orgId: string,
-  clientId: string,
-  contentId: string,
-  accountIds: string[],
-  manualPlatforms: readonly string[]
-) {
-  // Résoudre la plateforme de chaque compte social (défense : le compte doit
-  // appartenir au client).
-  const { data: accounts } = await supabase
-    .from("social_accounts")
-    .select("id, platform")
-    .eq("org_id", orgId)
-    .eq("client_id", clientId)
-    .in("id", accountIds.length ? accountIds : ["00000000-0000-0000-0000-000000000000"])
-  const platformById = new Map((accounts ?? []).map((a) => [a.id, a.platform]))
-
-  const rows = [
-    ...accountIds
-      .filter((id) => platformById.has(id))
-      .map((id) => ({
-        org_id: orgId,
-        client_id: clientId,
-        content_item_id: contentId,
-        social_account_id: id,
-        platform: platformById.get(id) as string,
-      })),
-    ...manualPlatforms.map((platform) => ({
-      org_id: orgId,
-      client_id: clientId,
-      content_item_id: contentId,
-      social_account_id: null,
-      platform,
-    })),
-  ]
-
-  // Delete+insert : sûr tant que les cibles sont 'pending' (statut pré-revue).
-  await supabase
-    .from("content_targets")
-    .delete()
-    .eq("org_id", orgId)
-    .eq("content_item_id", contentId)
-  if (rows.length) await supabase.from("content_targets").insert(rows)
-}
-
-/** Remplace les liaisons médias (assets de médiathèque uniquement). */
-async function reconcileMedia(
-  supabase: Db,
-  orgId: string,
-  clientId: string,
-  contentId: string,
-  media: { libraryAssetId: string; altText: string; crop?: string }[]
-) {
-  await supabase.from("content_media").delete().eq("org_id", orgId).eq("content_item_id", contentId)
-  if (!media.length) return
-
-  const rows = media.map((m, position) => ({
-    org_id: orgId,
-    client_id: clientId,
-    content_item_id: contentId,
-    media_asset_id: m.libraryAssetId,
-    position,
-    alt_text_override: m.altText || null,
-    crop_preset: m.crop ?? null,
-  }))
-  await supabase.from("content_media").insert(rows)
-}
-
-/** Upsert des étiquettes par nom puis reconstruction des liaisons. */
-async function reconcileLabels(
-  supabase: Db,
-  orgId: string,
-  clientId: string,
-  contentId: string,
-  labels: string[]
-) {
-  await supabase
-    .from("content_item_labels")
-    .delete()
-    .eq("org_id", orgId)
-    .eq("content_item_id", contentId)
-  if (!labels.length) return
-
-  const wanted = [...new Set(labels)]
-  const { data: existing } = await supabase
-    .from("content_labels")
-    .select("id, name")
-    .eq("org_id", orgId)
-    .eq("client_id", clientId)
-    .in("name", wanted)
-  const idByName = new Map((existing ?? []).map((l) => [l.name, l.id]))
-
-  const toCreate = wanted.filter((name) => !idByName.has(name))
-  if (toCreate.length) {
-    const { data: created } = await supabase
-      .from("content_labels")
-      .insert(toCreate.map((name) => ({ org_id: orgId, client_id: clientId, name })))
-      .select("id, name")
-    for (const l of created ?? []) idByName.set(l.name, l.id)
-  }
-
-  const links = wanted
-    .map((name) => idByName.get(name))
-    .filter((id): id is string => id !== undefined)
-    .map((content_label_id) => ({
-      org_id: orgId,
-      client_id: clientId,
-      content_item_id: contentId,
-      content_label_id,
-    }))
-  if (links.length) await supabase.from("content_item_labels").insert(links)
 }
 
 // --- Programmation / corbeille ---------------------------------------------
