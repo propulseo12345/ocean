@@ -90,6 +90,23 @@ lire le run.
 
 Reprend la session 1 du brief, protégée par la phase 0.
 
+> **Prérequis CODE de cette phase : faits le 14/08** (branche `chore/phase-0-outillage`).
+> Ne restent que les actions à identifiants — app Meta, variables Coolify, app worker.
+>
+> | Prérequis | Commit | Preuve |
+> |---|---|---|
+> | `redirect_uri` + origine publique au runtime | `2956318` | Le `redirect_uri` venait de `new URL(request.url).origin` : en conteneur ce n'est pas l'URL publique, donc **aucune** connexion sociale ne pouvait aboutir. Pire, `NEXT_PUBLIC_SITE_URL` est **inlinée au build** par Next : le bundle contenait `return "http://localhost:3000".replace(...)` et plus aucune lecture de `process.env` — ce que Coolify posait au runtime était ignoré. Nouveau `lib/site-url.ts` sur `SITE_URL` (non préfixée). Après : 15 fichiers lisent `process.env.SITE_URL`, **zéro** valeur gelée. |
+> | Noms de variables réconciliés | `2956318` | `.env.local.example` annonçait `META_APP_ID`, `TIKTOK_CLIENT_KEY`… que le code ne lit **nulle part** (il lit `OAUTH_META_CLIENT_ID`, etc.). Le gabarit était en plus **ignoré par .gitignore**, donc invisible : il est désormais versionné, aligné sur le code, avec `SITE_URL` et `OAUTH_STATE_SECRET`. |
+> | Chaîne de build du worker + image | `573bf59` | `start` lançait `tsx`, une devDependency → crash-loop garanti sous `NODE_ENV=production`. Désormais `tsc` → `dist/`, `node dist/index.js`, et `apps/worker/Dockerfile`. Image construite pour de vrai : 257 Mo, non-root, `tsx` et `typescript` **absents**. Les 4 chemins de refus rejoués **dans le conteneur**. |
+> | Les images sont construites en CI | `c3b7258` | Nouveau job `docker` en matrice (web + worker), cache GHA. `jobs = ['db','web','worker','docker']`. Les deux `docker build` passent en local. |
+>
+> **Reste à faire, phase 1** : app Meta en mode dev + testeurs ; poser `SITE_URL`,
+> `OAUTH_STATE_SECRET` et les identifiants Meta dans Coolify ; créer l'app Coolify
+> `ocean-worker` (build pack **Dockerfile** `apps/worker/Dockerfile`, contexte racine,
+> `PUBLISHERS_MODE=dry-run`, `DATABASE_CA_CERT`, replicas 1, grace period ≥ 150 s) ;
+> smoke test `deploy/smoke_publish_jobs.sql`. Tout est détaillé dans
+> `deploy/GO-LIVE-points-1-2.md`, corrigé en conséquence.
+
 - Créer l'app Meta en mode développement, compte de test + compte Instagram perso en testeurs.
 - Poser `OAUTH_STATE_SECRET` et les identifiants Meta dans Coolify (⚠ vérifier les **noms exacts**
   des variables : le code, le runbook et `.env.local.example` ne concordent pas).
