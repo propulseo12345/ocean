@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": true,
+    // Sortie CommonJS À DESSEIN. Les sources utilisent des imports relatifs sans
+    // extension (`./env`), ce que `moduleResolution: bundler` autorise et que tsx
+    // résout en dev. En ESM, Node exige l'extension explicite : un `dist` émis en
+    // ESM planterait au boot sur ERR_MODULE_NOT_FOUND — précisément le genre de
+    // panne qui ne se voit qu'en production. Le script `build` écrit un
+    // `dist/package.json` { "type": "commonjs" } pour neutraliser le
+    // `"type": "module"` du package (sans quoi Node lirait les .js comme de l'ESM).
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

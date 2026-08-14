@@ -73,8 +73,21 @@ Sans `SITE_URL`, les routes OAuth redirigent en `?error=site_url_unconfigured`
 
 ## Étape 4 — App worker Coolify (TOI, UI Coolify)
 Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
-- **Install** : `pnpm install`
-- **Start** : `pnpm --filter worker start`  (lance `tsx src/index.ts`)
+- **Build pack** : `Dockerfile`
+- **Dockerfile** : `apps/worker/Dockerfile` — ⚠️ **contexte de build = racine du dépôt**
+  (le lockfile déclare 3 importers). Vérifié localement :
+  `docker build -f apps/worker/Dockerfile -t ocean-worker .` → image 257 Mo,
+  utilisateur non-root `worker`, `tsx` et `typescript` ABSENTS de l'image.
+- **Replicas** : 1 (le rate limiting par `social_account` n'est pas partagé entre
+  process — règle 19). **Grace period** ≥ 150 s (le lease est de 2 min).
+
+  ⚠️ **Ne PAS choisir le buildpack `pnpm install` + `pnpm --filter worker start`**,
+  comme le prescrivait la version précédente de ce document : `start` lançait
+  `tsx src/index.ts` et `tsx` est une **devDependency**. Un buildpack qui pose
+  `NODE_ENV=production` élague les devDependencies → crash-loop au boot,
+  indistinguable d'un worker sans job pour qui ne lit pas les logs. Le TypeScript
+  est désormais compilé au build (`pnpm --filter worker build` → `dist/`) et le
+  runtime n'exécute que du JavaScript (`node dist/index.js`).
 - **Env** (le worker n'utilise QUE pg — pas de supabase-js) :
   ```
   DATABASE_URL=<Supavisor SESSION>      # OBLIGATOIRE, port 5432 — voir ci-dessous
