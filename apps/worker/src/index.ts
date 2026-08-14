@@ -32,9 +32,29 @@ function sleep(ms: number): Promise<void> {
  * continuer à prolonger le lease d'un autre worker était précisément le
  * mécanisme qui permettait à un zombie de survivre à sa propre expiration.
  */
-function startLeaseHeartbeat(store: JobStore, job: PublishJob, leaseMs: number): () => void {
+function startLeaseHeartbeat(
+  store: JobStore,
+  job: PublishJob,
+  leaseMs: number,
+  maxProcessingMs: number
+): () => void {
+  const startedAt = Date.now()
   const timer: NodeJS.Timeout = setInterval(
     () => {
+      // Le heartbeat MASQUAIT le reaper : il prolongeait le lease sans borne, si
+      // bien qu'un job bloqué n'expirait jamais et que le seul filet contre un
+      // worker coincé ne se déclenchait pas. Passé maxProcessingMs, on cesse de
+      // prolonger et on laisse le lease mourir — le reaper reprendra le job.
+      if (Date.now() - startedAt > maxProcessingMs) {
+        clearInterval(timer)
+        log.error("traitement trop long : lease non prolonge, le reaper reprendra", {
+          jobId: job.id,
+          workerId: job.workerId,
+          elapsedMs: Date.now() - startedAt,
+          maxProcessingMs,
+        })
+        return
+      }
       store
         .extendLease(job, leaseMs)
         .then((kept) => {
@@ -60,7 +80,7 @@ async function runOne(
   deps: EngineDeps,
   config: WorkerConfig
 ): Promise<void> {
-  const stopHeartbeat = startLeaseHeartbeat(deps.store, job, config.leaseMs)
+  const stopHeartbeat = startLeaseHeartbeat(deps.store, job, config.leaseMs, config.maxProcessingMs)
   try {
     await processJob(job, { ...deps, now })
   } catch (err) {
@@ -145,7 +165,11 @@ async function main(): Promise<void> {
     resolvePublisher,
     prepare: createContextProvider(pool, { stub }),
     checkQuota: createQuotaChecker(pool, { stub }),
-    config: { graceWindowMs: config.graceWindowMs, awaitMediaDelayMs: AWAIT_MEDIA_DELAY_MS },
+    config: {
+      graceWindowMs: config.graceWindowMs,
+      awaitMediaDelayMs: AWAIT_MEDIA_DELAY_MS,
+      httpTimeoutMs: config.httpTimeoutMs,
+    },
     // `now` est réécrit par tick à partir de now() Postgres (règle 17).
     now: new Date(0),
   }
@@ -176,6 +200,8 @@ async function main(): Promise<void> {
     pollIntervalMs: config.pollIntervalMs,
     healthPort: config.healthPort ?? null,
     maxConsecutiveTickFailures: config.maxConsecutiveTickFailures,
+    httpTimeoutMs: config.httpTimeoutMs,
+    maxProcessingMs: config.maxProcessingMs,
   })
 
   /** Panne persistante : on sort en 1 pour que Coolify redémarre vraiment. */

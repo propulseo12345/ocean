@@ -24,10 +24,40 @@ export interface EngineDeps {
   prepare: (job: PublishJob) => Promise<PublishContext>
   /** Vérifie le quota AVANT publication (règle 19). false => report auto. */
   checkQuota: (job: PublishJob) => Promise<boolean>
-  config: { graceWindowMs: number; awaitMediaDelayMs: number }
+  config: { graceWindowMs: number; awaitMediaDelayMs: number; httpTimeoutMs: number }
   /** Horloge de référence = now() Postgres (fourni par le store au claim). */
   now: Date
   random?: () => number
+}
+
+/**
+ * Borne UN appel plateforme. Le traitement de la file est strictement
+ * séquentiel : un seul appel pendu — Meta qui ne répond ni ne coupe, un socket
+ * mort que le noyau garde ouvert — gèle TOUS les autres jobs, indéfiniment. Rien
+ * ne le rattrapait : le heartbeat prolongeait le lease en boucle, donc le reaper
+ * ne voyait jamais d'expiration.
+ *
+ * Le timeout ne peut pas annuler l'appel HTTP lui-même (les publishers réels
+ * recevront `ctx.signal` en phase 6 pour ça). Il garantit ce qui compte ici :
+ * qu'on RENDE LA MAIN. Et si l'appel dépassé était un `publish`, l'ancre est
+ * déjà posée — la règle 15 interdit toute republication aveugle, donc la reprise
+ * commencera par interroger le conteneur.
+ */
+export class PlatformTimeoutError extends Error {
+  constructor(operation: string, timeoutMs: number) {
+    super(`appel plateforme ${operation} sans reponse apres ${timeoutMs} ms`)
+    this.name = "PlatformTimeoutError"
+  }
+}
+
+function withTimeout<T>(work: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  const guard = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new PlatformTimeoutError(operation, timeoutMs)), timeoutMs)
+  })
+  return Promise.race([work, guard]).finally(() => {
+    if (timer) clearTimeout(timer)
+  }) as Promise<T>
 }
 
 /** Trop en retard pour publier (§5) — l'admin choisira une nouvelle date. */
@@ -86,7 +116,7 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
   }
 
   try {
-    await publishFresh(job, publisher, ctx, store)
+    await publishFresh(job, publisher, ctx, store, config.httpTimeoutMs)
   } catch (err) {
     await handleError(store, job, err, nextDelay())
   }
@@ -116,10 +146,19 @@ async function recoverStartedJob(
     return
   }
 
-  const status = await publisher.getContainerStatus(job, container, ctx)
+  const { httpTimeoutMs } = config
+  const status = await withTimeout(
+    publisher.getContainerStatus(job, container, ctx),
+    httpTimeoutMs,
+    "getContainerStatus"
+  )
   if (status === "published") {
     // Déjà publié : on récupère l'id/permalink, on NE republie PAS.
-    const res = await publisher.resolvePublished(job, container, ctx)
+    const res = await withTimeout(
+      publisher.resolvePublished(job, container, ctx),
+      httpTimeoutMs,
+      "resolvePublished"
+    )
     await store.succeed(job, res)
   } else if (status === "in_progress") {
     await store.markAwaitingMedia(job, config.awaitMediaDelayMs)
@@ -132,7 +171,7 @@ async function recoverStartedJob(
       return
     }
     // Republier est sûr (idempotent) : le conteneur n'avait rien publié.
-    const res = await publisher.publish(job, container, ctx)
+    const res = await withTimeout(publisher.publish(job, container, ctx), httpTimeoutMs, "publish")
     await store.succeed(job, res)
   }
 }
@@ -142,20 +181,25 @@ async function publishFresh(
   job: PublishJob,
   publisher: Publisher,
   ctx: PublishContext,
-  store: JobStore
+  store: JobStore,
+  httpTimeoutMs: number
 ): Promise<void> {
   // Un conteneur déjà créé par une tentative précédente est réutilisé — y
   // compris s'il a été persisté sur la cible et non sur cette ligne de job.
   let container = effectiveAnchor(job).containerId
   if (!container) {
-    const created = await publisher.createContainer(job, ctx)
+    const created = await withTimeout(
+      publisher.createContainer(job, ctx),
+      httpTimeoutMs,
+      "createContainer"
+    )
     container = created.containerId
     await store.patchProgress(job, { step: "create_container", externalContainerId: container })
   }
   // RÈGLE 15 : la marque est posée et COMMITÉE avant tout appel de publication,
   // sur le job ET sur la cible (migration 023) dans la même transaction.
   await store.markPublishStarted(job, container)
-  const res = await publisher.publish(job, container, ctx)
+  const res = await withTimeout(publisher.publish(job, container, ctx), httpTimeoutMs, "publish")
   await store.succeed(job, res)
 }
 

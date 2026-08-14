@@ -17,6 +17,14 @@ export interface PublishContext {
   /** URL signée du média original (générée à la publication, TTL 48h). */
   mediaUrl?: string
   caption?: string
+  /**
+   * Signal d'annulation à passer à `fetch` (phase 6). Le moteur borne déjà
+   * chaque appel dans le temps (`withTimeout`), mais une course de promesses
+   * rend seulement la main : sans ce signal, la requête HTTP continue de vivre
+   * en tâche de fond, socket et token compris. Les publishers réels DOIVENT le
+   * transmettre.
+   */
+  signal?: AbortSignal
 }
 
 export interface Publisher {

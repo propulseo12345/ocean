@@ -48,6 +48,18 @@ export interface WorkerConfig {
   healthStaleTicks: number
   /** Échecs de tick consécutifs avant d'abandonner (exit 1 => redémarrage). */
   maxConsecutiveTickFailures: number
+  /**
+   * Délai maximal d'UN appel plateforme. Sans lui, un appel pendu (Meta qui ne
+   * répond ni ne coupe) gèle la file entière : le traitement est séquentiel, un
+   * seul job suffit à bloquer tous les autres.
+   */
+  httpTimeoutMs: number
+  /**
+   * Durée maximale de traitement d'un job, tous appels confondus. Au-delà, le
+   * heartbeat CESSE de prolonger le lease : sinon il le prolonge indéfiniment et
+   * le reaper — le seul filet contre un worker bloqué — ne voit jamais rien.
+   */
+  maxProcessingMs: number
 }
 
 function int(name: string, fallback: number): number {
@@ -151,5 +163,12 @@ export function loadConfig(): WorkerConfig {
     // 60 ticks à 5 s ≈ 5 min : une bascule de pooler ne redémarre pas le
     // conteneur, une panne installée si.
     maxConsecutiveTickFailures: int("WORKER_MAX_CONSECUTIVE_TICK_FAILURES", 60),
+    // 60 s : au-dessus de la latence d'un POST /media_publish même lent, très
+    // en dessous du lease de 2 min — un appel pendu est donc détecté par le
+    // timeout, pas par l'expiration du lease.
+    httpTimeoutMs: int("WORKER_HTTP_TIMEOUT_MS", 60_000),
+    // 10 min : large pour un upload chunké de Reel, borné pour que le reaper
+    // reprenne un jour la main.
+    maxProcessingMs: int("WORKER_MAX_PROCESSING_MS", 10 * 60 * 1000),
   }
 }

@@ -100,6 +100,10 @@ Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
   #              WORKER_HEALTH_PORT=8080 (déjà posé par l'image)
   #              WORKER_HEALTH_STALE_TICKS=6
   #              WORKER_MAX_CONSECUTIVE_TICK_FAILURES=60
+  #              WORKER_HTTP_TIMEOUT_MS=60000   (délai max d'UN appel plateforme)
+  #              WORKER_MAX_PROCESSING_MS=600000 (au-delà, le lease n'est plus
+  #                prolongé et le reaper reprend le job — ne pas monter au-dessus
+  #                sans raison : c'est ce qui empêche un job bloqué de l'être à vie)
   ```
 
 - **Healthcheck Coolify** : `GET :8080/` — l'image l'expose et déclare déjà un

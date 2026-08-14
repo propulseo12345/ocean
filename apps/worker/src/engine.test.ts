@@ -119,7 +119,7 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
     resolvePublisher: () => pub,
     prepare: async (): Promise<PublishContext> => ({ accessToken: "t" }),
     checkQuota: async () => true,
-    config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000 },
+    config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 60000 },
     now: NOW,
     random: () => 0,
     ...over,
@@ -429,4 +429,52 @@ test("lease perdu avant publish => AUCUNE publication, et aucun statut écrasé"
     "aucun statut d'échec posé sur le travail d'un autre worker"
   )
   assert.ok(!events.some((e) => e.startsWith("deadLetter")), "et aucun abandon écrit non plus")
+})
+
+// ── TIMEOUTS PLATEFORME ─────────────────────────────────────────────────────
+// Le traitement est strictement séquentiel : un seul appel pendu gèle la file
+// entière. Le heartbeat prolongeait le lease sans borne, donc le reaper — seul
+// filet — ne voyait jamais d'expiration. Ces tests utilisent un timeout très
+// court pour rester instantanés.
+
+test("appel plateforme pendu => timeout, on rend la main (la file ne gèle pas)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events)
+  // Un conteneur qui ne répond jamais — ni succès, ni erreur, ni coupure.
+  pub.createContainer = () => new Promise(() => {})
+
+  await processJob(
+    makeJob(),
+    deps(store, pub, {
+      config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 20 },
+    })
+  )
+
+  assert.ok(events.includes("retryOrFail"), "traité comme transitoire : retry avec backoff")
+  assert.equal(pub.publishCalls, 0, "rien n'a été publié")
+})
+
+test("timeout sur un publish DÉJÀ démarré => pas d'échec sec, l'ancre protège", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  // Le conteneur n'avait pas publié, on republie… et l'appel reste pendu.
+  pub.publish = () => new Promise(() => {})
+
+  await processJob(
+    makeJob({
+      publishStartedAt: new Date(NOW.getTime() - 5000),
+      externalContainerId: "c-target-1",
+      status: "publishing",
+    }),
+    deps(store, pub, {
+      config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 20 },
+    })
+  )
+
+  // Transitoire : la reprise repassera par recoverStartedJob, qui interrogera le
+  // conteneur avant toute republication (règle 15). Un timeout ne dit PAS que
+  // rien n'est parti — c'est précisément pourquoi on ne conclut pas.
+  assert.ok(events.includes("retryOrFail"), "retry, et surtout pas une conclusion hâtive")
 })
