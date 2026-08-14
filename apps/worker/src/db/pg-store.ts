@@ -7,7 +7,7 @@ import {
   type PublishResult,
 } from "../domain"
 import { log } from "../log"
-import type { JobStore } from "../store"
+import type { JobStore, ReapResult } from "../store"
 
 // Implémentation Postgres de la file (Supavisor SESSION). L'horloge est now()
 // Postgres (règle 17). Les écritures terminales touchent DEUX niveaux dans une
@@ -133,20 +133,90 @@ export class PgJobStore implements JobStore {
     return { job: rowToJob(row), now: row._now as Date }
   }
 
-  async reapExpired(): Promise<number> {
+  async reapExpired(): Promise<ReapResult> {
     // Reaper : un job dont le lease a expiré (worker mort en cours) redevient
-    // « retrying » pour re-claim. attempts++ borne les boucles. Les jobs à bout de
-    // tentatives sont laissés au watchdog pg_cron (indépendant, §5) qui notifie.
-    const sql = `
-      update public.publish_jobs
-      set status = 'retrying', attempts = attempts + 1,
-          worker_id = null, claimed_at = null, lease_expires_at = null,
-          next_attempt_at = now()
-      where status in ('claimed', 'publishing')
-        and lease_expires_at is not null and lease_expires_at < now()
-        and attempts < max_attempts`
-    const { rowCount } = await this.pool.query(sql)
-    return rowCount ?? 0
+    // « retrying » pour re-claim. attempts++ borne les boucles.
+    const requeue = await this.pool.query(
+      `update public.publish_jobs
+       set status = 'retrying', attempts = attempts + 1,
+           worker_id = null, claimed_at = null, lease_expires_at = null,
+           next_attempt_at = now()
+       where status in ('claimed', 'publishing')
+         and lease_expires_at is not null and lease_expires_at < now()
+         and attempts < max_attempts`
+    )
+    const terminalized = await this.terminalizeExhausted()
+    return { requeued: requeue.rowCount ?? 0, terminalized }
+  }
+
+  /**
+   * Jobs à bout de tentatives ET à lease expiré. La clause `attempts <
+   * max_attempts` du requeue les laissait `claimed`/`publishing` À VIE : le
+   * commentaire d'origine les renvoyait « au watchdog pg_cron », qui n'existe
+   * pas. Conséquences en chaîne : l'index unique partiel des statuts actifs
+   * (020:115) gelait la cible — plus aucun job ne pouvait être enfilé pour elle —
+   * et `content_items` restait bloqué en `publishing`, un statut d'où la matrice
+   * 016 n'autorise AUCUNE transition à `authenticated`. Contenu mort, cible
+   * morte, sans un seul message.
+   *
+   * L'issue posée dépend de l'ancre, comme partout ailleurs (024) : `dead_letter`
+   * quand on sait que rien n'est parti, `needs_verification` sinon. Le reaper est
+   * justement le cas où l'on ne PEUT pas savoir — le worker qui traitait ce job
+   * est mort sans rien dire.
+   */
+  private async terminalizeExhausted(): Promise<number> {
+    const { rows } = await this.pool.query<{
+      id: string
+      content_item_id: string
+      content_target_id: string
+      unknown_outcome: boolean
+    }>(
+      `select j.id, j.content_item_id, j.content_target_id,
+              (coalesce(j.publish_started_at, ct.publish_started_at) is not null)
+                as unknown_outcome
+       from public.publish_jobs j
+       join public.content_targets ct on ct.id = j.content_target_id
+       where j.status in ('claimed', 'publishing')
+         and j.lease_expires_at is not null and j.lease_expires_at < now()
+         and j.attempts >= j.max_attempts`
+    )
+    if (rows.length === 0) return 0
+
+    let count = 0
+    for (const row of rows) {
+      const detail = row.unknown_outcome
+        ? "lease expire, tentatives epuisees — une publication a peut-etre eu lieu"
+        : "lease expire, tentatives epuisees — aucune publication n a demarre"
+      const error = JSON.stringify({ error: "reaper_exhausted", detail })
+      await this.withTx(async (c) => {
+        // Le `status in (...)` rejoue le filtre : si un autre worker (ou le
+        // requeue ci-dessus) est passé entre le SELECT et ici, on ne fait rien.
+        const res = await c.query(
+          `update public.publish_jobs
+           set status = $2::public.publish_job_status, failed_at = now(),
+               worker_id = null, claimed_at = null, lease_expires_at = null,
+               last_error = $3::jsonb
+           where id = $1 and status in ('claimed', 'publishing')`,
+          [row.id, row.unknown_outcome ? "needs_verification" : "dead_letter", error]
+        )
+        if ((res.rowCount ?? 0) === 0) return
+        await c.query(
+          `update public.content_targets
+           set status = $2::public.target_status, last_error = $3::jsonb
+           where id = $1`,
+          [row.content_target_id, row.unknown_outcome ? "needs_verification" : "failed", error]
+        )
+        await recomputeParent(c, row.content_item_id)
+        count++
+      })
+      log.error("job termine par le reaper (tentatives epuisees)", {
+        jobId: row.id,
+        contentItemId: row.content_item_id,
+        contentTargetId: row.content_target_id,
+        outcomeUnknown: row.unknown_outcome,
+      })
+    }
+    return count
   }
 
   async extendLease(job: PublishJob, leaseMs: number): Promise<boolean> {

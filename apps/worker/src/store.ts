@@ -15,6 +15,14 @@ import type { JobStep, PublishJob, PublishResult } from "./domain"
 // file sûre à plus d'une instance, et ce qui rend une déprogrammation effective
 // sur un job déjà réclamé.
 
+/** Ce que le reaper a fait de son passage. */
+export interface ReapResult {
+  /** Jobs rendus à la file pour une nouvelle tentative. */
+  requeued: number
+  /** Jobs à bout de tentatives, clos définitivement (dead_letter / needs_verification). */
+  terminalized: number
+}
+
 export interface ClaimedContext {
   /** Horloge de référence = now() Postgres (jamais l'horloge du process). */
   now: Date
@@ -24,8 +32,13 @@ export interface JobStore {
   /** Réclame le prochain job dû (FOR UPDATE SKIP LOCKED) + pose le lease. */
   claim(workerId: string, leaseMs: number): Promise<{ job: PublishJob; now: Date } | null>
 
-  /** Reaper : rend « retrying » les jobs dont le lease a expiré (worker mort). */
-  reapExpired(): Promise<number>
+  /**
+   * Reaper : rend « retrying » les jobs dont le lease a expiré (worker mort),
+   * et TERMINALISE ceux qui n'ont plus de tentative. Sans ce second geste, un
+   * job à bout de tentatives reste `claimed` à vie, gèle sa cible via l'index
+   * unique partiel, et laisse le contenu en `publishing` — statut sans sortie.
+   */
+  reapExpired(): Promise<ReapResult>
 
   /**
    * Prolonge le lease d'un job en cours (opération longue).

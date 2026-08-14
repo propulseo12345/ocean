@@ -54,7 +54,7 @@ class FakeStore implements JobStore {
     return null
   }
   async reapExpired() {
-    return 0
+    return { requeued: 0, terminalized: 0 }
   }
   async extendLease() {
     return true

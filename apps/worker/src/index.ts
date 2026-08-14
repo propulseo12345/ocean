@@ -126,7 +126,9 @@ async function dryRunOne(store: PgJobStore, job: PublishJob, config: WorkerConfi
 
 async function tick(store: PgJobStore, deps: EngineDeps, config: WorkerConfig): Promise<void> {
   const reaped = await store.reapExpired()
-  if (reaped > 0) log.info("reaped expired leases", { count: reaped })
+  if (reaped.requeued > 0 || reaped.terminalized > 0) {
+    log.info("reaper", { requeued: reaped.requeued, terminalized: reaped.terminalized })
+  }
 
   for (let i = 0; i < BATCH_PER_TICK; i++) {
     const claimed = await store.claim(config.workerId, config.leaseMs)
