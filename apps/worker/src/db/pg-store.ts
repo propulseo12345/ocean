@@ -1,5 +1,11 @@
 import type pg from "pg"
-import { isOutcomeUnknown, type JobStep, type PublishJob, type PublishResult } from "../domain"
+import {
+  isOutcomeUnknown,
+  type JobStep,
+  LeaseLostError,
+  type PublishJob,
+  type PublishResult,
+} from "../domain"
 import { log } from "../log"
 import type { JobStore } from "../store"
 
@@ -77,6 +83,25 @@ function jobFields(job: PublishJob): Record<string, unknown> {
   }
 }
 
+/**
+ * Statuts dans lesquels le job est ENTRE NOS MAINS. Toute écriture d'état les
+ * exige : un job qui n'y est plus a été repris par le reaper (donc par un autre
+ * worker) ou annulé par l'app (P3-9). Dans les deux cas nous n'avons plus le
+ * droit d'écrire.
+ */
+const OWNED_STATUSES = "('claimed', 'publishing')"
+
+/**
+ * JETON DE CLÔTURE. `rowCount === 0` sur une écriture fencée ne veut pas dire
+ * « rien à faire » : ça veut dire « ce job ne nous appartient plus ». Le laisser
+ * passer, comme le faisait le code d'origine, permet à un worker zombie
+ * d'écraser le travail de celui qui a repris le job — et, avant
+ * `markPublishStarted`, de publier une seconde fois.
+ */
+function assertOwned(rowCount: number | null, operation: string): void {
+  if ((rowCount ?? 0) === 0) throw new LeaseLostError(operation)
+}
+
 export class PgJobStore implements JobStore {
   constructor(private readonly pool: pg.Pool) {}
 
@@ -124,13 +149,17 @@ export class PgJobStore implements JobStore {
     return rowCount ?? 0
   }
 
-  async extendLease(jobId: string, leaseMs: number): Promise<void> {
-    await this.pool.query(
+  async extendLease(job: PublishJob, leaseMs: number): Promise<boolean> {
+    // Prolonger le lease de N'IMPORTE QUEL propriétaire était le défaut le plus
+    // insidieux : un worker zombie maintenait en vie le lease d'un job qu'un
+    // autre traitait déjà.
+    const { rowCount } = await this.pool.query(
       `update public.publish_jobs
        set lease_expires_at = now() + make_interval(secs => $2::double precision / 1000)
-       where id = $1`,
-      [jobId, leaseMs]
+       where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
+      [job.id, leaseMs, job.workerId]
     )
+    return (rowCount ?? 0) > 0
   }
 
   async patchProgress(
@@ -138,13 +167,14 @@ export class PgJobStore implements JobStore {
     patch: { step?: JobStep; externalContainerId?: string }
   ): Promise<void> {
     await this.withTx(async (c) => {
-      await c.query(
+      const res = await c.query(
         `update public.publish_jobs
          set step = coalesce($2, step),
              external_container_id = coalesce($3, external_container_id)
-         where id = $1`,
-        [job.id, patch.step ?? null, patch.externalContainerId ?? null]
+         where id = $1 and worker_id = $4 and status in ${OWNED_STATUSES}`,
+        [job.id, patch.step ?? null, patch.externalContainerId ?? null, job.workerId]
       )
+      assertOwned(res.rowCount, "patchProgress")
       // Le conteneur est aussi persisté sur la CIBLE : si cette ligne de job
       // disparaît avant la publication, le conteneur reste réutilisable et,
       // surtout, interrogeable.
@@ -172,14 +202,20 @@ export class PgJobStore implements JobStore {
     // ancre de job sans ancre de cible serait exactement le défaut que la
     // migration 023 corrige.
     await this.withTx(async (c) => {
-      await c.query(
+      // LE fence qui compte : c'est la dernière écriture avant l'appel de
+      // publication. S'il échoue ici, `publishFresh` lève et n'appelle JAMAIS
+      // publisher.publish() — c'est ce qui rend effective une déprogrammation
+      // arrivée pendant le lease (P3-9), et ce qui empêche un worker zombie de
+      // publier derrière celui qui a repris le job.
+      const res = await c.query(
         `update public.publish_jobs
          set publish_started_at = coalesce(publish_started_at, now()),
              external_container_id = coalesce(external_container_id, $2),
              status = 'publishing', step = 'publish'
-         where id = $1`,
-        [job.id, containerId]
+         where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
+        [job.id, containerId, job.workerId]
       )
+      assertOwned(res.rowCount, "markPublishStarted")
       // L'ancre qui compte : elle survit à la ligne de job.
       await c.query(
         `update public.content_targets
@@ -197,26 +233,33 @@ export class PgJobStore implements JobStore {
     })
   }
 
-  async markAwaitingMedia(jobId: string, retryDelayMs: number): Promise<void> {
-    await this.pool.query(
+  async markAwaitingMedia(job: PublishJob, retryDelayMs: number): Promise<void> {
+    const { rowCount } = await this.pool.query(
       `update public.publish_jobs
        set status = 'awaiting_media', step = 'verify',
            worker_id = null, claimed_at = null, lease_expires_at = null,
            next_attempt_at = now() + make_interval(secs => $2::double precision / 1000)
-       where id = $1`,
-      [jobId, retryDelayMs]
+       where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
+      [job.id, retryDelayMs, job.workerId]
     )
+    assertOwned(rowCount, "markAwaitingMedia")
   }
 
   async succeed(job: PublishJob, result: PublishResult): Promise<void> {
     await this.withTx(async (c) => {
-      await c.query(
+      // Fencé comme les autres. Si le lease est perdu ICI, le post est bien en
+      // ligne mais nous n'avons plus le droit d'écrire : le propriétaire courant
+      // reclaimera, trouvera la cible ancrée (023), interrogera le conteneur et
+      // enregistrera le succès. Rien n'est perdu — la convergence est assurée
+      // par la règle 15 elle-même.
+      const res = await c.query(
         `update public.publish_jobs
          set status = 'succeeded', step = 'verify', succeeded_at = now(),
              external_post_id = $2, permalink = $3, last_error = null
-         where id = $1`,
-        [job.id, result.externalPostId, result.permalink ?? null]
+         where id = $1 and worker_id = $4 and status in ${OWNED_STATUSES}`,
+        [job.id, result.externalPostId, result.permalink ?? null, job.workerId]
       )
+      assertOwned(res.rowCount, "succeed")
       await c.query(
         `update public.content_targets
          set status = $2, external_post_id = $3, permalink = $4,
@@ -241,15 +284,16 @@ export class PgJobStore implements JobStore {
       return
     }
     log.warn("job retrying", { ...jobFields(job), retryDelayMs, lastError: errorJson(error) })
-    await this.pool.query(
+    const { rowCount } = await this.pool.query(
       `update public.publish_jobs
        set status = 'retrying', attempts = attempts + 1, step = null,
            worker_id = null, claimed_at = null, lease_expires_at = null,
            next_attempt_at = now() + make_interval(secs => $2::double precision / 1000),
            last_error = $3::jsonb
-       where id = $1`,
-      [job.id, retryDelayMs, errorJson(error)]
+       where id = $1 and worker_id = $4 and status in ${OWNED_STATUSES}`,
+      [job.id, retryDelayMs, errorJson(error), job.workerId]
     )
+    assertOwned(rowCount, "retryOrFail")
   }
 
   async failPermanent(job: PublishJob, error: unknown, needsReauth: boolean): Promise<void> {
@@ -263,12 +307,13 @@ export class PgJobStore implements JobStore {
     const targetStatus = unknown ? "needs_verification" : "failed"
 
     await this.withTx(async (c) => {
-      await c.query(
+      const res = await c.query(
         `update public.publish_jobs
          set status = $3::public.publish_job_status, failed_at = now(), last_error = $2::jsonb
-         where id = $1`,
-        [job.id, errorJson(error), jobStatus]
+         where id = $1 and worker_id = $4 and status in ${OWNED_STATUSES}`,
+        [job.id, errorJson(error), jobStatus, job.workerId]
       )
+      assertOwned(res.rowCount, "failPermanent")
       await c.query(
         `update public.content_targets
          set status = $3::public.target_status, last_error = $2::jsonb
@@ -306,12 +351,13 @@ export class PgJobStore implements JobStore {
    */
   async deadLetter(job: PublishJob, reason: string): Promise<void> {
     await this.withTx(async (c) => {
-      await c.query(
+      const res = await c.query(
         `update public.publish_jobs
          set status = 'dead_letter', failed_at = now(), last_error = $2::jsonb
-         where id = $1`,
-        [job.id, JSON.stringify({ error: "dead_letter", detail: reason })]
+         where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
+        [job.id, JSON.stringify({ error: "dead_letter", detail: reason }), job.workerId]
       )
+      assertOwned(res.rowCount, "deadLetter")
       await c.query(
         `update public.content_targets set status = 'failed', last_error = $2::jsonb where id = $1`,
         [job.contentTargetId, JSON.stringify({ error: "dead_letter", detail: reason })]
@@ -324,14 +370,15 @@ export class PgJobStore implements JobStore {
   async deferForQuota(job: PublishJob, retryDelayMs: number): Promise<void> {
     // Report auto (règle 19) : ni échec ni attempt++, on repousse simplement.
     log.info("job reporte (quota plateforme atteint)", { ...jobFields(job), retryDelayMs })
-    await this.pool.query(
+    const { rowCount } = await this.pool.query(
       `update public.publish_jobs
        set status = 'retrying', step = 'check_quota',
            worker_id = null, claimed_at = null, lease_expires_at = null,
            next_attempt_at = now() + make_interval(secs => $2::double precision / 1000)
-       where id = $1`,
-      [job.id, retryDelayMs]
+       where id = $1 and worker_id = $3 and status in ${OWNED_STATUSES}`,
+      [job.id, retryDelayMs, job.workerId]
     )
+    assertOwned(rowCount, "deferForQuota")
   }
 
   /**

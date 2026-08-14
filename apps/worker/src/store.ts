@@ -7,6 +7,13 @@ import type { JobStep, PublishJob, PublishResult } from "./domain"
 // Toute écriture terminale met à jour DEUX niveaux : le job (état technique) ET
 // content_targets (état métier), + recalcul du statut agrégé du content_item
 // (workflow Ocean §7 : « résultat écrit sur ContentTarget ET PublishJob »).
+//
+// JETON DE CLÔTURE (fencing, P3-5) — TOUTE écriture d'état porte
+// `and worker_id = <le nôtre>` et vérifie `rowCount`. 0 ligne touchée => le job
+// ne nous appartient plus (lease expiré et repris, ou job annulé) => on lève
+// `LeaseLostError` et on s'arrête sans publier ni écrire. C'est ce qui rend la
+// file sûre à plus d'une instance, et ce qui rend une déprogrammation effective
+// sur un job déjà réclamé.
 
 export interface ClaimedContext {
   /** Horloge de référence = now() Postgres (jamais l'horloge du process). */
@@ -20,8 +27,12 @@ export interface JobStore {
   /** Reaper : rend « retrying » les jobs dont le lease a expiré (worker mort). */
   reapExpired(): Promise<number>
 
-  /** Prolonge le lease d'un job en cours (opération longue). */
-  extendLease(jobId: string, leaseMs: number): Promise<void>
+  /**
+   * Prolonge le lease d'un job en cours (opération longue).
+   * `false` = lease perdu (le job appartient à un autre worker) : l'appelant
+   * doit interrompre le traitement. Ne lève pas — c'est un heartbeat de fond.
+   */
+  extendLease(job: PublishJob, leaseMs: number): Promise<boolean>
 
   /**
    * Progression non terminale (étape courante, id de conteneur). Le conteneur
@@ -43,7 +54,7 @@ export interface JobStore {
   markPublishStarted(job: PublishJob, containerId: string): Promise<void>
 
   /** Média encore en préparation côté plateforme : re-vérifier plus tard. */
-  markAwaitingMedia(jobId: string, retryDelayMs: number): Promise<void>
+  markAwaitingMedia(job: PublishJob, retryDelayMs: number): Promise<void>
 
   /** Succès (ou brouillon TikTok poussé) : job + content_target + agrégat parent. */
   succeed(job: PublishJob, result: PublishResult): Promise<void>

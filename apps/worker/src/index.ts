@@ -1,7 +1,7 @@
 import { createContextProvider, createQuotaChecker } from "./context"
 import { PgJobStore } from "./db/pg-store"
 import { createPool } from "./db/pool"
-import type { PublishJob } from "./domain"
+import { LeaseLostError, type PublishJob } from "./domain"
 import { type EngineDeps, processJob } from "./engine"
 import { loadConfig, type WorkerConfig } from "./env"
 import { createHealthState, markTickFailed, markTickOk, startHealthServer } from "./health"
@@ -24,13 +24,30 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Prolonge le lease en tâche de fond pendant un traitement long (upload chunké). */
-function startLeaseHeartbeat(store: JobStore, jobId: string, leaseMs: number): () => void {
-  const timer = setInterval(
+/**
+ * Prolonge le lease en tâche de fond pendant un traitement long (upload chunké).
+ *
+ * Depuis P3-5, `extendLease` est fencé sur `worker_id` : il renvoie false quand
+ * le job ne nous appartient plus. Le heartbeat s'arrête alors immédiatement —
+ * continuer à prolonger le lease d'un autre worker était précisément le
+ * mécanisme qui permettait à un zombie de survivre à sa propre expiration.
+ */
+function startLeaseHeartbeat(store: JobStore, job: PublishJob, leaseMs: number): () => void {
+  const timer: NodeJS.Timeout = setInterval(
     () => {
-      store.extendLease(jobId, leaseMs).catch((err) => {
-        log.warn("lease heartbeat failed", { jobId, ...errorFields(err) })
-      })
+      store
+        .extendLease(job, leaseMs)
+        .then((kept) => {
+          if (kept) return
+          clearInterval(timer)
+          log.error("lease perdu : le job appartient a un autre worker", {
+            jobId: job.id,
+            workerId: job.workerId,
+          })
+        })
+        .catch((err) => {
+          log.warn("lease heartbeat failed", { jobId: job.id, ...errorFields(err) })
+        })
     },
     Math.max(5_000, Math.floor(leaseMs / 3))
   )
@@ -43,13 +60,24 @@ async function runOne(
   deps: EngineDeps,
   config: WorkerConfig
 ): Promise<void> {
-  const stopHeartbeat = startLeaseHeartbeat(deps.store, job.id, config.leaseMs)
+  const stopHeartbeat = startLeaseHeartbeat(deps.store, job, config.leaseMs)
   try {
     await processJob(job, { ...deps, now })
   } catch (err) {
-    // processJob gère déjà ses erreurs (retryOrFail…) ; ici = crash inattendu.
-    // On laisse le lease expirer => le reaper reprend le job (règle 15 tient).
-    log.error("job processing crashed", { jobId: job.id, ...errorFields(err) })
+    if (err instanceof LeaseLostError) {
+      // Pas un incident : le job a changé de mains (lease expiré et repris, ou
+      // contenu déprogrammé pendant le lease). On s'est arrêté sans publier ni
+      // écrire, ce qui est exactement le comportement voulu.
+      log.warn("job abandonne : lease perdu", {
+        jobId: job.id,
+        workerId: job.workerId,
+        operation: err.operation,
+      })
+    } else {
+      // processJob gère déjà ses erreurs (retryOrFail…) ; ici = crash inattendu.
+      // On laisse le lease expirer => le reaper reprend le job (règle 15 tient).
+      log.error("job processing crashed", { jobId: job.id, ...errorFields(err) })
+    }
   } finally {
     stopHeartbeat()
   }

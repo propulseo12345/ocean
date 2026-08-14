@@ -1,5 +1,11 @@
 import { backoffMs } from "./backoff"
-import { effectiveAnchor, NeedsReauthError, PermanentPublishError, type PublishJob } from "./domain"
+import {
+  effectiveAnchor,
+  LeaseLostError,
+  NeedsReauthError,
+  PermanentPublishError,
+  type PublishJob,
+} from "./domain"
 import type { PublishContext, Publisher } from "./publishers/types"
 import type { JobStore } from "./store"
 
@@ -116,7 +122,7 @@ async function recoverStartedJob(
     const res = await publisher.resolvePublished(job, container, ctx)
     await store.succeed(job, res)
   } else if (status === "in_progress") {
-    await store.markAwaitingMedia(job.id, config.awaitMediaDelayMs)
+    await store.markAwaitingMedia(job, config.awaitMediaDelayMs)
   } else {
     // error/expired : le conteneur n'a PAS publié. C'est SEULEMENT ici, la
     // plateforme interrogée, qu'abandonner un job démarré est sûr — on sait que
@@ -159,6 +165,11 @@ function handleError(
   err: unknown,
   delayMs: number
 ): Promise<void> {
+  // Lease perdu : le job appartient à un autre worker (ou a été annulé). On n'a
+  // plus le droit d'écrire, et surtout PAS de poser un statut d'échec sur le
+  // travail de quelqu'un d'autre. On remonte tel quel — la boucle log, et le
+  // propriétaire courant décide.
+  if (err instanceof LeaseLostError) return Promise.reject(err)
   if (err instanceof NeedsReauthError) return store.failPermanent(job, err, true)
   if (err instanceof PermanentPublishError) return store.failPermanent(job, err, false)
   return store.retryOrFail(job, err, delayMs)

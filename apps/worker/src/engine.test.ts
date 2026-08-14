@@ -3,6 +3,7 @@ import { test } from "node:test"
 import {
   effectiveAnchor,
   isOutcomeUnknown,
+  LeaseLostError,
   NeedsReauthError,
   PermanentPublishError,
   type PublishJob,
@@ -55,7 +56,9 @@ class FakeStore implements JobStore {
   async reapExpired() {
     return 0
   }
-  async extendLease() {}
+  async extendLease() {
+    return true
+  }
   async patchProgress(_job: PublishJob, patch: { externalContainerId?: string }) {
     this.events.push(`patchProgress:${patch.externalContainerId ?? ""}`)
   }
@@ -397,4 +400,33 @@ test("isOutcomeUnknown : décide entre « échec » et « on ne sait pas » (024
     false,
     "un conteneur SANS marque n'a rien publié : failed reste la vérité"
   )
+})
+
+// ── CHEMIN DE DOUBLE PUBLICATION n°4 ────────────────────────────────────────
+// Worker A est dans createContainer/upload (ancre encore nulle) ; une coupure DB
+// de plus de 120 s fait expirer son lease pendant que le HTTP continue. Le reaper
+// rend le job à la file, worker B le claim et publie. A revient et enchaînait
+// jusqu'à publier lui aussi — deux publications réelles, dont une invisible.
+// Le fencing arrête A à `markPublishStarted`, la dernière écriture avant l'appel.
+test("lease perdu avant publish => AUCUNE publication, et aucun statut écrasé", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  // Le store refuse la marque : le job appartient à un autre worker.
+  store.markPublishStarted = async () => {
+    throw new LeaseLostError("markPublishStarted")
+  }
+
+  await assert.rejects(
+    () => processJob(makeJob(), deps(store, pub)),
+    (err: unknown) => err instanceof LeaseLostError,
+    "le lease perdu REMONTE (la boucle le journalise, elle ne le traite pas)"
+  )
+
+  assert.equal(pub.publishCalls, 0, "publisher.publish() n'est JAMAIS appelé")
+  assert.ok(
+    !events.some((e) => e.startsWith("failPermanent") || e === "retryOrFail"),
+    "aucun statut d'échec posé sur le travail d'un autre worker"
+  )
+  assert.ok(!events.some((e) => e.startsWith("deadLetter")), "et aucun abandon écrit non plus")
 })

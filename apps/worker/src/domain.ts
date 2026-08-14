@@ -99,6 +99,23 @@ export interface PublishResult {
   targetStatus: TerminalTargetStatus
 }
 
+/**
+ * Le job ne nous appartient plus (jeton de clôture / fencing token).
+ *
+ * Levée quand une écriture d'état touche 0 ligne : soit le lease a expiré et le
+ * reaper a rendu le job à la file (un autre worker l'a repris), soit le job a
+ * été annulé pendant qu'on le traitait. Dans les deux cas la SEULE conduite
+ * sûre est d'arrêter immédiatement sans publier et sans écrire : le propriétaire
+ * courant décidera. Ce n'est ni un échec du contenu ni une erreur à retenter —
+ * aucun statut ne doit être posé (on n'en a plus le droit).
+ */
+export class LeaseLostError extends Error {
+  constructor(readonly operation: string) {
+    super(`lease perdu sur ${operation} : le job appartient a un autre worker`)
+    this.name = "LeaseLostError"
+  }
+}
+
 /** Erreur permanente (token révoqué, média invalide) : failed direct, aucun retry (règle 18). */
 export class PermanentPublishError extends Error {
   readonly permanent = true
