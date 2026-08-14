@@ -14,6 +14,12 @@ RUN pnpm install --frozen-lockfile
 # --- Build de l'app web ---
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# `images.remotePatterns` est résolu AU BUILD (next.config.ts) : sans cet ARG,
+# l'hôte Storage exact est inconnu à ce moment-là et le config retombe sur le
+# générique `*.supabase.co`. Le passer donne le motif exact — c'est plus étroit,
+# donc préférable. Facultatif : l'image se construit sans.
+ARG SUPABASE_URL=""
+ENV SUPABASE_URL=$SUPABASE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY . .
