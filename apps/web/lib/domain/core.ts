@@ -24,6 +24,13 @@ export type ContentStatus =
   | "published"
   | "partially_published"
   | "failed"
+  /**
+   * Migration 024 — issue INCONNUE : une publication est peut-être partie et le
+   * worker n'a pas pu conclure. Distinct de `failed`, qui affirme que rien
+   * n'est parti. Aucune transition n'en sort côté app : la sortie est la
+   * résolution humaine de chaque cible.
+   */
+  | "needs_verification"
   | "canceled"
 
 // Statut par cible (ContentTarget)
@@ -35,6 +42,8 @@ export type TargetStatus =
   | "published"
   | "pushed_to_platform"
   | "failed"
+  /** Migration 024 — cf. ContentStatus. C'est LE statut porteur du fait. */
+  | "needs_verification"
   | "skipped"
   | "canceled"
 

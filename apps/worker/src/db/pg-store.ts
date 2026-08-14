@@ -1,5 +1,5 @@
 import type pg from "pg"
-import type { JobStep, PublishJob, PublishResult } from "../domain"
+import { isOutcomeUnknown, type JobStep, type PublishJob, type PublishResult } from "../domain"
 import { log } from "../log"
 import type { JobStore } from "../store"
 
@@ -253,16 +253,27 @@ export class PgJobStore implements JobStore {
   }
 
   async failPermanent(job: PublishJob, error: unknown, needsReauth: boolean): Promise<void> {
+    // RÈGLE 15 — le fait le plus important de cette méthode : l'ancre était-elle
+    // posée ? Si oui, un POST est peut-être parti et on n'a PAS pu conclure
+    // (token perdu avant l'interrogation, erreur permanente au publish, réseau
+    // coupé). Écrire « échec » serait un mensonge qui produit un doublon dès que
+    // l'admin reprogramme. On écrit « on ne sait pas » (migration 024).
+    const unknown = isOutcomeUnknown(job)
+    const jobStatus = unknown ? "needs_verification" : "failed"
+    const targetStatus = unknown ? "needs_verification" : "failed"
+
     await this.withTx(async (c) => {
       await c.query(
         `update public.publish_jobs
-         set status = 'failed', failed_at = now(), last_error = $2::jsonb
+         set status = $3::public.publish_job_status, failed_at = now(), last_error = $2::jsonb
          where id = $1`,
-        [job.id, errorJson(error)]
+        [job.id, errorJson(error), jobStatus]
       )
       await c.query(
-        `update public.content_targets set status = 'failed', last_error = $2::jsonb where id = $1`,
-        [job.contentTargetId, errorJson(error)]
+        `update public.content_targets
+         set status = $3::public.target_status, last_error = $2::jsonb
+         where id = $1`,
+        [job.contentTargetId, errorJson(error), targetStatus]
       )
       if (needsReauth) {
         // Le compte a perdu son autorisation : marque à reconnecter (règle 14).
@@ -278,13 +289,21 @@ export class PgJobStore implements JobStore {
     // Canal GARANTI de CLAUDE.md §10 (publish-failed) : à ce jour zéro canal sur
     // trois — ni push, ni Realtime, ni Brevo. Le log est le seul filet en
     // attendant la phase 2 ; il doit donc être lisible et complet.
-    log.error("job failed (definitif)", {
+    log.error(unknown ? "job needs_verification (issue INCONNUE)" : "job failed (definitif)", {
       ...jobFields(job),
       needsReauth,
+      outcomeUnknown: unknown,
       lastError: errorJson(error),
     })
   }
 
+  /**
+   * Abandon par fenêtre de grâce. La cible reste `failed` et non
+   * `needs_verification`, et c'est délibéré : depuis P3-1, le moteur n'appelle
+   * `deadLetter` que dans deux situations où l'issue est CONNUE — job jamais
+   * démarré, ou conteneur interrogé et confirmé `error`/`expired`. Dire « on ne
+   * sait pas » quand on sait rendrait le statut inutile à force d'être posé.
+   */
   async deadLetter(job: PublishJob, reason: string): Promise<void> {
     await this.withTx(async (c) => {
       await c.query(
@@ -355,11 +374,21 @@ export class PgJobStore implements JobStore {
   }
 }
 
-/** Recalcule le statut agrégé du content_item d'après ses cibles (manuel + API). */
+/**
+ * Recalcule le statut agrégé du content_item d'après ses cibles (manuel + API).
+ *
+ * L'issue INCONNUE domine (migration 024) : une seule cible en
+ * `needs_verification` suffit. Annoncer « publié » sur un contenu dont une
+ * plateforme est incertaine serait exactement le mensonge que ce statut existe
+ * pour supprimer — et laisser le contenu figé en `publishing` (le comportement
+ * d'avant, `needs_verification` n'étant ni `done` ni `bad`) l'enfermait dans un
+ * statut d'où la matrice 016 n'autorise aucune sortie.
+ */
 async function recomputeParent(c: pg.PoolClient, contentItemId: string): Promise<void> {
   await c.query(
     `update public.content_items ci
      set status = case
+       when a.unknown > 0 then 'needs_verification'
        when a.total > 0 and a.done = a.total then 'published'
        when a.done > 0 and (a.done + a.bad) = a.total then 'partially_published'
        when a.total > 0 and a.done = 0 and a.bad = a.total then 'failed'
@@ -368,7 +397,8 @@ async function recomputeParent(c: pg.PoolClient, contentItemId: string): Promise
      from (
        select count(*) total,
               count(*) filter (where status in ('published', 'pushed_to_platform')) done,
-              count(*) filter (where status in ('failed', 'skipped', 'canceled')) bad
+              count(*) filter (where status in ('failed', 'skipped', 'canceled')) bad,
+              count(*) filter (where status = 'needs_verification') unknown
        from public.content_targets where content_item_id = $1
      ) a
      where ci.id = $1`,

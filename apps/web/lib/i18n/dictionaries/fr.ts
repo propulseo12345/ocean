@@ -44,6 +44,10 @@ export const fr = {
       published: "Publié",
       partially_published: "Partiellement publié",
       failed: "Échec",
+      // 024 : formulé comme une CONSIGNE, pas comme un état. « Issue inconnue »
+      // n'apprend rien à qui le lit ; « à vérifier sur la plateforme » dit quoi
+      // faire, et pourquoi il ne faut surtout pas reprogrammer.
+      needs_verification: "À vérifier sur la plateforme",
       canceled: "Annulé",
     },
     target: {
@@ -54,6 +58,7 @@ export const fr = {
       published: "Publié",
       pushed_to_platform: "Brouillon poussé",
       failed: "Échec",
+      needs_verification: "À vérifier sur la plateforme",
       skipped: "Ignoré",
       canceled: "Annulé",
     },

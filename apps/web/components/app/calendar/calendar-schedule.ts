@@ -9,11 +9,14 @@ import type { DayKey } from "./calendar-utils"
 // et règles d'éditabilité par statut (PRD §5.B).
 
 /** Statuts dont la date est verrouillée (pas de drag, pas de décalage). */
+// 024 : `needs_verification` verrouille la date. Deplacer un contenu peut-etre
+// deja en ligne n'a aucun sens, et le reprogrammer produirait le doublon.
 const LOCKED_STATUSES: ContentStatus[] = [
   "publishing",
   "published",
   "partially_published",
   "failed",
+  "needs_verification",
   "canceled",
 ]
 

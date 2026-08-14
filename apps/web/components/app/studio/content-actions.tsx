@@ -14,7 +14,12 @@ import { routes } from "@/lib/routes"
 import { DetailDuplicateDialog } from "./detail-duplicate-dialog"
 
 // Statuts en lecture seule (édition interdite à partir de publishing — §5.B).
-const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
+const READ_ONLY: ContentStatus[] = [
+  "publishing",
+  "published",
+  "partially_published",
+  "needs_verification",
+]
 
 export function ContentActions({
   status,

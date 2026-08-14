@@ -32,6 +32,8 @@ export const contentStatusMeta: Record<ContentStatus, Meta> = {
   published: { labelKey: "status.content.published", tone: "success" },
   partially_published: { labelKey: "status.content.partially_published", tone: "warning" },
   failed: { labelKey: "status.content.failed", tone: "danger" },
+  // 024 : `danger` et pas `warning` — l'action attendue est immédiate.
+  needs_verification: { labelKey: "status.content.needs_verification", tone: "danger" },
   canceled: { labelKey: "status.content.canceled", tone: "neutral" },
 }
 
@@ -43,6 +45,7 @@ export const targetStatusMeta: Record<TargetStatus, Meta> = {
   published: { labelKey: "status.target.published", tone: "success" },
   pushed_to_platform: { labelKey: "status.target.pushed_to_platform", tone: "warning" },
   failed: { labelKey: "status.target.failed", tone: "danger" },
+  needs_verification: { labelKey: "status.target.needs_verification", tone: "danger" },
   skipped: { labelKey: "status.target.skipped", tone: "neutral" },
   canceled: { labelKey: "status.target.canceled", tone: "neutral" },
 }

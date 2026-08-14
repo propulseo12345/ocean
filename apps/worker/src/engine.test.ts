@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import {
+  effectiveAnchor,
+  isOutcomeUnknown,
   NeedsReauthError,
   PermanentPublishError,
   type PublishJob,
@@ -348,4 +350,51 @@ test("erreur permanente (média invalide) au publish => failed, pas de retry", a
 
   assert.ok(events.includes("failPermanent:false"))
   assert.ok(!events.some((e) => e === "retryOrFail"), "pas de retry sur erreur permanente")
+})
+
+// ── L'ANCRE ET LA DÉCISION QU'ELLE PORTE ────────────────────────────────────
+// `effectiveAnchor` et `isOutcomeUnknown` sont les deux fonctions dont dépend
+// tout le reste : la première décide si on republie, la seconde si on écrit
+// « échec » ou « on ne sait pas ». Elles se testent sans base ni réseau.
+
+test("effectiveAnchor : la CIBLE fait foi, le job n'est qu'un repli", () => {
+  const targetWins = makeJob({
+    publishStartedAt: new Date("2026-07-22T10:00:00.000Z"),
+    externalContainerId: "c-job",
+    targetPublishStartedAt: new Date("2026-07-22T09:00:00.000Z"),
+    targetExternalContainerId: "c-target",
+  })
+  assert.equal(effectiveAnchor(targetWins).containerId, "c-target")
+  assert.equal(
+    effectiveAnchor(targetWins).startedAt?.toISOString(),
+    "2026-07-22T09:00:00.000Z",
+    "l'ancre la plus ancienne, celle de la cible, est celle qui compte"
+  )
+
+  // Le cas qui justifie la migration 023 : job neuf, cible ancrée.
+  const freshJob = makeJob({ targetPublishStartedAt: new Date(NOW) })
+  assert.notEqual(effectiveAnchor(freshJob).startedAt, null, "un job neuf HÉRITE de l'ancre")
+
+  // Et le cas historique, sans cible ancrée (base pas encore migrée).
+  const legacy = makeJob({ publishStartedAt: new Date(NOW), externalContainerId: "c-job" })
+  assert.equal(effectiveAnchor(legacy).containerId, "c-job", "repli sur l'ancre du job")
+})
+
+test("isOutcomeUnknown : décide entre « échec » et « on ne sait pas » (024)", () => {
+  assert.equal(isOutcomeUnknown(makeJob()), false, "rien n'est parti => failed, relançable")
+  assert.equal(
+    isOutcomeUnknown(makeJob({ publishStartedAt: new Date(NOW) })),
+    true,
+    "ancre du job posée => issue inconnue"
+  )
+  assert.equal(
+    isOutcomeUnknown(makeJob({ targetPublishStartedAt: new Date(NOW) })),
+    true,
+    "ancre de la CIBLE seule => issue inconnue AUSSI (c'est tout l'objet de 023)"
+  )
+  assert.equal(
+    isOutcomeUnknown(makeJob({ targetExternalContainerId: "c-1" })),
+    false,
+    "un conteneur SANS marque n'a rien publié : failed reste la vérité"
+  )
 })

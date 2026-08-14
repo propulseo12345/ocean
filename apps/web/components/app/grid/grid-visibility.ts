@@ -23,6 +23,7 @@ export const STATUS_ORDER: ContentStatus[] = [
   "published",
   "partially_published",
   "failed",
+  "needs_verification",
   "canceled",
 ]
 

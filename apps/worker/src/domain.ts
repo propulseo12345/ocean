@@ -11,6 +11,12 @@ export type JobStatus =
   | "failed"
   | "dead_letter"
   | "canceled"
+  /**
+   * Terminal, migration 024 : l'issue est INCONNUE — l'ancre de la règle 15
+   * était posée et on n'a pas pu conclure. Distinct de `failed`, qui affirme
+   * que rien n'est parti. Aucune relance automatique ne le reprend.
+   */
+  | "needs_verification"
 
 export type JobStep = "refresh_token" | "check_quota" | "create_container" | "publish" | "verify"
 
@@ -69,6 +75,18 @@ export function effectiveAnchor(job: PublishJob): {
     startedAt: job.targetPublishStartedAt ?? job.publishStartedAt,
     containerId: job.targetExternalContainerId ?? job.externalContainerId,
   }
+}
+
+/**
+ * RÈGLE 15 : l'issue de ce job est-elle INCONNUE ?
+ *
+ * Vrai dès que l'ancre effective est posée — la cible a peut-être reçu un POST
+ * et on n'a pas pu conclure. C'est LE booléen qui décide entre `failed` (« rien
+ * n'est parti », donc relançable) et `needs_verification` (« on ne sait pas »,
+ * donc un humain doit regarder avant toute relance, migration 024).
+ */
+export function isOutcomeUnknown(job: PublishJob): boolean {
+  return effectiveAnchor(job).startedAt !== null
 }
 
 /** Statut métier terminal posé sur content_targets selon la plateforme. */
