@@ -2,10 +2,10 @@
 
 import { createHash, randomBytes } from "node:crypto"
 import { revalidatePath } from "next/cache"
-import { headers } from "next/headers"
 import { z } from "zod"
 
 import { sendTransactional } from "@/lib/brevo/transactional"
+import { notifyOrgMembers, siteOrigin } from "@/lib/notifications/notify-org"
 import { routes } from "@/lib/routes"
 import { createClient } from "@/lib/supabase/server"
 import { type ActionResult, requireClientInOrg } from "./_helpers"
@@ -24,7 +24,7 @@ async function contentContext(contentItemId: string) {
   if (!user) return null
   const { data } = await supabase
     .from("content_items")
-    .select("org_id, client_id")
+    .select("org_id, client_id, title")
     .eq("id", contentItemId)
     .maybeSingle()
   if (!data) return null
@@ -38,8 +38,15 @@ async function contentContext(contentItemId: string) {
     userId: user.id,
     orgId: data.org_id,
     clientId: data.client_id,
+    title: data.title ?? "Publication sans titre",
     name: profile?.full_name ?? profile?.email ?? null,
   }
+}
+
+/** Extrait court d'un retour, pour le corps d'une notification / d'un email. */
+function excerpt(text: string, max = 180): string {
+  const flat = text.replace(/\s+/g, " ").trim()
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat
 }
 
 const decisionSchema = z.object({
@@ -54,19 +61,37 @@ export async function submitReviewDecision(input: unknown): Promise<ActionResult
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const { contentItemId, decision, message } = parsed.data
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "unauthorized" }
+  const ctx = await contentContext(contentItemId)
+  if (!ctx) return { ok: false, error: "forbidden" }
 
-  const { error } = await supabase.rpc("submit_review_decision", {
+  const { error } = await ctx.supabase.rpc("submit_review_decision", {
     _content_item: contentItemId,
     _decision: decision,
     _message: message ?? null,
   })
   if (error) return { ok: false, error: "db_error" }
 
+  // La RPC a tranché (statut + approbation immuable + commentaire éventuel) ;
+  // la décision est acquise. La notification vient APRÈS et n'est jamais
+  // bloquante — le contenu ne doit pas rester en attente si Brevo tousse.
+  const approved = decision === "approved"
+  await notifyOrgMembers({
+    orgId: ctx.orgId,
+    clientId: ctx.clientId,
+    type: approved ? "content_approved" : "changes_requested",
+    title: approved ? `« ${ctx.title} » approuvé` : `Modifications demandées sur « ${ctx.title} »`,
+    body: message ? excerpt(message) : `Décision de ${ctx.name ?? "votre client"}.`,
+    href: routes.content(ctx.clientId, contentItemId),
+    template: approved ? "content-approved" : "changes-requested",
+    params: {
+      author_name: ctx.name ?? "Votre client",
+      content_title: ctx.title,
+      comment: message ? excerpt(message, 400) : "",
+    },
+    tags: [approved ? "content-approved" : "changes-requested"],
+  })
+
+  revalidatePath(`/clients/${ctx.clientId}/content/${contentItemId}`)
   revalidatePath("/portal")
   return { ok: true }
 }
@@ -98,6 +123,21 @@ export async function postComment(input: unknown): Promise<ActionResult<{ id: st
   const ctx = await contentContext(contentItemId)
   if (!ctx) return { ok: false, error: "forbidden" }
 
+  // Défense en profondeur : l'ancre doit appartenir AU contenu commenté. La FK
+  // composite (annotation_content_media_id, client_id) ne garantit que le même
+  // CLIENT — sans ce contrôle, un reviewer pourrait épingler sa remarque sur le
+  // média d'un autre contenu du même client (pas une fuite inter-tenant, mais
+  // un repère qui apparaît sur le mauvais post). La lecture passe par la RLS.
+  if (annotation) {
+    const { data: anchor } = await ctx.supabase
+      .from("content_media")
+      .select("id")
+      .eq("id", annotation.contentMediaId)
+      .eq("content_item_id", contentItemId)
+      .maybeSingle()
+    if (!anchor) return { ok: false, error: "invalid_anchor" }
+  }
+
   // author_role : owner si membre de l'org, sinon reviewer.
   const { data: orgMember } = await ctx.supabase
     .from("organization_members")
@@ -125,6 +165,27 @@ export async function postComment(input: unknown): Promise<ActionResult<{ id: st
     .select("id")
     .single()
   if (error || !data) return { ok: false, error: "db_error" }
+
+  // Notifier l'agence — UNIQUEMENT sur un retour client. Une réponse de
+  // l'agence (ou une note interne) n'a personne à prévenir de ce côté.
+  if (authorRole === "reviewer" && visibility === "client") {
+    await notifyOrgMembers({
+      orgId: ctx.orgId,
+      clientId: ctx.clientId,
+      type: "review_comment",
+      title: `Nouveau retour sur « ${ctx.title} »`,
+      body: excerpt(body),
+      href: routes.content(ctx.clientId, contentItemId),
+      template: "review-comment",
+      params: {
+        author_name: ctx.name ?? "Votre client",
+        content_title: ctx.title,
+        comment: excerpt(body, 400),
+        pinned: Boolean(annotation),
+      },
+      tags: ["review-comment"],
+    })
+  }
 
   revalidatePath(`/clients/${ctx.clientId}/content/${contentItemId}`)
   revalidatePath("/portal")
@@ -303,10 +364,7 @@ export async function inviteReviewer(input: unknown): Promise<ActionResult<{ tok
   // sendTransactional lève et on ignore : l'invitation reste valide et le lien
   // d'acceptation est affiché dans l'UI. Auto-actif dès que Brevo est câblé.
   try {
-    const h = await headers()
-    const origin =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-      `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`
+    const origin = await siteOrigin()
     await sendTransactional({
       template: "reviewer-invitation",
       to: normalizedEmail,

@@ -383,6 +383,7 @@ export const getComments = cache(
         annotation:
           anchor && row.annotation_x !== null && row.annotation_y !== null
             ? {
+                contentMediaId: row.annotation_content_media_id as string,
                 mediaAssetId: anchor.mediaAssetId,
                 slideIndex: anchor.slideIndex,
                 x: row.annotation_x,

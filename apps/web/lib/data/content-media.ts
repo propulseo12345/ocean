@@ -86,7 +86,7 @@ export async function loadContentMedia(
 
   const { data: links } = await supabase
     .from("content_media")
-    .select("content_item_id, media_asset_id, position, alt_text_override")
+    .select("id, content_item_id, media_asset_id, position, alt_text_override")
     .in("client_id", clientIds)
     .in("content_item_id", itemIds)
     .order("position", { ascending: true })
@@ -116,6 +116,10 @@ export async function loadContentMedia(
       // L'id exposé est celui de l'ASSET : c'est la clé sur laquelle les
       // annotations du portail sont résolues (cf. getComments).
       id: row.id,
+      // …mais l'ANCRE d'écriture d'une annotation est la liaison content_media
+      // (colonne annotation_content_media_id + FK composite). Sans elle, le
+      // portail peut afficher les repères mais pas en créer.
+      contentMediaId: link.id,
       type: row.type as MediaType,
       thumbUrl: urls.thumbUrl(row.thumb_path),
       fullUrl: urls.fullUrl(row.storage_path, row.thumb_path),

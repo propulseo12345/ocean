@@ -326,19 +326,21 @@ export type Database = {
           created_at: string
         }
         Insert: {
-          id: string
+          // id / channels / payload / created_at portent un DEFAULT en base
+          // (migration 007) — optionnels à l'insert, comme les autres tables.
+          id?: string
           org_id: string
           client_id?: string | null
           recipient_user_id: string
           type: string
           title: string
           body?: string | null
-          channels: string[]
+          channels?: string[]
           audience: string
           href: string
-          payload: Json
+          payload?: Json
           read_at?: string | null
-          created_at: string
+          created_at?: string
         }
         Update: {
           id?: string

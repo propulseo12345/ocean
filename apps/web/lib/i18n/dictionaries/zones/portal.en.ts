@@ -38,9 +38,24 @@ export const portalEn: Widen<typeof portalFr> = {
     annotation: {
       pinHint: "Tap a marker on the visual to see the related comment.",
       pinLabel: "Marker {label}",
+      draftPinLabel: "Marker being placed",
       noThread: "No conversation yet.",
       client: "Client",
       yourAgency: "Your agency",
+      composerTitle: "Your comment",
+      composerHint:
+        "Write your feedback. To point at a specific detail, drop a marker on the visual.",
+      composerPlaceholder: "E.g. the logo sits too close to the edge, could you move it?",
+      composerAriaLabel: "Your comment on this post",
+      pinAction: "Drop a marker",
+      pickingCancel: "Cancel marker",
+      pickingHint: "Tap the visual exactly where you want to point.",
+      pinnedOnSlide: "Marker on visual {index}",
+      removePin: "Remove marker",
+      send: "Send comment",
+      posted: "Comment sent",
+      postedDetail: "Your agency will find it in their workspace.",
+      postError: "Your comment could not be sent. Please try again.",
     },
     carousel: {
       altSlide: "{alt} — visual {index}",
@@ -48,6 +63,7 @@ export const portalEn: Widen<typeof portalFr> = {
       previous: "Previous visual",
       next: "Next visual",
       viewSlide: "View visual {index}",
+      pickPoint: "Choose where to place the marker on the visual",
     },
     review: {
       decisionRecorded: "Decision recorded",

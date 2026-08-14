@@ -56,7 +56,12 @@ export default async function PortalContentPage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="space-y-5">
-          <AnnotationViewer media={content.media} comments={comments} alt={title} />
+          <AnnotationViewer
+            media={content.media}
+            comments={comments}
+            alt={title}
+            contentId={contentId}
+          />
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20">

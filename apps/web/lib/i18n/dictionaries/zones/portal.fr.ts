@@ -38,13 +38,29 @@ export const portalFr = {
       reviewAndApprove: "Relire et valider",
       review: "Relire",
     },
-    // components/portal/annotation-viewer.tsx
+    // components/portal/annotation-viewer.tsx + annotation-thread.tsx
     annotation: {
       pinHint: "Touchez un repère sur le visuel pour voir la remarque associée.",
       pinLabel: "Repère {label}",
+      draftPinLabel: "Repère en cours de saisie",
       noThread: "Aucun échange pour le moment.",
       client: "Client",
       yourAgency: "Votre agence",
+      // components/portal/annotation-composer.tsx
+      composerTitle: "Votre remarque",
+      composerHint:
+        "Écrivez votre retour. Pour viser un détail précis, placez un repère sur le visuel.",
+      composerPlaceholder: "Ex. : le logo est trop près du bord, peut-on le décaler ?",
+      composerAriaLabel: "Votre remarque sur cette publication",
+      pinAction: "Placer un repère",
+      pickingCancel: "Annuler le repère",
+      pickingHint: "Touchez le visuel à l'endroit exact que vous voulez signaler.",
+      pinnedOnSlide: "Repère sur le visuel {index}",
+      removePin: "Retirer le repère",
+      send: "Envoyer la remarque",
+      posted: "Remarque envoyée",
+      postedDetail: "Votre agence la retrouvera dans son espace de travail.",
+      postError: "Votre remarque n'a pas pu être envoyée. Réessayez.",
     },
     // components/portal/media-carousel.tsx
     carousel: {
@@ -53,6 +69,7 @@ export const portalFr = {
       previous: "Visuel précédent",
       next: "Visuel suivant",
       viewSlide: "Voir le visuel {index}",
+      pickPoint: "Choisir l'endroit du repère sur le visuel",
     },
     // components/portal/review-actions.tsx
     review: {

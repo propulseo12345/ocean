@@ -112,6 +112,12 @@ export interface ImportedPost {
 export interface MediaAsset {
   id: string
   type: MediaType
+  /**
+   * Id de la LIAISON content_media (pas de l'asset) — ancre des annotations
+   * (règle : le pin suit la ligne de liaison, donc survit au réordonnancement).
+   * Absent quand le média n'est rattaché à aucun contenu (bibliothèque).
+   */
+  contentMediaId?: string
   thumbUrl: string
   fullUrl: string
   width: number
