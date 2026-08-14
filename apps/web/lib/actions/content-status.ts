@@ -70,6 +70,40 @@ export async function applyStatusIntent(
     if (client?.approval_mode !== "auto") return { ok: false, error: "APPROVAL_REQUIRED" }
   }
 
+  // Même garde, côté programmation. La source de vérité est la garde SQL 030 —
+  // c'est elle qui rend `approval_mode` opposable, et elle seule protège des
+  // écritures qui ne passent pas par ici. Ce pré-contrôle n'existe que pour
+  // rendre le refus LISIBLE : sans lui, l'utilisateur reçoit un message Postgres
+  // brut là où il attend « ce client doit valider d'abord ».
+  if (intent === "schedule") {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("approval_mode")
+      .eq("org_id", orgId)
+      .eq("id", clientId)
+      .maybeSingle()
+    if (client?.approval_mode === "required") {
+      const { data: approval } = await supabase
+        .from("approvals")
+        .select("id")
+        .eq("content_item_id", contentId)
+        .eq("decision", "approved")
+        // Le rôle est le cœur du contrôle : une auto-approbation de l'agence ne
+        // vaut pas validation client.
+        .eq("decided_by_role", "reviewer")
+        .limit(1)
+        .maybeSingle()
+      if (!approval) return { ok: false, error: "CLIENT_APPROVAL_REQUIRED" }
+      // Une approbation portant sur un texte modifié depuis n'en est plus une.
+      const { data: freshness } = await supabase
+        .from("content_items")
+        .select("approval_stale")
+        .eq("id", contentId)
+        .maybeSingle()
+      if (freshness?.approval_stale) return { ok: false, error: "CLIENT_APPROVAL_STALE" }
+    }
+  }
+
   const path = pathFor(intent, item.status as never)
   if (path === null) return { ok: false, error: "TRANSITION_NOT_ALLOWED" }
   if (path.length === 0) return { ok: true, data: { status: item.status } }
