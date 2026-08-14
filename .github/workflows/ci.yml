@@ -155,3 +155,35 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # Le sous-systeme le plus dangereux du produit (ecriture irreversible chez un
+  # tiers) etait le seul sans filet automatise : `apps/worker` n'apparaissait dans
+  # aucun job. Les 7 tests qui prouvent la regle 15 (jamais de double publication)
+  # existaient dans le depot et n'etaient executes par aucun pipeline.
+  # A garder BLOQUANT quand les publishers passeront en mode live.
+  worker:
+    name: Worker (typecheck + tests idempotence)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      # Node 22 obligatoire ici aussi : `node --test` n'accepte un glob de
+      # fichiers qu'a partir de Node 22 (cf. script `test` de apps/worker).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Le worker tourne sous tsx en production : son TypeScript n'est compile
+      # nulle part. Sans ce step, une erreur de type n'est jamais vue.
+      - name: Typecheck
+        run: pnpm --filter worker exec tsc --noEmit
+
+      - name: Tests
+        run: pnpm --filter worker test
