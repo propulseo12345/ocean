@@ -4,6 +4,7 @@ import { createPool } from "./db/pool"
 import type { PublishJob } from "./domain"
 import { type EngineDeps, processJob } from "./engine"
 import { loadConfig, type WorkerConfig } from "./env"
+import { createHealthState, markTickFailed, markTickOk, startHealthServer } from "./health"
 import { errorFields, log } from "./log"
 import { assertLivePublishersAvailable, resolvePublisher } from "./publishers"
 import type { JobStore } from "./store"
@@ -102,6 +103,12 @@ async function main(): Promise<void> {
   if (config.publishersMode === "live") assertLivePublishersAvailable()
 
   const pool = createPool(config)
+  // Sans ce handler, une erreur sur un client INACTIF du pool (bascule du pooler,
+  // coupure réseau) est un 'error' non écouté sur un EventEmitter : Node fait
+  // tomber le process, sans une ligne de log exploitable.
+  pool.on("error", (err) => {
+    log.error("pg pool error (client inactif)", errorFields(err))
+  })
   const store = new PgJobStore(pool)
   const stub = config.publishersMode === "stub"
 
@@ -124,23 +131,66 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => shutdown("SIGTERM"))
   process.on("SIGINT", () => shutdown("SIGINT"))
 
+  const health = createHealthState(Date.now())
+  const healthServer = config.healthPort
+    ? startHealthServer(health, {
+        port: config.healthPort,
+        workerId: config.workerId,
+        publishersMode: config.publishersMode,
+        pollIntervalMs: config.pollIntervalMs,
+        staleTicks: config.healthStaleTicks,
+      })
+    : null
+
   log.info("worker started", {
     workerId: config.workerId,
     publishersMode: config.publishersMode,
     pollIntervalMs: config.pollIntervalMs,
+    healthPort: config.healthPort ?? null,
+    maxConsecutiveTickFailures: config.maxConsecutiveTickFailures,
   })
+
+  /** Panne persistante : on sort en 1 pour que Coolify redémarre vraiment. */
+  let fatal: unknown = null
 
   while (running) {
     try {
       await tick(store, deps, config)
+      markTickOk(health, Date.now())
     } catch (err) {
-      log.error("tick failed", errorFields(err))
+      markTickFailed(health, Date.now())
+      log.error("tick failed", {
+        ...errorFields(err),
+        consecutiveFailures: health.consecutiveFailures,
+        maxConsecutiveTickFailures: config.maxConsecutiveTickFailures,
+      })
+      // Un worker qui échoue sur 100 % de ses ticks restait « vivant » pour
+      // Coolify, donc invisible. Un conteneur qui redémarre en boucle, lui, se
+      // voit. Sûr vis-à-vis de la règle 15 : un tick ne peut échouer que sur
+      // reapExpired/claim — runOne attrape ses propres erreurs — donc aucune
+      // publication n'est en vol à cet instant.
+      if (health.consecutiveFailures >= config.maxConsecutiveTickFailures) {
+        fatal = err
+        running = false
+        break
+      }
     }
     if (running) await sleep(config.pollIntervalMs)
   }
 
+  await healthServer?.close()
   await pool.end()
-  log.info("worker stopped")
+
+  if (fatal) {
+    log.error("worker abandonne apres echecs consecutifs", {
+      ...errorFields(fatal),
+      consecutiveFailures: health.consecutiveFailures,
+      totalTicks: health.totalTicks,
+      totalFailures: health.totalFailures,
+    })
+    process.exit(1)
+  }
+  log.info("worker stopped", { totalTicks: health.totalTicks, totalFailures: health.totalFailures })
 }
 
 main().catch((err) => {

@@ -1,5 +1,6 @@
 import type pg from "pg"
 import type { JobStep, PublishJob, PublishResult } from "../domain"
+import { log } from "../log"
 import type { JobStore } from "../store"
 
 // Implémentation Postgres de la file (Supavisor SESSION). L'horloge est now()
@@ -44,6 +45,27 @@ function errorJson(error: unknown): string {
   const detail = error instanceof Error ? error.message : String(error)
   const name = error instanceof Error ? error.name : "unknown"
   return JSON.stringify({ error: name, detail })
+}
+
+/**
+ * Contexte minimal d'un job pour les logs. Que des identifiants et le statut :
+ * aucun token, aucune légende, aucune donnée client (règle 12, et §10 « aucun
+ * secret loggé »). Le moteur d'états était totalement muet — impossible de savoir
+ * a posteriori si 2 % ou 30 % des publications échouaient, donc impossible de
+ * prioriser quoi que ce soit.
+ */
+function jobFields(job: PublishJob): Record<string, unknown> {
+  return {
+    jobId: job.id,
+    orgId: job.orgId,
+    clientId: job.clientId,
+    contentItemId: job.contentItemId,
+    contentTargetId: job.contentTargetId,
+    socialAccountId: job.socialAccountId,
+    platform: job.platform,
+    attempts: job.attempts,
+    maxAttempts: job.maxAttempts,
+  }
 }
 
 export class PgJobStore implements JobStore {
@@ -114,6 +136,13 @@ export class PgJobStore implements JobStore {
   }
 
   async markPublishStarted(job: PublishJob): Promise<void> {
+    // Trace de l'instant exact où la publication devient irréversible côté Ocean :
+    // c'est la ligne à chercher en premier quand on soupçonne une double
+    // publication (règle 15).
+    log.info("publish_started_at pose (regle 15)", {
+      ...jobFields(job),
+      externalContainerId: job.externalContainerId,
+    })
     // Règle 15 : publish_started_at posé (idempotent via coalesce) AVANT publish.
     // Chaque requête hors transaction explicite est auto-commitée => la marque est
     // durable avant l'appel HTTP de publication.
@@ -161,6 +190,11 @@ export class PgJobStore implements JobStore {
       )
       await recomputeParent(c, job.contentItemId)
     })
+    log.info("job succeeded", {
+      ...jobFields(job),
+      targetStatus: result.targetStatus,
+      externalPostId: result.externalPostId,
+    })
   }
 
   async retryOrFail(job: PublishJob, error: unknown, retryDelayMs: number): Promise<void> {
@@ -170,6 +204,7 @@ export class PgJobStore implements JobStore {
       await this.failPermanent(job, error, false)
       return
     }
+    log.warn("job retrying", { ...jobFields(job), retryDelayMs, lastError: errorJson(error) })
     await this.pool.query(
       `update public.publish_jobs
        set status = 'retrying', attempts = attempts + 1, step = null,
@@ -204,6 +239,14 @@ export class PgJobStore implements JobStore {
       }
       await recomputeParent(c, job.contentItemId)
     })
+    // Canal GARANTI de CLAUDE.md §10 (publish-failed) : à ce jour zéro canal sur
+    // trois — ni push, ni Realtime, ni Brevo. Le log est le seul filet en
+    // attendant la phase 2 ; il doit donc être lisible et complet.
+    log.error("job failed (definitif)", {
+      ...jobFields(job),
+      needsReauth,
+      lastError: errorJson(error),
+    })
   }
 
   async deadLetter(job: PublishJob, reason: string): Promise<void> {
@@ -220,10 +263,12 @@ export class PgJobStore implements JobStore {
       )
       await recomputeParent(c, job.contentItemId)
     })
+    log.error("job dead_letter", { ...jobFields(job), reason, runAt: job.runAt.toISOString() })
   }
 
   async deferForQuota(job: PublishJob, retryDelayMs: number): Promise<void> {
     // Report auto (règle 19) : ni échec ni attempt++, on repousse simplement.
+    log.info("job reporte (quota plateforme atteint)", { ...jobFields(job), retryDelayMs })
     await this.pool.query(
       `update public.publish_jobs
        set status = 'retrying', step = 'check_quota',

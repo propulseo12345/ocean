@@ -55,10 +55,16 @@ COPY --from=build --chown=worker:nodejs /app/apps/worker/package.json ./apps/wor
 USER worker
 WORKDIR /app/apps/worker
 
-# Pas de HEALTHCHECK : le worker n'expose aucun port et sa boucle avale ses
-# erreurs — un `pgrep` mentirait. Le heartbeat et le healthcheck HTTP sont un
-# chantier de la phase 2 (observabilité).
-#
+# Sonde de santé. Activée par défaut DANS L'IMAGE (et seulement là : en dev,
+# aucun port n'est ouvert tant que WORKER_HEALTH_PORT n'est pas posé).
+# Elle ne répond pas « le process vit » mais « un tick a réussi récemment » —
+# c'est toute la différence : la boucle attrape ses erreurs, donc un worker qui
+# échoue à 100 % restait vert pour Coolify.
+ENV WORKER_HEALTH_PORT=8080
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+process.env.WORKER_HEALTH_PORT).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 # Rappels d'exploitation, sinon le conteneur refuse de démarrer (à dessein) :
 #   DATABASE_URL     Supavisor SESSION, port 5432 — jamais 6543 (règle 17)
 #   PUBLISHERS_MODE  live | stub | dry-run — sans valeur par défaut

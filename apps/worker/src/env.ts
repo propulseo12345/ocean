@@ -42,11 +42,26 @@ export interface WorkerConfig {
   maxAttempts: number
   /** dry-run : délai avant qu'un job relâché redevienne claimable (anti-spam). */
   dryRunDeferMs: number
+  /** Port du serveur de santé HTTP. `null` = pas de serveur (défaut en dev). */
+  healthPort: number | null
+  /** Ticks manqués tolérés avant que /health réponde 503. */
+  healthStaleTicks: number
+  /** Échecs de tick consécutifs avant d'abandonner (exit 1 => redémarrage). */
+  maxConsecutiveTickFailures: number
 }
 
 function int(name: string, fallback: number): number {
   const raw = process.env[name]
   if (!raw) return fallback
+  const n = Number.parseInt(raw, 10)
+  if (Number.isNaN(n) || n <= 0) throw new Error(`${name} invalide: ${raw}`)
+  return n
+}
+
+/** Entier facultatif : absent => la fonctionnalité est désactivée, pas de défaut. */
+function optionalInt(name: string): number | null {
+  const raw = process.env[name]?.trim()
+  if (!raw) return null
   const n = Number.parseInt(raw, 10)
   if (Number.isNaN(n) || n <= 0) throw new Error(`${name} invalide: ${raw}`)
   return n
@@ -129,5 +144,12 @@ export function loadConfig(): WorkerConfig {
     graceWindowMs: int("WORKER_GRACE_MS", 2 * 60 * 60 * 1000),
     maxAttempts: int("WORKER_MAX_ATTEMPTS", 5),
     dryRunDeferMs: int("WORKER_DRY_RUN_DEFER_MS", 15 * 60 * 1000),
+    // Optionnel en dev (aucun port ouvert par défaut), posé par le Dockerfile
+    // pour que Coolify dispose d'un vrai healthcheck en production.
+    healthPort: optionalInt("WORKER_HEALTH_PORT"),
+    healthStaleTicks: int("WORKER_HEALTH_STALE_TICKS", 6),
+    // 60 ticks à 5 s ≈ 5 min : une bascule de pooler ne redémarre pas le
+    // conteneur, une panne installée si.
+    maxConsecutiveTickFailures: int("WORKER_MAX_CONSECUTIVE_TICK_FAILURES", 60),
   }
 }

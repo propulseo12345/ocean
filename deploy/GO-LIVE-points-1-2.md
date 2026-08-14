@@ -97,7 +97,30 @@ Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
   # optionnels : WORKER_POLL_MS=5000 WORKER_LEASE_MS=120000
   #              WORKER_GRACE_MS=7200000 WORKER_MAX_ATTEMPTS=5
   #              WORKER_DRY_RUN_DEFER_MS=900000
+  #              WORKER_HEALTH_PORT=8080 (déjà posé par l'image)
+  #              WORKER_HEALTH_STALE_TICKS=6
+  #              WORKER_MAX_CONSECUTIVE_TICK_FAILURES=60
   ```
+
+- **Healthcheck Coolify** : `GET :8080/` — l'image l'expose et déclare déjà un
+  `HEALTHCHECK`. Il ne répond pas « le process vit » mais **« un tick a réussi
+  récemment »** : 200 tant que le dernier tick réussi date de moins de
+  `WORKER_HEALTH_STALE_TICKS × WORKER_POLL_MS` (30 s par défaut), 503 sinon.
+  Le corps JSON porte `status`, `consecutiveFailures`, `totalFailures` et
+  `publishersMode` — le mode d'exécution devient enfin observable à distance.
+
+  Pourquoi ça compte : la boucle du worker attrape **toutes** les erreurs de tick
+  et continue. Un worker dont le pooler a basculé échouait sur 100 % de ses ticks
+  en restant « running / healthy », sans publier une seule fois, jusqu'à ce qu'un
+  client réclame. Vérifié en conteneur : base injoignable → `HTTP 503` puis
+  `docker inspect` → **`unhealthy`**.
+
+  Au-delà de `WORKER_MAX_CONSECUTIVE_TICK_FAILURES` (60, soit ~5 min à 5 s), le
+  worker **sort en code 1** : un conteneur qui redémarre en boucle se voit, un
+  conteneur vert qui ne fait rien ne se voit pas. Vérifié : exit 1 avec le log
+  `worker abandonne apres echecs consecutifs`. Sûr vis-à-vis de la règle 15 —
+  un tick ne peut échouer que sur `reapExpired`/`claim`, jamais avec une
+  publication en vol.
 
 ### ⚠️ PUBLISHERS_MODE — sans valeur par défaut, et `stub` est INTERDIT ici
 Trois modes, la variable est obligatoire (le worker refuse de démarrer sans elle) :
