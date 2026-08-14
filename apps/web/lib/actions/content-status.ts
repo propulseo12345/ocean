@@ -126,10 +126,23 @@ export async function applyStatusIntent(
   // et annuler : le helper relit l'état réel du contenu et en déduit ce que la
   // file doit contenir. Le if/else d'avant était correct ici, mais c'est sa forme
   // qui posait problème — chaque nouvelle surface d'édition devait le recopier.
-  await syncPublishQueue(supabase, orgId, clientId, contentId)
+  const queue = await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
+
+  // P4-4 : le résultat de l'enfilement était jeté. Un contenu pouvait afficher
+  // « Programmé » sans qu'aucun job existe — donc ne jamais partir, sans le
+  // moindre signal.
+  //
+  // La transition, elle, EST persistée : on ne la défait pas (elle est légale, et
+  // la défaire créerait un second problème). Mais on refuse de l'annoncer comme
+  // un succès complet. `finalStatus` reste dans la réponse pour que l'UI puisse
+  // se rafraîchir sur le vrai statut tout en montrant l'erreur.
+  if (!queue.ok) {
+    return { ok: false, error: `QUEUE_${queue.error}` }
+  }
+
   return { ok: true, data: { status: finalStatus } }
 }
 

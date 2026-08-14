@@ -160,10 +160,11 @@ export async function saveContentItem(
   // pas la date. Rouvrir un post programmé vendredi 9 h, le reprogrammer à 17 h
   // et enregistrer réécrivait donc `scheduled_at` sans réaligner `run_at` :
   // calendrier, grille et kanban affichaient 17 h, le worker publiait à 9 h.
-  await syncPublishQueue(supabase, orgId, d.clientId, contentId)
+  const queue = await syncPublishQueue(supabase, orgId, d.clientId, contentId)
 
   revalidatePath(routes.clientContent(d.clientId))
   revalidatePath(routes.content(d.clientId, contentId))
+  if (!queue.ok) return { ok: false, error: `QUEUE_${queue.error}` }
   return { ok: true, data: { id: contentId } }
 }
 
@@ -318,10 +319,13 @@ export async function scheduleContentItem(
   // couvrait que la première : `scheduledAt: null` (retirer la date depuis le
   // composer) laissait le job vivant, avec son ancienne `run_at` — le post
   // partait à une date que plus personne n'affichait.
-  await syncPublishQueue(supabase, orgId, clientId, contentId)
+  const queue = await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
+  // La date EST enregistrée ; ce qu'on refuse, c'est de dire « c'est programmé »
+  // quand rien ne partira (P4-4).
+  if (!queue.ok) return { ok: false, error: `QUEUE_${queue.error}` }
   return { ok: true }
 }
 
