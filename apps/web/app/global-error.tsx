@@ -1,8 +1,10 @@
 "use client"
 
+import { ErrorDigest } from "@/components/shared/error-digest"
 import { ErrorState, RetryButton } from "@/components/shared/error-state"
 
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
@@ -15,7 +17,12 @@ export default function GlobalError({
           <ErrorState
             title="Ocean a rencontre une erreur."
             description="La page n'a pas pu etre affichee. Tu peux relancer le rendu."
-            action={<RetryButton onClick={reset} />}
+            action={
+              <>
+                <RetryButton onClick={reset} />
+                <ErrorDigest digest={error.digest} />
+              </>
+            }
           />
         </main>
       </body>
