@@ -13,6 +13,13 @@ const JOB_COLUMNS = `
   lease_expires_at, publish_started_at, external_container_id, external_post_id,
   permalink, next_attempt_at, last_error`
 
+// Ancre d'idempotence DURABLE, lue sur la cible au claim (migration 023). Elle
+// est ce qui distingue « ce job n'a rien envoyé » de « cette cible a peut-être
+// déjà reçu un POST » — un job neuf ne peut plus effacer la seconde information.
+const TARGET_ANCHOR_COLUMNS = `
+  ct.publish_started_at    as target_publish_started_at,
+  ct.external_container_id as target_external_container_id`
+
 type Row = Record<string, unknown>
 
 function rowToJob(r: Row): PublishJob {
@@ -34,6 +41,8 @@ function rowToJob(r: Row): PublishJob {
     leaseExpiresAt: r.lease_expires_at as Date | null,
     publishStartedAt: r.publish_started_at as Date | null,
     externalContainerId: r.external_container_id as string | null,
+    targetPublishStartedAt: (r.target_publish_started_at ?? null) as Date | null,
+    targetExternalContainerId: (r.target_external_container_id ?? null) as string | null,
     externalPostId: r.external_post_id as string | null,
     permalink: r.permalink as string | null,
     nextAttemptAt: r.next_attempt_at as Date | null,
@@ -90,7 +99,9 @@ export class PgJobStore implements JobStore {
         )
         returning ${JOB_COLUMNS}
       )
-      select claimed.*, now() as _now from claimed`
+      select claimed.*, ${TARGET_ANCHOR_COLUMNS}, now() as _now
+      from claimed
+      join public.content_targets ct on ct.id = claimed.content_target_id`
     const { rows } = await this.pool.query(sql, [workerId, leaseMs])
     const row = rows[0]
     if (!row) return null
@@ -123,42 +134,67 @@ export class PgJobStore implements JobStore {
   }
 
   async patchProgress(
-    jobId: string,
+    job: PublishJob,
     patch: { step?: JobStep; externalContainerId?: string }
   ): Promise<void> {
-    await this.pool.query(
-      `update public.publish_jobs
-       set step = coalesce($2, step),
-           external_container_id = coalesce($3, external_container_id)
-       where id = $1`,
-      [jobId, patch.step ?? null, patch.externalContainerId ?? null]
-    )
+    await this.withTx(async (c) => {
+      await c.query(
+        `update public.publish_jobs
+         set step = coalesce($2, step),
+             external_container_id = coalesce($3, external_container_id)
+         where id = $1`,
+        [job.id, patch.step ?? null, patch.externalContainerId ?? null]
+      )
+      // Le conteneur est aussi persisté sur la CIBLE : si cette ligne de job
+      // disparaît avant la publication, le conteneur reste réutilisable et,
+      // surtout, interrogeable.
+      if (patch.externalContainerId) {
+        await c.query(
+          `update public.content_targets
+           set external_container_id = coalesce(external_container_id, $2)
+           where id = $1`,
+          [job.contentTargetId, patch.externalContainerId]
+        )
+      }
+    })
   }
 
-  async markPublishStarted(job: PublishJob): Promise<void> {
+  async markPublishStarted(job: PublishJob, containerId: string): Promise<void> {
     // Trace de l'instant exact où la publication devient irréversible côté Ocean :
     // c'est la ligne à chercher en premier quand on soupçonne une double
     // publication (règle 15).
     log.info("publish_started_at pose (regle 15)", {
       ...jobFields(job),
-      externalContainerId: job.externalContainerId,
+      externalContainerId: containerId,
     })
-    // Règle 15 : publish_started_at posé (idempotent via coalesce) AVANT publish.
-    // Chaque requête hors transaction explicite est auto-commitée => la marque est
-    // durable avant l'appel HTTP de publication.
-    await this.pool.query(
-      `update public.publish_jobs
-       set publish_started_at = coalesce(publish_started_at, now()),
-           status = 'publishing', step = 'publish'
-       where id = $1`,
-      [job.id]
-    )
-    // État honnête du parent pendant l'exécution.
-    await this.pool.query(
-      `update public.content_items set status = 'publishing'
-       where id = $1 and status in ('scheduled', 'approved', 'partially_published')`,
-      [job.contentItemId]
-    )
+    // Règle 15 : les DEUX ancres sont posées (idempotentes via coalesce) et
+    // committées AVANT l'appel HTTP de publication. Une seule transaction : une
+    // ancre de job sans ancre de cible serait exactement le défaut que la
+    // migration 023 corrige.
+    await this.withTx(async (c) => {
+      await c.query(
+        `update public.publish_jobs
+         set publish_started_at = coalesce(publish_started_at, now()),
+             external_container_id = coalesce(external_container_id, $2),
+             status = 'publishing', step = 'publish'
+         where id = $1`,
+        [job.id, containerId]
+      )
+      // L'ancre qui compte : elle survit à la ligne de job.
+      await c.query(
+        `update public.content_targets
+         set publish_started_at = coalesce(publish_started_at, now()),
+             external_container_id = coalesce(external_container_id, $2)
+         where id = $1`,
+        [job.contentTargetId, containerId]
+      )
+      // État honnête du parent pendant l'exécution.
+      await c.query(
+        `update public.content_items set status = 'publishing'
+         where id = $1 and status in ('scheduled', 'approved', 'partially_published')`,
+        [job.contentItemId]
+      )
+    })
   }
 
   async markAwaitingMedia(jobId: string, retryDelayMs: number): Promise<void> {

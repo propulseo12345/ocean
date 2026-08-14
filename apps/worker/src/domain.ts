@@ -32,13 +32,43 @@ export interface PublishJob {
   workerId: string | null
   claimedAt: Date | null
   leaseExpiresAt: Date | null
-  /** Règle 15 : posé AVANT media_publish. Non nul => jamais de retry aveugle. */
+  /**
+   * Règle 15, trace d'EXÉCUTION : quand CE job a rendu la publication
+   * irréversible. Jetable avec la ligne — ne jamais décider sur cette seule
+   * valeur, lire `effectiveAnchor`.
+   */
   publishStartedAt: Date | null
   externalContainerId: string | null
+  /**
+   * Règle 15, ancre de DÉCISION : `content_targets.publish_started_at`
+   * (migration 023). Elle survit à la ligne de job, donc aux quatre chemins qui
+   * fabriquent un job neuf pour une cible déjà partie chez la plateforme.
+   */
+  targetPublishStartedAt: Date | null
+  targetExternalContainerId: string | null
   externalPostId: string | null
   permalink: string | null
   nextAttemptAt: Date | null
   lastError: unknown
+}
+
+/**
+ * Ancre d'idempotence EFFECTIVE d'un job (RÈGLE 15). La cible fait foi : son
+ * ancre est durable, celle du job ne l'est pas. `coalesce` et pas `&&` — un job
+ * neuf sur une cible déjà ancrée doit hériter de l'ancre, c'est tout l'objet de
+ * la migration 023.
+ *
+ * `containerId` sans `startedAt` est un cas normal : un conteneur créé puis un
+ * crash avant la marque. Rien n'est parti, mais le conteneur est réutilisable.
+ */
+export function effectiveAnchor(job: PublishJob): {
+  startedAt: Date | null
+  containerId: string | null
+} {
+  return {
+    startedAt: job.targetPublishStartedAt ?? job.publishStartedAt,
+    containerId: job.targetExternalContainerId ?? job.externalContainerId,
+  }
 }
 
 /** Statut métier terminal posé sur content_targets selon la plateforme. */

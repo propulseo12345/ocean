@@ -23,17 +23,24 @@ export interface JobStore {
   /** Prolonge le lease d'un job en cours (opération longue). */
   extendLease(jobId: string, leaseMs: number): Promise<void>
 
-  /** Progression non terminale (étape courante, id de conteneur). */
+  /**
+   * Progression non terminale (étape courante, id de conteneur). Le conteneur
+   * est écrit sur le job ET sur la cible : c'est la cible qui doit rester
+   * interrogeable si la ligne de job disparaît (migration 023).
+   */
   patchProgress(
-    jobId: string,
+    job: PublishJob,
     patch: { step?: JobStep; externalContainerId?: string }
   ): Promise<void>
 
   /**
    * Règle 15 : pose publish_started_at = now() AVANT media_publish, et commit.
-   * Bascule aussi le content_item parent en « publishing » (état honnête).
+   * L'ancre est posée sur le JOB (trace) et sur la CIBLE (décision, migration
+   * 023) dans une seule transaction — une ancre posée sur le job seul serait
+   * perdue au premier réenfilement. Bascule aussi le content_item parent en
+   * « publishing » (état honnête).
    */
-  markPublishStarted(job: PublishJob): Promise<void>
+  markPublishStarted(job: PublishJob, containerId: string): Promise<void>
 
   /** Média encore en préparation côté plateforme : re-vérifier plus tard. */
   markAwaitingMedia(jobId: string, retryDelayMs: number): Promise<void>

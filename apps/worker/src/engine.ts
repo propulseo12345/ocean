@@ -1,5 +1,5 @@
 import { backoffMs } from "./backoff"
-import { NeedsReauthError, PermanentPublishError, type PublishJob } from "./domain"
+import { effectiveAnchor, NeedsReauthError, PermanentPublishError, type PublishJob } from "./domain"
 import type { PublishContext, Publisher } from "./publishers/types"
 import type { JobStore } from "./store"
 
@@ -33,8 +33,9 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
   const { store, prepare, checkQuota, config, now } = deps
   const publisher = deps.resolvePublisher(job.platform)
   const nextDelay = () => backoffMs(job.attempts + 1, deps.random)
-  // RÈGLE 15 : ce job a peut-être déjà envoyé un POST chez la plateforme.
-  const started = job.publishStartedAt !== null
+  // RÈGLE 15 : la CIBLE a peut-être déjà reçu un POST chez la plateforme — y
+  // compris si cette ligne de job est neuve (migration 023).
+  const started = effectiveAnchor(job).startedAt !== null
 
   // Fenêtre de grâce (§5) — mais JAMAIS avant d'avoir interrogé le conteneur.
   // Un job démarré abandonné sans vérification laisse une cible « failed » sur un
@@ -97,7 +98,7 @@ async function recoverStartedJob(
   deps: EngineDeps
 ): Promise<void> {
   const { store, config, now } = deps
-  const container = job.externalContainerId
+  const container = effectiveAnchor(job).containerId
   if (!container) {
     // publish_started_at sans conteneur = incohérent : on retente proprement
     // (aucune publication n'a pu partir sans conteneur).
@@ -137,14 +138,17 @@ async function publishFresh(
   ctx: PublishContext,
   store: JobStore
 ): Promise<void> {
-  let container = job.externalContainerId
+  // Un conteneur déjà créé par une tentative précédente est réutilisé — y
+  // compris s'il a été persisté sur la cible et non sur cette ligne de job.
+  let container = effectiveAnchor(job).containerId
   if (!container) {
     const created = await publisher.createContainer(job, ctx)
     container = created.containerId
-    await store.patchProgress(job.id, { step: "create_container", externalContainerId: container })
+    await store.patchProgress(job, { step: "create_container", externalContainerId: container })
   }
-  // RÈGLE 15 : la marque est posée et COMMITÉE avant tout appel de publication.
-  await store.markPublishStarted(job)
+  // RÈGLE 15 : la marque est posée et COMMITÉE avant tout appel de publication,
+  // sur le job ET sur la cible (migration 023) dans la même transaction.
+  await store.markPublishStarted(job, container)
   const res = await publisher.publish(job, container, ctx)
   await store.succeed(job, res)
 }

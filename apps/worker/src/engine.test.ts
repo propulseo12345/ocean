@@ -35,6 +35,8 @@ function makeJob(over: Partial<PublishJob> = {}): PublishJob {
     leaseExpiresAt: new Date(NOW.getTime() + 120000),
     publishStartedAt: null,
     externalContainerId: null,
+    targetPublishStartedAt: null,
+    targetExternalContainerId: null,
     externalPostId: null,
     permalink: null,
     nextAttemptAt: null,
@@ -52,11 +54,11 @@ class FakeStore implements JobStore {
     return 0
   }
   async extendLease() {}
-  async patchProgress(_id: string, patch: { externalContainerId?: string }) {
+  async patchProgress(_job: PublishJob, patch: { externalContainerId?: string }) {
     this.events.push(`patchProgress:${patch.externalContainerId ?? ""}`)
   }
-  async markPublishStarted() {
-    this.events.push("markPublishStarted")
+  async markPublishStarted(_job: PublishJob, containerId: string) {
+    this.events.push(`markPublishStarted:${containerId}`)
   }
   async markAwaitingMedia() {
     this.events.push("markAwaitingMedia")
@@ -127,7 +129,7 @@ test("job frais : publish_started_at posé AVANT publish, succès, publish 1 foi
 
   assert.equal(pub.publishCalls, 1, "publish appelé exactement une fois")
   assert.equal(pub.createCalls, 1, "conteneur créé une fois")
-  const iStart = events.indexOf("markPublishStarted")
+  const iStart = events.findIndex((e) => e.startsWith("markPublishStarted:"))
   const iPub = events.indexOf("publish")
   assert.ok(iStart >= 0 && iPub >= 0, "les deux étapes ont eu lieu")
   assert.ok(iStart < iPub, "RÈGLE 15 : publish_started_at AVANT publish")
@@ -195,6 +197,54 @@ test("fenêtre de grâce dépassée (>2h de retard) => dead_letter, aucune publi
   assert.equal(pub.publishCalls, 0)
   assert.equal(pub.createCalls, 0)
   assert.ok(events.some((e) => e.startsWith("deadLetter:")))
+})
+
+// ── CHEMIN DE DOUBLE PUBLICATION n°2 ────────────────────────────────────────
+// Le job précédent est terminal (ou supprimé) : `enqueue_publish_jobs` en
+// fabrique un neuf, `publish_started_at` à NULL sur la ligne. Avant la migration
+// 023, ce job repartait en `publishFresh` et republiait un post déjà en ligne.
+// L'ancre de la CIBLE est ce qui l'en empêche.
+test("RÈGLE 15 : job NEUF (ancre de job nulle) sur cible ANCRÉE => jamais republier", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  const job = makeJob({
+    // La ligne de job est vierge : c'est bien un job fraîchement enfilé.
+    publishStartedAt: null,
+    externalContainerId: null,
+    // Mais la cible porte la marque d'une publication partie.
+    targetPublishStartedAt: new Date(NOW.getTime() - 3 * 60 * 1000),
+    targetExternalContainerId: "c-target-1",
+    status: "claimed",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.createCalls, 0, "aucun conteneur recréé")
+  assert.equal(pub.publishCalls, 0, "AUCUNE republication")
+  assert.equal(pub.statusCalls, 1, "le conteneur de la cible est interrogé")
+  assert.equal(pub.resolveCalls, 1, "le post existant est résolu")
+})
+
+test("conteneur porté par la cible seule (crash avant la marque) => réutilisé, pas recréé", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  const job = makeJob({
+    publishStartedAt: null,
+    externalContainerId: null,
+    // Conteneur créé par une tentative précédente, marque JAMAIS posée : rien
+    // n'est parti, mais le conteneur est réutilisable.
+    targetPublishStartedAt: null,
+    targetExternalContainerId: "c-recycle",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.createCalls, 0, "conteneur existant réutilisé")
+  assert.equal(pub.publishCalls, 1, "publication normale : rien n'était parti")
+  assert.ok(
+    events.includes("markPublishStarted:c-recycle"),
+    "l'ancre est posée avec le conteneur réutilisé"
+  )
 })
 
 // ── CHEMIN DE DOUBLE PUBLICATION n°1 ────────────────────────────────────────
