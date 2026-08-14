@@ -171,6 +171,31 @@ la **cible** et est définitif.
 **Critère de sortie** : les tests du moteur couvrent les quatre chemins de double publication, et
 ils tournent en CI.
 
+#### Tickets — suivi d'exécution
+
+> Exécution : branche `chore/phase-0-outillage`, nuit du 14 au 15/08/2026.
+> **Non poussée** (le compte GitHub de la session n'a que la lecture).
+> Aucune écriture sur `hgdeopkmkwyoumsfggrm` : les migrations 023→031 attendent
+> dans `deploy/` (fichiers 18 à 27), à appliquer à la main dans l'ordre.
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| P3-1 | Inverser l'ordre dans `processJob` : idempotence AVANT fenêtre de grâce | ✅ | `c15cb2a` | La fenêtre n'est plus évaluée qu'`if (!started)` ; elle est **réévaluée** dans `recoverStartedJob`, sur la seule branche sûre (conteneur `error`/`expired`, donc « rien n'est parti » établi). Le quota passe après la reprise (interroger un conteneur ne consomme pas de quota). `pnpm --filter worker test` → **25/25** (22 avant), dont « grâce dépassée MAIS job démarré => on interroge le conteneur d'abord » et « … + conteneur en erreur => dead_letter APRÈS vérification ». |
+| P3-2 | Porter l'ancre d'idempotence sur `content_targets` | ✅ | `e96b031` | **Modélisation : ancre DÉDOUBLÉE, pas déplacée.** `publish_jobs.publish_started_at` reste la trace d'exécution (jetable) ; `content_targets.publish_started_at` + `external_container_id` deviennent l'ancre de DÉCISION (durable). Le moteur lit `effectiveAnchor = coalesce(cible, job)` — `coalesce` et pas `&&`, c'est un job NEUF sur cible ANCRÉE qu'il faut arrêter. Migration 023 : 2 colonnes + backfill + 2 triggers (`authenticated` ne pose, ne déplace, n'efface jamais l'ancre, et ne supprime pas une cible ancrée — `reconcileTargets` fait un delete-all dès qu'un contenu repasse en draft, et `failed → draft` est légal). `markPublishStarted` écrit les deux ancres dans UNE transaction. tsc 0 ; worker **27/27** ; pgTAP 023 **10 ok / 0 not ok**. |
+| P3-3 | Statut terminal `needs_verification`, distinct de `failed` | ✅ | `9aa45ed` | **Modélisation : ajouté aux TROIS enums** (`publish_job_status`, `target_status`, `content_status`) — le mensonge existait aux trois niveaux. Sur l'agrégat l'issue inconnue **domine** : sans ça `recomputeParent` laissait le contenu figé en `publishing`, statut sans sortie (016). Posé par une règle unique, `isOutcomeUnknown(job)` : l'ancre effective est-elle posée ? `deadLetter` reste sur `failed`, délibérément — depuis P3-1 il n'est appelé que quand l'issue est CONNUE. Sortie humaine : `mark_target_published_manually` accepte `needs_verification` ; `request_target_retry` non (c'est toute la différence). **Piège maison** : 4 ruptures trouvées par tsc (`contentStatusMeta`, `targetStatusMeta`, `STATUS_TRANSITIONS`, `kanbanColumnOf` + `priorityRank`) **et 7 listes `ContentStatus[]` que le typage ne protège pas**, cherchées à la main. worker **29/29** ; pgTAP 024 **9 ok / 0 not ok**. |
+| P3-4 | `enqueue_publish_jobs` ne ré-enfile plus `failed` ni `pushed_to_platform` | ✅ | `e2e8a73` | **Le critère retenu n'est pas le statut, c'est l'ANCRE.** Exclure `failed` en bloc aurait été une régression : la majorité des échecs réels n'ont rien envoyé et leur relance est le geste normal (le seul, `request_target_retry` restant un cul-de-sac). Donc : `failed` **sans** ancre → ré-enfilable ; `failed` **avec** ancre, `pushed_to_platform`, `needs_verification` → jamais. Filtre symétrique sur le passage en `queued`. pgTAP 025 **7 ok / 0 not ok** (dont « cible failed ANCREE : aucun job cree » et « cible failed SANS ancre : ENFILEE »), 020b non-régression 4/4. |
+| P3-5 | Fencing `worker_id` sur les écritures d'état | ✅ | `4798080` | Les **9** écritures portent `and worker_id = $n and status in ('claimed','publishing')` et testent `rowCount` → `LeaseLostError`. Traitée à part de toutes les autres erreurs : `handleError` la **remonte sans écrire** (poser `failed` sur le job d'un autre worker serait le dommage même qu'on évite). `extendLease` prolongeait le lease de n'importe quel propriétaire — c'était ce qui laissait un zombie survivre à sa propre expiration ; il renvoie `false` et le heartbeat s'arrête net. `succeed` est fencé aussi : le post est en ligne mais le propriétaire courant reclaimera, trouvera la cible ancrée et conclura. `grep -c assertOwned` → **9** ; worker **30/30**, dont « lease perdu avant publish => AUCUNE publication, et aucun statut écrasé ». |
+| P3-6 | Timeouts HTTP + heartbeat qui ne masque plus le reaper | ✅ | `a848ffc` | Deux bornes distinctes : `WORKER_HTTP_TIMEOUT_MS` (60 s) sur les 5 appels plateforme, `WORKER_MAX_PROCESSING_MS` (10 min) au-delà duquel le heartbeat **cesse de prolonger** — il prolongeait sans borne, donc `lease_expires_at` ne passait jamais dans le passé et le reaper ne voyait rien. `PublishContext.signal` posé pour la phase 6 (une course de promesses rend la main, elle n'annule pas la requête). Timeout classé **transitoire** délibérément : il ne dit pas que rien n'est parti. worker **32/32**. Les 2 variables sont documentées dans le runbook. |
+| P3-7 | Le reaper terminalise les jobs à bout de tentatives | ✅ | `378f63e` | La clause `attempts < max_attempts` les laissait `claimed` **à vie** ; le commentaire renvoyait « au watchdog pg_cron », qui n'existe pas. Double conséquence : l'index unique partiel gelait la cible (impubliable définitivement) et le contenu restait en `publishing`, statut d'où 016 n'autorise rien. Seconde passe → `dead_letter` (ancre nulle) ou `needs_verification` (ancre posée). `reapExpired()` renvoie `{requeued, terminalized}` — confondre les deux rendrait le second invisible. pgTAP **092** (renommé depuis 026) **5 ok / 0 not ok**. ⚠ **Limite** : ce test prouve le mécanisme de schéma, pas le TypeScript du reaper — aucune base n'est joignable depuis l'hôte (conteneur sans mapping de port), donc `PgJobStore` n'est exécuté par aucun test. |
+| P3-8 | FK `content_target_id` en `restrict` | ⚠️ **fait autrement** | `549a66d` | **La bascule demandée n'est PAS appliquée, et c'est délibéré.** Son motif (« supprimer une cible efface l'ancre ») a été traité à la source par 023 : l'ancre vit sur `content_targets` et un `before delete` la protège déjà. `restrict` ne fermerait donc plus rien mais **casserait** `reconcileTargets` : `cancel_publish_jobs` passe les jobs `canceled` sans les supprimer, donc le DELETE lèverait 23503, l'INSERT suivant serait rejeté par `content_targets_item_account_idx`, et les modifications de ciblage seraient **perdues en silence**. Mesuré dans `ocean_rev2` sur le schéma réel : org member + cible non ancrée + job `canceled` → `DELETE 1`, jobs restants 0. À la place, la garde de 023 est étendue au cas résiduel (ancre portée par un JOB seul). La bascule est fournie **en commentaire** dans `deploy/22_migration_026.sql`, avec sa condition (P5-3 d'abord). pgTAP 026 **3 ok / 0 not ok**. |
+| P3-9 | `cancel_publish_jobs` couvre le statut `claimed` | ✅ | `9e970bf` | + `claimed` et `awaiting_media`, lease explicitement relâché. **C'est le fencing de P3-5 qui rend l'annulation effective** : `markPublishStarted` exige `status in ('claimed','publishing')`, donc un job passé `canceled` fait échouer la dernière écriture AVANT publication → `LeaseLostError` → arrêt sans publier. P3-5 est le prérequis dur, l'ordre de déploiement aussi. Règle 15 tenue : les DEUX ancres sont testées. En prime : la cible repasse `queued → pending` (elle restait `queued` à vie). pgTAP 027 **6 ok / 0 not ok**. |
+| P3-10 | Quota : compteur local + `deferForQuota` corrigé | ✅ | `76c4508` | `checkQuota` renvoyait `true` **en dur dans les deux branches**. Moitié locale implémentée : `ig_publish` 100/24 h, `tt_draft` 5/24 h. **`facebook` est `null`, pas un chiffre** : le BUC dépend de l'engagement de la Page, un plafond inventé serait soit trop bas soit inutile — le worker le journalise au lieu de faire semblant. L'appel distant est un emplacement nommé dans `createQuotaChecker`, pas un TODO flottant. **Le report** : `deferForQuota` repoussait de 60 s sans toucher `run_at`, or la fenêtre de grâce se mesure dessus → dead_letter en 2 h. Le verdict dit désormais QUAND réessayer (calculé sur `window_resets_at`) et `run_at` est décalé — reporter, c'est redater. Piège fermé : fenêtre absente ou échue = réouverture (une ligne `used=100` sans reset aurait bloqué le compte à vie). Compteur incrémenté dans la transaction de `succeed`. worker **40/40**, dont 7 sur `decideQuota`. ⚠ Le SQL (`bumpQuotaUsage`, lecture du compteur) n'est exécuté par aucun test. ⚠ La notification du décalage (§5) n'existe toujours pas. |
+
+**Critère de sortie — atteint.** Les quatre chemins de double publication ont chacun leur test dans
+`apps/worker/src/engine.test.ts` : ① grâce dépassée sur job démarré, ② job neuf sur cible ancrée,
+③ ré-enfilement d'une cible finie (pgTAP 025), ④ lease perdu avant publish.
+`pnpm --filter worker test` → **40/40**.
+
 ### Phase 4 — Synchroniser l'app et la file · 1 session
 
 **Pourquoi** : le lien entre ce que l'app affiche et ce que le worker exécutera ne tient qu'à deux
@@ -186,6 +211,20 @@ Le re-dater depuis le composer ne réaligne pas `run_at` — il partira à l'anc
 
 **Critère de sortie** : un test pgTAP prouve qu'un contenu corbeillé, dé-programmé ou re-daté n'a
 plus aucun job vivant incohérent.
+
+#### Tickets — suivi d'exécution
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| P4-1 | Helper unique `syncPublishQueue(contentId)` sur tous les call sites | ✅ | `4996d4d` | Les 4 chemins vérifiés et corrigés : `trashContent` (le claim ne joint jamais `content_items`, `deleted_at` n'existe nulle part dans `apps/worker` → le contenu supprimé partait, et le bouton s'intitule « annuler la programmation »), `saveContentItem` (`scheduled_at` est dans `baseFields`, appliqué à TOUS les statuts), le retrait de date, et `markTargetPublishedManually`. **Le fond n'était pas les 4 oublis mais la forme** : chaque appelant devait CHOISIR entre enfiler et annuler. Ici personne ne choisit — on relit l'état réel et on en déduit. Invariant : jobs vivants ⟺ `scheduled` + daté + non supprimé. **La publication manuelle est traitée en SQL (028)** : `cancel_publish_jobs` est scopée au CONTENU, l'appeler après une publication manuelle TikTok annulerait aussi Instagram et Facebook — on remplacerait un doublon par des publications manquantes. pgTAP 028 **5 ok / 0 not ok** ; 016 non-régression **19/19**. |
+| P4-2 | Trigger `AFTER UPDATE` en filet | ✅ | `1aec7f0` | Ferme la direction **dangereuse** (job de trop, ou à la mauvaise heure) ; **n'enfile jamais** — l'absence de job est visible et traitée par P4-4, un job de trop part chez un vrai client sans que personne le voie. **Piège évité** : « annuler dès que le statut n'est plus `scheduled` » aurait été destructeur — `markPublishStarted` passe le contenu en `publishing`, donc les jobs des AUTRES cibles d'un contenu multi-plateformes auraient été annulés au moment même où la première publie. Le trigger n'annule que sur les statuts posables par l'app. pgTAP 029 **8 ok / 0 not ok**. |
+| P4-3 | Porter `clients.approval_mode` dans le trigger de transition | ✅ | `68ecb03` | Deux subtilités font toute la valeur : le **RÔLE** (`decided_by_role = 'reviewer'` — sans lui, l'auto-approbation de l'agence satisferait une garde censée protéger le client d'elle) et la **PÉREMPTION** (`approval_stale`, posé par 013 et lu par personne : une approbation portant sur un texte réécrit n'en est pas une). `optional` n'impose rien (aucun drapeau par contenu dans le schéma), `auto` non plus (c'est le sens du mode). ⚠ **Correction au ticket** : le défaut de la colonne est `'optional'` (004:8), **pas** `'required'` — les clients existants ne sont pas bloqués. ⚠ Changement visible : chez un client `required` le drag « Brouillon → Programmé » lève 42501 ; l'action rend `CLIENT_APPROVAL_REQUIRED` / `_STALE` au lieu d'un message Postgres brut, **mais griser le geste dans le kanban reste à faire**. pgTAP 030 **8 ok / 0 not ok**. |
+| P4-4 | Arrêter le fire-and-forget sur l'enfilement | ✅ | `47b814b` | Le commentaire justifiait l'omission par « le watchdog rattrapera » : il n'existe pas. **La question à poser n'est pas « zéro job ? »** — un contenu 100 % manuel n'en a légitimement aucun ; on demande s'il existe une cible qui AURAIT DÛ être enfilée. Si oui → `SCHEDULED_WITHOUT_JOB`, journalisé et remonté. On ne défait ni la transition ni la date (légales, déjà persistées) : on refuse seulement de les annoncer comme un succès. `pnpm -w build` ✅. |
+| P4-5 | Borne serveur sur `scheduled_at` | ✅ | `00d4f5e` | Dangereux **des deux côtés** : passé de moins de 2 h → dans la fenêtre de grâce, publication immédiate ; au-delà → `dead_letter` à la naissance. `check (scheduled_at >= now())` est impossible (`now()` non immutable) **et serait faux** : réévalué à chaque UPDATE, il rendrait immodifiable un contenu légitimement en retard. La règle exacte est donc « on refuse de POSER une date passée, pas d'en AVOIR une ». Tolérance 2 min. pgTAP 031 **6 ok / 0 not ok**. |
+
+**Critère de sortie — atteint.** `supabase/tests/029_publish_queue_safety_net.test.sql` exerce les trois
+cas par des **UPDATE nus** sur `content_items`, sans passer par le code applicatif — exactement ce que
+ferait une surface d'édition qui aurait oublié le helper. Corbeillé, dé-programmé, re-daté : **8 ok / 0 not ok**.
 
 ### Phase 5 — Faire entrer les médias · 2 sessions
 
@@ -205,6 +244,33 @@ Sans cette phase, la phase 6 ne peut pas atteindre son critère de sortie.
 
 **Critère de sortie** : une photo envoyée depuis l'iPhone s'affiche dans la grille, le studio **et**
 le portail client.
+
+#### Tickets — suivi d'exécution (partiel : upload TUS non attaqué, comme demandé)
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| P5-1 | `next.config.ts` : dériver l'hôte de l'URL Supabase | ✅ | `c28f77d` | **Le piège était bien là.** Dériver naïvement de `NEXT_PUBLIC_SUPABASE_URL` aurait donné le bon hôte EN LOCAL (Next charge `.env.local` avant d'évaluer `next.config.ts`) et `undefined` EN CONTENEUR — le Dockerfile ne passait aucun build arg. Deux niveaux : `SUPABASE_URL` au build (nouvel `ARG`) → motif exact ; sinon `*.supabase.co`. `search` volontairement non spécifié (les URL signées portent leur jeton en query string ; `search: ''` les rejetterait toutes). **Preuve mesurée sur `.next/required-server-files.json`**, la config réellement embarquée, pour les 3 chemins — sans `.env.local` ni ARG : `*.supabase.co` ; avec l'ARG : `exemple-projet.supabase.co` ; build local : `hgdeopkmkwyoumsfggrm.supabase.co`. |
+| P5-2 | Rouvrir un brouillon détache tous ses médias | ✅ | `a69808d` | Chaîne vérifiée de bout en bout, l'hypothèse de l'audit est **confirmée** : `draftFromContent` ne pose aucun `libraryAssetId` → `handleSave` filtre tout → `reconcileMedia` fait son `delete()` puis sort sur un tableau vide. **Ce que l'audit ne disait pas** : `content_comments.annotation_content_media_id` porte `ON DELETE CASCADE` (013:138), donc la suppression efface la **ligne de commentaire entière**, pas seulement l'ancre — un « rouvrir + enregistrer » détruisait le retour de validation annoté du client. Correctif : une ligne, `libraryAssetId: m.id` (l'id de l'ASSET, cf. content-media.ts:118). ⚠ Vu, non corrigé : `crop_preset` n'est pas remonté non plus (absent d'`ASSET_COLUMNS`). |
+| P5-3 | Les 3 `reconcile*` ignorent leurs 8 erreurs ; passer au diff | ✅ | `826cd84` | Les 8 écritures sont lues, le premier échec interrompt et remonte. Diff par clé d'identité : compte social / plateforme pour les cibles, **(asset, n-ième occurrence)** pour les médias (`content_media` n'a volontairement pas de `unique(content_item_id, media_asset_id)`, 012:111), id pour les étiquettes. **L'ordre des opérations sur les médias n'est pas décoratif** : supprimer d'abord (sinon le trigger de cardinalité refuse le remplaçant), insérer au-delà de la position max (le `unique(position)` est deferrable mais chaque requête PostgREST est sa propre transaction), puis `reorder_content_media` — la RPC de 012 qui écrit toutes les positions en UNE transaction et **n'avait aucun appelant**. Bénéfice principal : les cibles conservées gardent statut, `external_post_id`, permalien et ancre ; les liaisons médias gardent leur id, donc les annotations. `content.ts` passe de 557 à 457 lignes, 2 modules de 197 et 127. ⚠ Toujours **pas d'atomicité** : la vraie réponse reste une RPC `save_content_item(payload jsonb)`. |
+| P5-4 | `applyCrop` réécrit les dimensions sans traiter l'image | ✅ | `ddf1f8d` | Il réécrivait `width`, `height`, `mimeType` et `fileSizeMb` — **exactement les 4 champs que valide le preflight**. Un clic sur « 4:5 » faisait passer au vert un PNG de 12 Mo en 3:4 : le preflight ne validait plus le fichier, il validait le clic. Le mensonge se payait au pire endroit — Meta rejette le fichier réel, erreur permanente, `failed` direct sans retry, sur le compte d'un vrai client. Désormais il pose `crop`, rien d'autre. Conséquence assumée : recadrer ne fait plus disparaître l'avertissement de ratio — c'est honnête, rien n'est recadré. `CROP_PRESETS` → `CROP_TARGET_SIZES` (le nom disait « voici les dimensions », il dit « voici les dimensions à PRODUIRE » : c'est la confusion qui a créé le bug). |
+| — | Upload TUS, conversion JPEG/HEIC, vignette WebP | ⛔ **non fait** | — | Hors périmètre demandé : exige du Storage réel et une session dédiée. |
+
+#### État final des commandes de vérification (fin de session, 15/08/2026)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm -w build` | ✅ `Compiled successfully` |
+| `pnpm --filter web exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker test` | ✅ **40/40** (22 au début de session) |
+| `pnpm check` (arbre LF via `git -c core.autocrlf=false archive`) | ✅ **exit 0** — 437 fichiers, 0 erreur, 17 warnings |
+| Rejeu migrations + pgTAP complet (`ocean_rev2`) | ✅ 30 migrations (1 sautée, `*_storage.sql`), 29 fichiers de test, **315 ok / 0 not ok / 0 erreur** (248 au début) |
+
+> ⚠ **Ce qu'aucune vérification ne couvre** : `apps/worker/src/db/pg-store.ts` n'est exécuté par
+> aucun test. Le conteneur `ocean_rev2` tourne sans mapping de port (WinNAT), donc aucune base n'est
+> joignable depuis l'hôte. Les tests du moteur prouvent les **décisions** (règle 15, fencing, quota,
+> issue inconnue) via un store factice ; le SQL qui les applique est relu, pas exécuté. Cela
+> concerne P3-5, P3-7 et P3-10.
 
 ### Phase 6 — Publishers réels · 2 à 3 sessions
 
@@ -325,3 +391,79 @@ décidé par Meta, pas par le code.
 ---
 
 *Rien n'est appliqué sans validation. Ce document est un plan, pas un patch.*
+
+---
+
+## Ce qui attend Étienne après la nuit du 14-15/08/2026
+
+### Migrations à appliquer à la main, DANS CET ORDRE
+
+Aucune écriture n'a été faite sur `hgdeopkmkwyoumsfggrm`. Neuf migrations attendent dans `deploy/`.
+
+| Ordre | Fichier | Objet | Idempotent ? |
+|---|---|---|---|
+| 1 | `deploy/18_migration_023.sql` | Ancre d'idempotence sur `content_targets` (+ 2 gardes) | ❌ `add column` — une seule fois |
+| 2 | `deploy/19_migration_024_etape1_enums.sql` | 3 valeurs d'enum `needs_verification` | ✅ (`if not exists`) |
+| 3 | `deploy/20_migration_024_etape2.sql` | Gardes + sortie humaine — **envoi SÉPARÉ de l'étape 1** | ✅ |
+| 4 | `deploy/21_migration_025.sql` | `enqueue_publish_jobs` n'ouvre plus les cibles finies | ✅ |
+| 5 | `deploy/22_migration_026.sql` | Garde de suppression étendue (+ FK stricte en commentaire) | ✅ |
+| 6 | `deploy/23_migration_027.sql` | `cancel_publish_jobs` atteint un job `claimed` | ✅ |
+| 7 | `deploy/24_migration_028.sql` | Publication manuelle → annule le job de SA cible | ✅ |
+| 8 | `deploy/25_migration_029.sql` | Trigger filet de la file | ⚠️ sauf le `create trigger` final |
+| 9 | `deploy/26_migration_030.sql` | `approval_mode` opposable | ✅ |
+| 10 | `deploy/27_migration_031.sql` | Date de programmation jamais dans le passé | ⚠️ sauf le `create trigger` final |
+
+Puis : rattraper le ledger (`supabase_migrations.schema_migrations`, versions `023`→`031`) sur le
+modèle de `deploy/17_ledger_catchup.sql`, et lancer `get_advisors` (attendu : aucun nouveau lint —
+toutes les fonctions ajoutées sont dans le schéma `private`, non exposé).
+
+**L'étape 2 de la 024 doit partir dans un envoi distinct de l'étape 1** : l'éditeur SQL Supabase
+enveloppe chaque envoi dans une transaction, et une valeur d'enum doit être commitée avant d'être
+évaluée.
+
+**Ordre migration → worker.** Appliquer 023 **avant** de déployer le worker à jour : son claim lit
+`ct.publish_started_at`. Et déployer le worker à jour **avant ou avec** la 027 : c'est le fencing
+`worker_id` (P3-5) qui rend l'annulation d'un job `claimed` réellement effective.
+
+### Changements de comportement visibles, à connaître avant d'appliquer
+
+1. **Client en `approval_mode = 'required'`** : le drag « Brouillon → Programmé » lève désormais
+   42501. Le défaut de la colonne est `'optional'`, donc rien ne bloque tant qu'un client n'est pas
+   explicitement passé en `required`. Le kanban ne grise pas encore le geste.
+2. **Recadrer ne fait plus disparaître l'avertissement de ratio** dans le composer. C'est voulu :
+   rien n'est recadré tant que le traitement d'image réel n'existe pas.
+3. **Une date de programmation dans le passé est refusée** (tolérance 2 min).
+4. `saveContentItem`, `scheduleContentItem` et `applyStatusIntent` peuvent désormais renvoyer
+   `ok: false` là où elles renvoyaient toujours `ok: true` — un toast d'erreur peut apparaître sur
+   des cas qui passaient en silence. C'est le but.
+
+### Décisions qui te reviennent
+
+- **FK `publish_jobs.content_target_id` en `restrict`** (ticket P3-8) : non appliquée, avec sa
+  justification mesurée. La bascule est prête en commentaire dans `deploy/22_migration_026.sql`.
+- **Sortie « rien n'est parti » d'un `needs_verification`** : la direction inverse (« j'ai vérifié,
+  republie ») exige d'effacer l'ancre de la règle 15. C'est la fonction la plus dangereuse que ce
+  schéma puisse porter ; elle n'est pas écrite. En attendant, l'issue est de republier depuis un
+  contenu neuf.
+- **Constantes de quota dans `packages/shared`** : elles vivent dans `apps/worker/src/quota.ts`,
+  parce que `@ocean/shared` n'est dépendance d'aucune app aujourd'hui. Le câbler touche le workspace
+  et l'image Docker du worker — à faire hors d'un ticket de sûreté de publication.
+
+### Vu pendant la nuit, volontairement PAS touché
+
+- `setClientArchived` (`clients.ts:220`) archive un client sans toucher aux jobs de ses contenus :
+  ils partiront. Ni changement de statut ni de date, donc hors de portée du helper P4-1 **et** du
+  trigger P4-2 — il faut une RPC scopée client.
+- `request_target_retry` reste un cul-de-sac (P1 de l'audit) : elle pose `retry_requested_at`, que
+  personne ne lit. C'est ce qui a imposé de garder les cibles `failed` **non ancrées** ré-enfilables
+  en P3-4.
+- `imported_posts.thumb_url` pointe le CDN Instagram, absent de `remotePatterns`. Sans effet
+  aujourd'hui (la table n'a aucun écrivain), à ajouter avec l'import de feed (phase 9).
+- `draftFromContent` ne remonte pas `crop_preset` : un recadrage enregistré est perdu à la
+  réouverture. Sans conséquence tant que rien ne traite l'image.
+- Le triple canal du §10 n'existe toujours pas : report de quota, `needs_verification` et
+  `SCHEDULED_WITHOUT_JOB` sont **journalisés**, rien de plus.
+- Commit `a4d031d` : le travail « annotations portail + notifications agence » trouvé **non
+  commité** dans l'arbre au démarrage a été commité tel quel, sans relecture, pour que les commits
+  de tickets restent atomiques (plusieurs de ses fichiers devaient être touchés par P3-3). Seule
+  vérification faite : `tsc --noEmit` passe.
