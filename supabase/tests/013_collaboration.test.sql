@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(29);
 
 -- ===========================================================================
 -- Seed. org A {owner UA, reviewer UR sur client A1}, org B {owner UB}.
@@ -236,18 +236,35 @@ select lives_ok(
   'le worker (sans claims JWT) peut poser status = published');
 
 -- ===========================================================================
--- 7. emit_notification : refuse un destinataire hors tenant
+-- 7. emit_notification : injoignable en REST, et refuse un destinataire hors tenant
+--
+-- La migration 017 a RETIRÉ l'EXECUTE à anon et authenticated : le helper n'est
+-- appelé que par d'autres fonctions SECURITY DEFINER (qui s'exécutent sous le
+-- propriétaire) et par le serveur en service_role. La garde de tenant, elle,
+-- reste évaluée sur auth.uid() — donc sur les claims JWT, quel que soit le rôle
+-- de connexion. On teste les deux séparément, sinon le 42501 « permission denied »
+-- masque le 42501 « FORBIDDEN » et l'assertion de tenant devient vide.
 -- ===========================================================================
 
-set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000013001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000013001","role":"authenticated"}';
+
+set local role authenticated;
+
+select throws_ok(
+  $$select public.emit_notification(
+      '00000000-0000-4000-8000-000000013003', '10000000-0000-4000-8000-000000013001',
+      '20000000-0000-4000-8000-000000013001', 'review_requested', 'À valider', '/portal', 'reviewer')$$,
+  '42501', 'permission denied for function emit_notification',
+  'emit_notification n est PAS appelable en REST par authenticated (migration 017)');
+
+set local role service_role;
 
 select throws_ok(
   $$select public.emit_notification(
       '00000000-0000-4000-8000-000000013004', '10000000-0000-4000-8000-000000013001', null,
       'review_requested', 'Titre', '/x', 'owner')$$,
-  '42501', null,
+  '42501', 'FORBIDDEN',
   'emit_notification refuse un destinataire d une autre org');
 
 select lives_ok(
