@@ -1,10 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+import { siteOrigin } from "@/lib/site-url"
 import { createClient } from "@/lib/supabase/server"
 
 const credentialsSchema = z.object({
@@ -12,15 +12,11 @@ const credentialsSchema = z.object({
   password: z.string().min(8),
 })
 
-/** Origine publique de l'app (redirect d'email). Env prioritaire, sinon en-têtes. */
-async function siteOrigin(): Promise<string> {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL
-  if (envUrl) return envUrl.replace(/\/$/, "")
-  const h = await headers()
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"
-  const proto = h.get("x-forwarded-proto") ?? "https"
-  return `${proto}://${host}`
-}
+// Origine publique de l'app (redirect des emails de confirmation et de
+// réinitialisation) : SITE_URL au runtime, sinon les en-têtes du proxy.
+// L'ancienne implémentation lisait NEXT_PUBLIC_SITE_URL, que Next inline au
+// build : dans le bundle compilé, cette fonction était littéralement
+// `return "http://localhost:3000".replace(...)`.
 
 const signUpSchema = credentialsSchema.extend({
   fullName: z.string().trim().min(1).max(120),

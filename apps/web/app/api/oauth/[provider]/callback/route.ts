@@ -4,6 +4,7 @@ import { exchangeCode, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
 import { resolveIdentity } from "@/lib/oauth/identity"
 import { verifyState } from "@/lib/oauth/state"
 import { persistConnection } from "@/lib/oauth/tokens"
+import { requireSiteOrigin } from "@/lib/site-url"
 
 // Callback OAuth : vérifie le state signé AVANT tout échange, échange le code
 // contre des tokens, résout l'identité de compte via l'API provider (me/pages…),
@@ -17,7 +18,17 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   const { provider } = await params
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+
+  // Même contrainte qu'à l'aller : le redirect_uri renvoyé au token endpoint doit
+  // être IDENTIQUE à celui de la requête d'autorisation (les quatre fournisseurs
+  // le vérifient). Il vient donc de SITE_URL, jamais de l'origine de la requête.
+  let origin: string
+  try {
+    origin = requireSiteOrigin()
+  } catch {
+    return NextResponse.redirect(new URL(`${SETTINGS}?error=site_url_unconfigured`, request.url))
+  }
 
   if (!isOAuthProviderKey(provider)) {
     return NextResponse.redirect(`${origin}${SETTINGS}?error=provider`)

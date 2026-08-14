@@ -36,16 +36,40 @@ Je fais alors : `git push` via URL tokenisée → `GET /api/v1/deploy?uuid=eienn
 
 ### Env OAuth à poser (Coolify web) pour rendre le flux vivant
 ```
+SITE_URL=https://socean.54-36-180-115.sslip.io   # OBLIGATOIRE — voir ci-dessous
 OAUTH_STATE_SECRET=<aléatoire 32+ octets>
 OAUTH_META_CLIENT_ID=...          OAUTH_META_CLIENT_SECRET=...
 OAUTH_TIKTOK_CLIENT_KEY=...       OAUTH_TIKTOK_CLIENT_SECRET=...
 OAUTH_GOOGLE_CLIENT_ID=...        OAUTH_GOOGLE_CLIENT_SECRET=...
 OAUTH_MICROSOFT_CLIENT_ID=...     OAUTH_MICROSOFT_CLIENT_SECRET=...
 ```
+Ces noms sont ceux que le code lit réellement (`lib/oauth/config.ts`,
+`clientIdEnv` / `clientSecretEnv`) — `apps/web/.env.local.example` annonçait
+`META_APP_ID`, `TIKTOK_CLIENT_KEY`… qui ne sont lus nulle part ; l'exemple a été
+aligné sur le code.
+
 Redirect URIs à déclarer chez chaque provider :
 `https://socean.54-36-180-115.sslip.io/api/oauth/<provider>/callback`
 (providers : meta, tiktok, google, microsoft). Sans ces env, les boutons de
 connexion redirigent proprement avec `?error=oauth_unconfigured` (pas de crash).
+
+#### ⚠️ SITE_URL — et surtout PAS `NEXT_PUBLIC_SITE_URL`
+Le `redirect_uri` était dérivé de `new URL(request.url).origin`. En conteneur
+derrière le proxy Coolify, ce n'est pas l'URL publique : le `redirect_uri` envoyé
+au fournisseur ne correspondait à aucune des URIs déclarées, donc **aucune
+connexion sociale ne pouvait aboutir en production** — et il était en plus dérivé
+d'un en-tête que le client contrôle. Il vient désormais de `SITE_URL`.
+
+`SITE_URL` n'est **pas** préfixée `NEXT_PUBLIC_` à dessein : Next inline les
+variables `NEXT_PUBLIC_*` **au build**, y compris côté serveur. Vérifié sur le
+bundle de ce dépôt — `.next/server/**/*.js` ne contient plus une seule occurrence
+de `process.env.NEXT_PUBLIC_SITE_URL`, seulement la valeur gelée :
+`return "http://localhost:3000".replace(...)`. Autrement dit, une image
+construite sur une machine de dev embarquait `localhost` dans les redirect URIs
+**et** dans les liens des emails, quoi que Coolify pose au runtime.
+
+Sans `SITE_URL`, les routes OAuth redirigent en `?error=site_url_unconfigured`
+(échec net et nommé, plutôt qu'un `redirect_uri_mismatch` opaque chez Meta).
 
 ## Étape 4 — App worker Coolify (TOI, UI Coolify)
 Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :

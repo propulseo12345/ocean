@@ -17,6 +17,10 @@ build/
 .env
 .env.*
 !.env.example
+# Le gabarit d'environnement doit, lui, être versionné : c'est le seul endroit qui
+# dit quels noms de variables le code lit réellement. Il ne contient que des
+# valeurs vides et des URLs publiques — vérifier avant chaque commit.
+!.env.local.example
 
 # Vercel
 .vercel/

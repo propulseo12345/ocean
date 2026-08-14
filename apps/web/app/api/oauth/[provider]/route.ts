@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { buildAuthorizeUrl, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
 import { codeChallengeOf, createCodeVerifier, signState } from "@/lib/oauth/state"
+import { requireSiteOrigin } from "@/lib/site-url"
 
 // Démarrage OAuth custom (CLAUDE.md règle 13). Route PUBLIQUE au niveau du proxy
 // (préfixe /api/oauth) MAIS protégée ici : getActiveOrg exige une session owner
@@ -19,7 +20,19 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   const { provider } = await params
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+
+  // ⚠️ JAMAIS `new URL(request.url).origin` ici. En conteneur derrière le proxy
+  // Coolify, cette origine est celle vue par le process (http, host interne), pas
+  // l'URL publique : le redirect_uri ne correspondrait à aucune des URIs déclarées
+  // chez le fournisseur, et AUCUNE connexion sociale ne pourrait aboutir. Elle est
+  // en plus dérivée d'un en-tête que le client contrôle.
+  let origin: string
+  try {
+    origin = requireSiteOrigin()
+  } catch {
+    return NextResponse.redirect(new URL(`${SETTINGS}?error=site_url_unconfigured`, request.url))
+  }
 
   if (!isOAuthProviderKey(provider)) {
     return NextResponse.redirect(`${origin}${SETTINGS}?error=provider`)
