@@ -55,6 +55,7 @@ Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
   ```
   DATABASE_URL=<Supavisor SESSION>      # OBLIGATOIRE, port 5432 — voir ci-dessous
   PUBLISHERS_MODE=dry-run               # OBLIGATOIRE — voir ci-dessous
+  DATABASE_CA_CERT=<prod-ca-2021.crt>   # OBLIGATOIRE hors local — voir ci-dessous
   WORKER_ID=ocean-worker-1              # optionnel
   # optionnels : WORKER_POLL_MS=5000 WORKER_LEASE_MS=120000
   #              WORKER_GRACE_MS=7200000 WORKER_MAX_ATTEMPTS=5
@@ -82,6 +83,35 @@ Trois modes, la variable est obligatoire (le worker refuse de démarrer sans ell
   phase 6. Sinon `live` ferait tourner les simulations en croyant publier.
 
 Le mode retenu est écrit dans la ligne `worker started` des logs Coolify.
+
+### ⚠️ DATABASE_CA_CERT — obligatoire, sinon le worker refuse de démarrer
+C'est la connexion qui lit `vault.decrypted_secrets`, donc les **tokens OAuth en
+clair** des comptes clients. Elle vérifie désormais la chaîne de certification
+(équivalent `verify-full`) au lieu de l'ancien `rejectUnauthorized: false`, qui
+acceptait n'importe quel certificat.
+
+Or Supabase signe ses endpoints Postgres avec **sa propre autorité**, pas une
+autorité publique — vérifié par handshake le 14/08/2026 sur
+`aws-0-eu-west-1.pooler.supabase.com` **et** `db.<ref>.supabase.co` : la chaîne
+remonte à « Supabase Root 2021 CA », qui n'est pas dans le magasin de confiance de
+Node. Sans ce certificat, la vérification ne peut pas aboutir.
+
+À faire : **Supabase > Project Settings > Database > SSL Configuration >
+Download certificate** (`prod-ca-2021.crt`), puis coller son contenu PEM dans
+`DATABASE_CA_CERT` côté Coolify (les `\n` littéraux sont acceptés), ou monter le
+fichier et pointer `DATABASE_CA_CERT_PATH`.
+
+Contrôle du fichier téléchargé — empreinte SHA-256 de la racine réellement
+présentée par le serveur :
+```
+80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA
+```
+```
+openssl x509 -in prod-ca-2021.crt -noout -fingerprint -sha256
+```
+
+Le worker refuse de démarrer si la variable est absente, avec ce message — il ne
+retombe **jamais** sur une connexion non vérifiée.
 
 ### ⚠️ DATABASE_URL — mode SESSION, port 5432, JAMAIS 6543
 Supabase › Project Settings › Database › Connection string › **Session mode** :
