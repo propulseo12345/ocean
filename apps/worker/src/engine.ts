@@ -24,14 +24,24 @@ export interface EngineDeps {
   random?: () => number
 }
 
+/** Trop en retard pour publier (§5) — l'admin choisira une nouvelle date. */
+function isTooLate(job: PublishJob, now: Date, graceWindowMs: number): boolean {
+  return now.getTime() - job.runAt.getTime() > graceWindowMs
+}
+
 export async function processJob(job: PublishJob, deps: EngineDeps): Promise<void> {
   const { store, prepare, checkQuota, config, now } = deps
   const publisher = deps.resolvePublisher(job.platform)
   const nextDelay = () => backoffMs(job.attempts + 1, deps.random)
+  // RÈGLE 15 : ce job a peut-être déjà envoyé un POST chez la plateforme.
+  const started = job.publishStartedAt !== null
 
-  // Fenêtre de grâce (§5) : trop en retard, on ne publie plus — l'admin choisira
-  // une nouvelle date. Publier un contenu daté avec des heures de retard nuit.
-  if (now.getTime() - job.runAt.getTime() > config.graceWindowMs) {
+  // Fenêtre de grâce (§5) — mais JAMAIS avant d'avoir interrogé le conteneur.
+  // Un job démarré abandonné sans vérification laisse une cible « failed » sur un
+  // post réellement en ligne : l'admin reprogramme, et le doublon part. La
+  // fenêtre est donc réévaluée dans recoverStartedJob, une fois la plateforme
+  // interrogée et « rien n'est parti » établi.
+  if (!started && isTooLate(job, now, config.graceWindowMs)) {
     await store.deadLetter(job, "grace_window_exceeded")
     return
   }
@@ -45,7 +55,19 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
     return
   }
 
-  // 2. Quota plateforme (règle 19) : atteint => report auto + notification.
+  // 2. Publication idempotente (RÈGLE 15) — avant le quota : interroger un
+  // conteneur ne consomme aucun quota de publication, et un job démarré doit
+  // pouvoir conclure même quota atteint.
+  if (started) {
+    try {
+      await recoverStartedJob(job, publisher, ctx, deps)
+    } catch (err) {
+      await handleError(store, job, err, nextDelay())
+    }
+    return
+  }
+
+  // 3. Quota plateforme (règle 19) : atteint => report auto + notification.
   try {
     if (!(await checkQuota(job))) {
       await store.deferForQuota(job, config.awaitMediaDelayMs)
@@ -56,12 +78,7 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
     return
   }
 
-  // 3. Publication idempotente (RÈGLE 15).
   try {
-    if (job.publishStartedAt) {
-      await recoverStartedJob(job, publisher, ctx, deps)
-      return
-    }
     await publishFresh(job, publisher, ctx, store)
   } catch (err) {
     await handleError(store, job, err, nextDelay())
@@ -79,7 +96,7 @@ async function recoverStartedJob(
   ctx: PublishContext,
   deps: EngineDeps
 ): Promise<void> {
-  const { store, config } = deps
+  const { store, config, now } = deps
   const container = job.externalContainerId
   if (!container) {
     // publish_started_at sans conteneur = incohérent : on retente proprement
@@ -100,7 +117,14 @@ async function recoverStartedJob(
   } else if (status === "in_progress") {
     await store.markAwaitingMedia(job.id, config.awaitMediaDelayMs)
   } else {
-    // error/expired : le conteneur n'a PAS publié → republier est sûr (idempotent).
+    // error/expired : le conteneur n'a PAS publié. C'est SEULEMENT ici, la
+    // plateforme interrogée, qu'abandonner un job démarré est sûr — on sait que
+    // rien n'est en ligne, donc la cible « failed » ne ment pas.
+    if (isTooLate(job, now, config.graceWindowMs)) {
+      await store.deadLetter(job, "grace_window_exceeded")
+      return
+    }
+    // Republier est sûr (idempotent) : le conteneur n'avait rien publié.
     const res = await publisher.publish(job, container, ctx)
     await store.succeed(job, res)
   }

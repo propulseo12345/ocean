@@ -82,6 +82,7 @@ class FakePublisher implements Publisher {
   publishCalls = 0
   resolveCalls = 0
   createCalls = 0
+  statusCalls = 0
   constructor(
     readonly events: string[],
     readonly containerStatus: ContainerStatus = "published"
@@ -96,6 +97,7 @@ class FakePublisher implements Publisher {
     return { externalPostId: `p-${job.contentTargetId}`, targetStatus: "published" }
   }
   async getContainerStatus(): Promise<ContainerStatus> {
+    this.statusCalls++
     return this.containerStatus
   }
   async resolvePublished(job: PublishJob): Promise<PublishResult> {
@@ -193,6 +195,79 @@ test("fenêtre de grâce dépassée (>2h de retard) => dead_letter, aucune publi
   assert.equal(pub.publishCalls, 0)
   assert.equal(pub.createCalls, 0)
   assert.ok(events.some((e) => e.startsWith("deadLetter:")))
+})
+
+// ── CHEMIN DE DOUBLE PUBLICATION n°1 ────────────────────────────────────────
+// Worker tué pendant media_publish, VPS down 3 h. Au retour, le job est en
+// retard de plus que la fenêtre de grâce. Avant P3-1 il partait en dead_letter
+// sans qu'on demande jamais à Meta si le post existait : cible « failed » sur un
+// post en ligne, l'admin reprogramme, doublon.
+test("grâce dépassée MAIS job démarré => on interroge le conteneur d'abord (jamais dead_letter à l'aveugle)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  const job = makeJob({
+    runAt: new Date(NOW.getTime() - 5 * 60 * 60 * 1000),
+    publishStartedAt: new Date(NOW.getTime() - 4 * 60 * 60 * 1000),
+    externalContainerId: "c-target-1",
+    status: "publishing",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.statusCalls, 1, "le conteneur EST interrogé malgré le retard")
+  assert.equal(pub.publishCalls, 0, "aucune republication")
+  assert.ok(
+    !events.some((e) => e.startsWith("deadLetter:")),
+    "PAS de dead_letter : le post est en ligne"
+  )
+  assert.ok(
+    events.some((e) => e.startsWith("succeed:")),
+    "la cible reflète la réalité : publiée"
+  )
+})
+
+test("grâce dépassée + job démarré + conteneur en erreur => dead_letter APRÈS vérification", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  const job = makeJob({
+    runAt: new Date(NOW.getTime() - 5 * 60 * 60 * 1000),
+    publishStartedAt: new Date(NOW.getTime() - 4 * 60 * 60 * 1000),
+    externalContainerId: "c-target-1",
+    status: "publishing",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.statusCalls, 1, "vérification faite")
+  assert.equal(pub.publishCalls, 0, "on ne publie pas un contenu daté avec 5 h de retard")
+  assert.ok(
+    events.some((e) => e.startsWith("deadLetter:")),
+    "abandon légitime : la plateforme confirme que rien n'est parti"
+  )
+})
+
+test("job démarré : le quota n'est jamais consulté (interroger un conteneur ne publie rien)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  let quotaCalls = 0
+  await processJob(
+    makeJob({
+      publishStartedAt: new Date(NOW.getTime() - 5000),
+      externalContainerId: "c-target-1",
+      status: "publishing",
+    }),
+    deps(store, pub, {
+      checkQuota: async () => {
+        quotaCalls++
+        return false
+      },
+    })
+  )
+
+  assert.equal(quotaCalls, 0, "quota non consulté sur un job démarré")
+  assert.ok(!events.includes("deferForQuota"), "un job démarré n'est jamais reporté")
+  assert.ok(events.some((e) => e.startsWith("succeed:")))
 })
 
 test("token perdu (NeedsReauth) => failed permanent, aucune publication", async () => {
