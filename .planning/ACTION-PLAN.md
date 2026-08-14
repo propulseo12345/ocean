@@ -133,6 +133,18 @@ n'a changé de statut**.
 **Critère de sortie** : une erreur provoquée volontairement dans le worker apparaît dans Sentry, et
 l'arrêt du worker déclenche une alerte.
 
+> **Ce qui ne demandait aucun compte externe est fait le 14/08.**
+>
+> | Chantier | Commit | Preuve |
+> |---|---|---|
+> | Le worker expose un signe de vie | `abbe73e` | Sa boucle attrapait **toutes** les erreurs de tick sans compteur : un worker dont le pooler bascule échouait à 100 % en restant « running / healthy », sans publier une seule fois. La santé répond maintenant « un tick a réussi récemment », pas « le process vit ». Vérifié **en conteneur** : base injoignable → `HTTP 503`, puis `docker inspect` → **`unhealthy`**. Au-delà de 60 échecs consécutifs (~5 min) : **exit 1**, donc redémarrage visible — vérifié. `pool.on('error')` ajouté. |
+> | Le moteur d'états n'est plus muet | `abbe73e` | `succeed`, `retryOrFail`, `failPermanent`, `deadLetter`, `deferForQuota` et la pose de `publish_started_at` émettent un log structuré (identifiants et statuts uniquement, aucun secret). Sans ça, impossible de savoir si 2 % ou 30 % des publications échouent. |
+> | Les erreurs serveur web laissent une trace | `0ad690f` | `grep 'console\.'` sur `apps/web` renvoyait **0** : le conteneur ne produisait aucun log. `instrumentation.ts` + `onRequestError`, même format JSON que le worker. Le `digest` est journalisé **et** affiché à l'utilisateur : prouvé de bout en bout, le même `4135737880` apparaît dans le log serveur et dans la charge envoyée au client. |
+>
+> **Reste, et ça demande des comptes** : Sentry (web + worker, sourcemaps, Cron Monitors),
+> PostHog EU, alerte sur job `failed`/`dead_letter`, et le **watchdog `pg_cron`** — le seul
+> filet indépendant du worker, qui n'existe toujours pas.
+
 ---
 
 ## PORTE B — Ne jamais publier deux fois
