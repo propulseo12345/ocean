@@ -54,10 +54,34 @@ Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
 - **Env** (le worker n'utilise QUE pg — pas de supabase-js) :
   ```
   DATABASE_URL=<Supavisor SESSION>      # OBLIGATOIRE, port 5432 — voir ci-dessous
+  PUBLISHERS_MODE=dry-run               # OBLIGATOIRE — voir ci-dessous
   WORKER_ID=ocean-worker-1              # optionnel
   # optionnels : WORKER_POLL_MS=5000 WORKER_LEASE_MS=120000
   #              WORKER_GRACE_MS=7200000 WORKER_MAX_ATTEMPTS=5
+  #              WORKER_DRY_RUN_DEFER_MS=900000
   ```
+
+### ⚠️ PUBLISHERS_MODE — sans valeur par défaut, et `stub` est INTERDIT ici
+Trois modes, la variable est obligatoire (le worker refuse de démarrer sans elle) :
+- `dry-run` — **le mode de cette étape**. Le worker claim les vrais jobs, pose et
+  prolonge le lease, fait tourner le reaper, et **s'arrête là** : le job n'entre pas
+  dans la machine à états, donc zéro appel plateforme, zéro état terminal, et pas une
+  ligne écrite dans `content_targets` ni `content_items`. Le job est relâché tel quel,
+  décalé de 15 min. C'est ce qui permet de prouver la file en production **sans le
+  moindre effet de bord**.
+- `stub` — simulation qui écrit `content_targets.status = 'published'` avec un
+  permalink `https://stub.local/…`. **Refus de démarrer si `DATABASE_URL` n'est pas
+  une base locale.** Sur la base de production, Étienne programme un post pour un
+  vrai client, cinq secondes plus tard l'app affiche « Publié » avec un lien mort,
+  le client le voit sur le portail, et `enqueue_publish_jobs` exclut définitivement
+  la cible du ré-enfilement (`ct.status not in ('published',…)`) : seul du SQL en
+  service_role débloque. C'est exactement ce que cette étape 4 prescrivait avant
+  le ticket P0-7.
+- `live` — publishers réels. **Refusé au démarrage** tant que `SIMULATED_PLATFORMS`
+  (apps/worker/src/publishers/index.ts) n'est pas vide, c'est-à-dire jusqu'à la
+  phase 6. Sinon `live` ferait tourner les simulations en croyant publier.
+
+Le mode retenu est écrit dans la ligne `worker started` des logs Coolify.
 
 ### ⚠️ DATABASE_URL — mode SESSION, port 5432, JAMAIS 6543
 Supabase › Project Settings › Database › Connection string › **Session mode** :
@@ -66,8 +90,6 @@ postgresql://postgres.hgdeopkmkwyoumsfggrm:<DB_PASSWORD>@aws-0-<region>.pooler.s
 ```
 Le port **6543** (Transaction mode) CASSE `FOR UPDATE SKIP LOCKED` entre commandes
 et les advisory locks (règle 17) — `env.ts` REFUSE explicitement `:6543` au démarrage.
-Le worker démarre en **STUB** (aucun POST réel Meta/TikTok) : il claim/lease/reaper
-de vrais jobs et fait tourner la machine à états, sans publier chez un client.
 
 ## Étape 5 — Smoke test réel claim/reaper (SQL Editor)
 Après étape 1 + un contenu programmé dans l'app (=> un `publish_job` réel) :

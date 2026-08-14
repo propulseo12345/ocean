@@ -234,6 +234,31 @@ export class PgJobStore implements JobStore {
     )
   }
 
+  /**
+   * PUBLISHERS_MODE=dry-run uniquement. Relâche un job réclamé sans rien décider :
+   * pas d'état terminal, pas d'attempts++, aucune écriture sur content_targets ni
+   * content_items. Le job retourne dans la file, décalé de `deferMs` pour ne pas
+   * être re-réclamé à chaque tick.
+   *
+   * Volontairement HORS de l'interface JobStore : c'est une manœuvre d'exploitation
+   * du mode dry-run, pas une transition de la machine à états (engine.ts n'y a
+   * donc pas accès et ne peut pas s'en servir par erreur).
+   *
+   * Note : le statut d'origine (scheduled / retrying / awaiting_media) n'est pas
+   * récupérable — le claim l'a déjà écrasé par 'claimed' — le job repart donc en
+   * 'scheduled'. `run_at` et `attempts` sont inchangés.
+   */
+  async releaseForDryRun(jobId: string, deferMs: number): Promise<void> {
+    await this.pool.query(
+      `update public.publish_jobs
+       set status = 'scheduled', step = null,
+           worker_id = null, claimed_at = null, lease_expires_at = null,
+           next_attempt_at = now() + make_interval(secs => $2::double precision / 1000)
+       where id = $1`,
+      [jobId, deferMs]
+    )
+  }
+
   private async withTx(fn: (c: pg.PoolClient) => Promise<void>): Promise<void> {
     const client = await this.pool.connect()
     try {
