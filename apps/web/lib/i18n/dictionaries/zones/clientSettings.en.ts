@@ -134,8 +134,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
         "A late approval never triggers automatic publishing: past the deadline, the content comes back to you for rescheduling.",
       savedToast: "Approval level saved",
       inviteDialogTitle: "Invite a reviewer",
-      inviteDialogDescription:
-        "They'll get read-only access to this client's approval portal.",
+      inviteDialogDescription: "They'll get read-only access to this client's approval portal.",
       inviteEmailLabel: "Reviewer email",
       inviteEmailPlaceholder: "name@example.com",
       inviteSubmit: "Create invitation",

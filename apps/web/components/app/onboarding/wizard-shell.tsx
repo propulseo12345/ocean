@@ -121,7 +121,9 @@ export function WizardShell() {
       slots: draft.slots.map((s) => ({
         weekday: s.weekday,
         time: s.time,
-        platforms: s.platforms.filter((p) => PUBLISHABLE.includes(p as (typeof PUBLISHABLE)[number])),
+        platforms: s.platforms.filter((p) =>
+          PUBLISHABLE.includes(p as (typeof PUBLISHABLE)[number])
+        ),
       })),
       reviewerEmail: draft.reviewerEmail,
     })

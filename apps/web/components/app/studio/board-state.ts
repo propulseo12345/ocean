@@ -232,9 +232,7 @@ export function useBoardState({
   const archiveBatch = useCallback(
     async (ids: string[]): Promise<BatchResult> => {
       setHiddenIds((prev) => new Set([...prev, ...ids]))
-      const results = await Promise.all(
-        ids.map((id) => trashContent({ clientId, contentId: id }))
-      )
+      const results = await Promise.all(ids.map((id) => trashContent({ clientId, contentId: id })))
       const failed = ids.filter((_, i) => !results[i].ok)
       if (failed.length) {
         setHiddenIds((prev) => {

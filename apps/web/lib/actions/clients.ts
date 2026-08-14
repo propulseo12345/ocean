@@ -73,9 +73,7 @@ function normalizeHandle(value: string): string | null {
  * Nommée `createClientAction` pour ne pas masquer la factory `createClient`
  * de lib/supabase/server importée ci-dessus.
  */
-export async function createClientAction(
-  input: unknown
-): Promise<ActionResult<{ id: string }>> {
+export async function createClientAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = draftSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const d = parsed.data

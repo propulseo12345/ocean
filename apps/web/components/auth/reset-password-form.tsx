@@ -29,7 +29,7 @@ export function ResetPasswordForm() {
       }
       return result
     },
-    undefined,
+    undefined
   )
 
   return (

@@ -141,17 +141,18 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # TODO(lot-0) : passer en bloquant une fois le Pre-0 commite.
-      # `pnpm check` echoue aujourd'hui sur 2 points hors perimetre backend
-      # (.planning/i18n/lot3-workflow.js, provider.tsx document.cookie).
-      # Une CI rouge en permanence est une CI qu'on ignore.
+      # Bloquants depuis P0-5. Ils ne l'etaient pas parce que `pnpm check`
+      # echouait sur des artefacts hors code source (.planning, docs/superpowers,
+      # _research -- desormais exclus de biome.json) et sur 24 fichiers non
+      # formates. Le typecheck, lui, renvoyait deja 0 erreur.
+      # Rappel : biome.json impose lineEnding lf. Sous Windows (core.autocrlf
+      # true) `biome check` remonte des erreurs de format sur des fichiers non
+      # modifies -- c'est un artefact local, la CI Linux checkout en LF.
       - name: Biome
         run: pnpm check
-        continue-on-error: true
 
       - name: Typecheck
         run: pnpm --filter web exec tsc --noEmit
-        continue-on-error: true
 
       - name: Build
         run: pnpm build

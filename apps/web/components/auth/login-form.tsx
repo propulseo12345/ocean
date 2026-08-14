@@ -27,7 +27,7 @@ export function LoginForm() {
       }
       return result
     },
-    undefined,
+    undefined
   )
 
   return (

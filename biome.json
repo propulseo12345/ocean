@@ -3,7 +3,15 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/components/ui", "!**/app/globals.css", "!**/next-env.d.ts"]
+    "includes": [
+      "**",
+      "!**/components/ui",
+      "!**/app/globals.css",
+      "!**/next-env.d.ts",
+      "!.planning",
+      "!_research",
+      "!docs/superpowers"
+    ]
   },
   "formatter": {
     "enabled": true,

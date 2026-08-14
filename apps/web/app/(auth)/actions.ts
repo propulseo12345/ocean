@@ -31,7 +31,7 @@ export type AuthResult = { error: string } | undefined
 /** Connexion par mot de passe (décision : password only, pas d'OTP). */
 export async function signInWithPassword(
   _prev: AuthResult,
-  formData: FormData,
+  formData: FormData
 ): Promise<AuthResult> {
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
@@ -56,7 +56,7 @@ export async function signInWithPassword(
  */
 export async function signUpWithPassword(
   _prev: AuthResult,
-  formData: FormData,
+  formData: FormData
 ): Promise<AuthResult> {
   const parsed = signUpSchema.safeParse({
     email: formData.get("email"),
@@ -75,13 +75,14 @@ export async function signUpWithPassword(
 
   // Session immédiate (confirmation désactivée) : amorcer l'org.
   if (data.session) {
-    const slug = parsed.data.fullName
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 40) || "mon-organisation"
+    const slug =
+      parsed.data.fullName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || "mon-organisation"
     await supabase.rpc("create_organization", {
       _name: parsed.data.fullName,
       _slug: slug,
@@ -106,7 +107,7 @@ const resetRequestSchema = z.object({ email: z.string().email() })
  */
 export async function requestPasswordReset(
   _prev: AuthResult,
-  formData: FormData,
+  formData: FormData
 ): Promise<AuthResult> {
   const parsed = resetRequestSchema.safeParse({ email: formData.get("email") })
   if (!parsed.success) return { error: "invalid_email" }
@@ -126,10 +127,7 @@ const newPasswordSchema = z.object({ password: z.string().min(8) })
  * Fixe un nouveau mot de passe. Exige une session active (session de
  * récupération établie par /auth/callback, ou utilisateur déjà connecté).
  */
-export async function updatePassword(
-  _prev: AuthResult,
-  formData: FormData,
-): Promise<AuthResult> {
+export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const parsed = newPasswordSchema.safeParse({ password: formData.get("password") })
   if (!parsed.success) return { error: "weak_password" }
 

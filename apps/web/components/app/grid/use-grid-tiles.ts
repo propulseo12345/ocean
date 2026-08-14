@@ -100,7 +100,12 @@ export function useGridTiles(
     const prevShelf = shelfRef.current
     const idx =
       over.id === GRID_DROP_ID ? prevPlanned.length : prevPlanned.findIndex((t) => t.id === over.id)
-    const { next, dateIso } = insertFromShelf(prevPlanned, tile, idx < 0 ? prevPlanned.length : idx, tz)
+    const { next, dateIso } = insertFromShelf(
+      prevPlanned,
+      tile,
+      idx < 0 ? prevPlanned.length : idx,
+      tz
+    )
     commit(
       next,
       prevShelf.filter((t) => t.id !== shelfId)
@@ -148,7 +153,8 @@ export function useGridTiles(
     const prevBaseline = baselineRef.current
     const base = new Map(prevBaseline.planned.map((tile) => [tile.id, tile.dateIso]))
     const changed = plannedRef.current.filter(
-      (tile) => isSortableTile(tile) && !tile.ghost && tile.dateIso && base.get(tile.id) !== tile.dateIso
+      (tile) =>
+        isSortableTile(tile) && !tile.ghost && tile.dateIso && base.get(tile.id) !== tile.dateIso
     )
     baselineRef.current = { planned: plannedRef.current, shelf: shelfRef.current }
     setHistory([])
@@ -239,7 +245,9 @@ export function useGridTiles(
   // (scheduleContentItem). Optimiste + rollback global si une écriture échoue.
   async function batchShiftWeek(ids: string[]) {
     const prev = plannedRef.current
-    const next = mapSelected(ids, (t) => (t.dateIso ? { ...t, dateIso: shiftDays(t.dateIso, 7) } : t))
+    const next = mapSelected(ids, (t) =>
+      t.dateIso ? { ...t, dateIso: shiftDays(t.dateIso, 7) } : t
+    )
     const targets = next.filter(
       (t) => ids.includes(t.id) && isSortableTile(t) && !t.ghost && t.dateIso
     )
@@ -266,9 +274,7 @@ export function useGridTiles(
     if (targets.length === 0) return
     commit(mapSelected(ids, (t) => ({ ...t, status: "in_review" as const })))
     const results = await Promise.all(
-      targets.map((t) =>
-        applyStatusIntent({ clientId, contentId: t.id, intent: "send_to_review" })
-      )
+      targets.map((t) => applyStatusIntent({ clientId, contentId: t.id, intent: "send_to_review" }))
     )
     if (results.some((r) => !r.ok)) {
       commit(prev)
