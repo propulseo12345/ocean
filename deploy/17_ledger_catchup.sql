@@ -1,9 +1,23 @@
 -- ============================================================================
 -- Rattrapage du ledger de migrations distant — ticket P0-2
 --
--- ⚠️ NON APPLIQUÉ. Ce fichier est une PROPOSITION à valider par Étienne avant
---    de le coller dans le SQL Editor du projet `hgdeopkmkwyoumsfggrm`.
---    Aucune session Claude ne l'exécute en ligne.
+-- ✅ APPLIQUÉ le 14/08/2026 sur `hgdeopkmkwyoumsfggrm`, sur décision explicite
+--    d'Étienne (autorisation d'écriture MCP accordée en séance).
+--    Contrôle après application :
+--      22 lignes, `001`…`022`, aucune version intruse.
+--      `get_advisors` (security) : aucun nouveau lint — 3 INFO `*_secrets`
+--      deny-all (voulus) + les WARN SECURITY DEFINER préexistants +
+--      auth_leaked_password_protection (à activer dans Auth > Password).
+--    Rejouable tel quel (`on conflict do nothing`) : le relancer est sans effet.
+--
+--    Note : `apply_migration` inscrit une ligne de bookkeeping horodatée pour
+--    chacun de ses appels. Les deux lignes ainsi créées (le rattrapage lui-même
+--    et son nettoyage) ont été retirées par `execute_sql` — elles ne
+--    correspondaient à aucun fichier de `supabase/migrations/`. Même effet qu'un
+--    `supabase migration repair --status reverted`. Si tu réappliques ce fichier
+--    via un outil qui journalise, pense à refaire ce ménage :
+--      delete from supabase_migrations.schema_migrations
+--      where version !~ '^0[0-2][0-9]$';
 --
 -- ---------------------------------------------------------------------------
 -- POURQUOI
@@ -40,12 +54,12 @@
 -- n'est lu que par le CLI. Il est rejouable (`on conflict do nothing`).
 --
 -- ---------------------------------------------------------------------------
--- LA MANŒUVRE, DANS L'ORDRE
+-- LA MANŒUVRE, DANS L'ORDRE  (étapes 1-2 : FAITES le 14/08/2026)
 -- ---------------------------------------------------------------------------
 --   1. Snapshot / backup du projet AVANT (Dashboard > Database > Backups).
 --   2. Coller ce fichier dans le SQL Editor, l'exécuter, lire le SELECT final :
 --      il doit lister 22 lignes, de 001 à 022.
---   3. NE PAS lancer `supabase db push` dans la foulée. Le vérifier d'abord à
+--   3. RESTE À FAIRE. NE PAS lancer `supabase db push` dans la foulée. Le vérifier d'abord à
 --      vide : `supabase link --project-ref hgdeopkmkwyoumsfggrm` puis
 --      `supabase migration list` — les 22 versions doivent apparaître des DEUX
 --      côtés (Local | Remote). Si une seule ligne n'a pas son pendant distant,
