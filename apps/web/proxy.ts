@@ -41,11 +41,16 @@ export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request)
   const { pathname } = request.nextUrl
 
-  // Un user connecte sur /login repart vers l'app.
+  // Un user connecte sur /login repart vers l'app. On ne DEVINE plus la
+  // destination ici — le proxy n'a pas le droit d'interroger la base (Partial
+  // Rendering, prefetch) et `/dashboard` en dur envoyait tout Reviewer sur un
+  // 404. On delegue au point unique de resolution de role (P7-5), en preservant
+  // `next` au lieu de l'effacer.
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone()
-    url.pathname = "/dashboard"
-    url.search = ""
+    url.pathname = "/auth/landing"
+    const next = request.nextUrl.searchParams.get("next")
+    url.search = next ? `?next=${encodeURIComponent(next)}` : ""
     return NextResponse.redirect(url)
   }
 

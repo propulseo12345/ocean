@@ -65,5 +65,21 @@ export const authFr = {
       weakPasswordDetail: "Le mot de passe doit faire au moins 8 caractères.",
       genericDetail: "Le lien a peut-être expiré. Redemande un e-mail de réinitialisation.",
     },
+    // Amorçage d'organisation (P7-3) — atterrissage de tout compte sans org.
+    onboarding: {
+      metaTitle: "Créer ton organisation",
+      cardTitle: "Créer ton organisation",
+      cardDescription:
+        "Ton compte n'est rattaché à aucune organisation. Donne-lui un nom pour commencer.",
+      nameLabel: "Nom de l'organisation",
+      namePlaceholder: "Studio Marea",
+      nameHelp: "C'est le nom que verront tes clients. Tu pourras le changer plus tard.",
+      submit: "Créer l'organisation",
+      submitting: "Création…",
+      errorTitle: "Création impossible",
+      invalidNameDetail: "Le nom doit faire entre 1 et 120 caractères.",
+      genericDetail: "Réessaie dans un instant. Si le problème persiste, contacte le support.",
+      signOut: "Ce n'est pas mon compte — se déconnecter",
+    },
   },
 } as const

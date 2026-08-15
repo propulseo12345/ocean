@@ -68,5 +68,21 @@ export const authEn: Widen<typeof authFr> = {
       weakPasswordDetail: "The password must be at least 8 characters.",
       genericDetail: "The link may have expired. Request a new reset email.",
     },
+    // Organization bootstrap (P7-3) - landing page for any account without an org.
+    onboarding: {
+      metaTitle: "Create your organization",
+      cardTitle: "Create your organization",
+      cardDescription:
+        "Your account isn't linked to any organization yet. Give it a name to get started.",
+      nameLabel: "Organization name",
+      namePlaceholder: "Studio Marea",
+      nameHelp: "This is the name your clients will see. You can change it later.",
+      submit: "Create organization",
+      submitting: "Creating…",
+      errorTitle: "Could not create",
+      invalidNameDetail: "The name must be between 1 and 120 characters.",
+      genericDetail: "Try again in a moment. If the problem persists, contact support.",
+      signOut: "Not my account - sign out",
+    },
   },
 }
