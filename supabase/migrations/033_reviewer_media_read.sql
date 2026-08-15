@@ -32,9 +32,9 @@
 
 -- ===========================================================================
 -- 1. Cast défensif d'un segment de chemin
---    `(storage.foldername(name))[4]::uuid` lève si le segment existe mais n'est
---    pas un uuid. Un objet au chemin inattendu ferait alors échouer l'ÉVALUATION
---    de la policy — donc une erreur, pas un refus propre.
+--    `(storage.foldername(name))[1]::uuid` lève si le segment existe mais n'est
+--    pas un uuid. Un objet rangé hors convention ferait alors échouer
+--    l'ÉVALUATION de la policy — donc une erreur, pas un refus propre.
 -- ===========================================================================
 
 create or replace function private.safe_uuid(_value text)
@@ -61,10 +61,15 @@ comment on function private.safe_uuid(text) is
 -- 2. Droit de LECTURE d'un média — distinct du droit d'écriture
 -- ===========================================================================
 
+-- L'ancienne signature (uuid, uuid, uuid) dérivait le média d'un segment de
+-- chemin. `create or replace` créerait une SURCHARGE au lieu de la remplacer, et
+-- la policy resterait ambiguë : on la retire explicitement.
+drop function if exists private.can_read_client_media(uuid, uuid, uuid);
+
 create or replace function private.can_read_client_media(
   _org uuid,
   _client uuid,
-  _media uuid
+  _object_name text
 )
 returns boolean
 language sql
@@ -72,24 +77,34 @@ stable
 security definer
 set search_path = ''
 as $$
-  -- Voie agence : strictement le prédicat d'écriture, inchangé.
+  -- Voie agence : strictement le prédicat d'écriture, inchangé. Les deux
+  -- premiers segments du chemin portent l'isolation de tenant.
   select (select private.can_write_client_media(_org, _client))
-    -- Voie reviewer : miroir exact de la policy media_assets_select (012:312).
-    -- `is_client_member` seul ne suffirait pas — il ouvrirait TOUS les médias du
-    -- client, y compris ceux d'un contenu que ce reviewer n'a pas à voir.
-    or (
-      _media is not null
-      and (select private.is_client_member(_client))
-      and (select private.is_reviewer_visible_media(_media))
+    -- Voie reviewer. On ne DEVINE pas l'asset depuis un segment de chemin : le
+    -- media_asset_id est généré par l'INSERT, donc le navigateur ne peut pas le
+    -- connaître au moment où il téléverse — un chemin qui le contiendrait serait
+    -- un vœu pieux. On RÉSOUT donc l'objet par la table, via
+    -- `media_assets_storage_path_idx` qui est UNIQUE (012:65) : un objet, un
+    -- asset, une sonde d'index.
+    --
+    -- La condition qui suit est le miroir exact de `media_assets_select`
+    -- (012:312). `is_client_member` seul ouvrirait TOUS les médias du client,
+    -- brouillons internes compris.
+    or exists (
+      select 1
+      from public.media_assets ma
+      where ma.storage_path = _object_name
+        and (select private.is_client_member(ma.client_id))
+        and (select private.is_reviewer_visible_media(ma.id))
     );
 $$;
 
-revoke all on function private.can_read_client_media(uuid, uuid, uuid) from public;
-grant execute on function private.can_read_client_media(uuid, uuid, uuid)
+revoke all on function private.can_read_client_media(uuid, uuid, text) from public;
+grant execute on function private.can_read_client_media(uuid, uuid, text)
   to authenticated, service_role;
 
-comment on function private.can_read_client_media(uuid, uuid, uuid) is
-  'Droit de LECTURE d un media : membre de l org, OU membre du client ET media visible par ce reviewer (miroir de media_assets_select). Distinct du droit d ecriture.';
+comment on function private.can_read_client_media(uuid, uuid, text) is
+  'Droit de LECTURE d un media : membre de l org, OU membre du client ET media visible par ce reviewer (resolu par storage_path, index unique). Distinct du droit d ecriture.';
 
 -- ===========================================================================
 -- 3. La policy SELECT de media-originals
@@ -117,7 +132,7 @@ begin
       and (select private.can_read_client_media(
             private.safe_uuid((storage.foldername(name))[1]),
             private.safe_uuid((storage.foldername(name))[2]),
-            private.safe_uuid((storage.foldername(name))[4])))
+            name))
     );
   end if;
 end
