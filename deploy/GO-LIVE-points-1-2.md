@@ -104,7 +104,27 @@ Nouvelle application (uuid distinct de web), même repo `propulseo12345/ocean` :
   #              WORKER_MAX_PROCESSING_MS=600000 (au-delà, le lease n'est plus
   #                prolongé et le reaper reprend le job — ne pas monter au-dessus
   #                sans raison : c'est ce qui empêche un job bloqué de l'être à vie)
+  #              WORKER_TOKEN_REFRESH_TIMEOUT_MS=15000 (budget du rafraîchissement
+  #                de token DANS le chemin de publication — borne le lease de 2 min)
+
+  # === REQUIS UNIQUEMENT EN `live` (phase 6) ============================
+  # Le worker refuse de démarrer en live si l'une de ces six manque, et il
+  # NOMME celles qui manquent. C'est délibéré : un worker live sans
+  # identifiants démarre parfaitement et n'échoue qu'au PREMIER job, à 7 h du
+  # matin sur le contenu d'un vrai client.
+  OAUTH_META_CLIENT_ID=<idem apps/web>       # re-échange du token long-lived Meta
+  OAUTH_META_CLIENT_SECRET=<idem apps/web>
+  OAUTH_TIKTOK_CLIENT_KEY=<idem apps/web>    # rotation du refresh token TikTok
+  OAUTH_TIKTOK_CLIENT_SECRET=<idem apps/web>
+  SUPABASE_URL=https://hgdeopkmkwyoumsfggrm.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY=<service_role>   # signe les URL de média (bucket privé)
   ```
+
+  ⚠️ **`SUPABASE_SERVICE_ROLE_KEY` dans le worker n'est pas la même exposition
+  que dans le web.** Le worker n'a pas de bundle navigateur : la clé y est
+  strictement serveur. Elle sert à **une seule chose** — signer une URL de
+  lecture, TTL 48 h, sur `media-originals` (règle 20). Sans elle, `media` arrive
+  vide aux publishers et Instagram refuse tout post.
 
 - **Healthcheck Coolify** : `GET :8080/` — l'image l'expose et déclare déjà un
   `HEALTHCHECK`. Il ne répond pas « le process vit » mais **« un tick a réussi
@@ -142,9 +162,14 @@ Trois modes, la variable est obligatoire (le worker refuse de démarrer sans ell
   la cible du ré-enfilement (`ct.status not in ('published',…)`) : seul du SQL en
   service_role débloque. C'est exactement ce que cette étape 4 prescrivait avant
   le ticket P0-7.
-- `live` — publishers réels. **Refusé au démarrage** tant que `SIMULATED_PLATFORMS`
-  (apps/worker/src/publishers/index.ts) n'est pas vide, c'est-à-dire jusqu'à la
-  phase 6. Sinon `live` ferait tourner les simulations en croyant publier.
+- `live` — publishers réels. Deux refus au démarrage, dans cet ordre :
+  ① `SIMULATED_PLATFORMS` (apps/worker/src/publishers/index.ts) non vide — la
+  liste est **vide depuis le 18/08/2026**, les trois publishers sont réels ;
+  ② **identifiants plateforme manquants** — c'est le refus qui compte
+  désormais. Le message liste les variables absentes et la raison de chacune.
+  ⚠️ Cette garde vérifie la **présence**, pas la validité : elle ne prouve ni
+  qu'une app Meta existe, ni qu'un compte est connecté. **Aucun post réel n'a
+  jamais été émis par ce code.**
 
 Le mode retenu est écrit dans la ligne `worker started` des logs Coolify.
 

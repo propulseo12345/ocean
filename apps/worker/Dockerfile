@@ -69,6 +69,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 #   DATABASE_URL     Supavisor SESSION, port 5432 — jamais 6543 (règle 17)
 #   PUBLISHERS_MODE  live | stub | dry-run — sans valeur par défaut
 #   DATABASE_CA_CERT racine Supabase, hors base locale
+# En mode `live` uniquement, six variables de plus, sinon refus de demarrer
+# avec la liste de ce qui manque : OAUTH_META_CLIENT_ID/_SECRET,
+# OAUTH_TIKTOK_CLIENT_KEY/_SECRET (refresh de token, regle 14), SUPABASE_URL et
+# SUPABASE_SERVICE_ROLE_KEY (signature des URL de media, bucket prive, regle 20).
 # Coolify : replicas = 1 tant que le rate limiting par social_account n'est pas
 # partagé entre process (règle 19), et grace period >= 150 s (lease de 2 min).
 CMD ["node", "dist/index.js"]
