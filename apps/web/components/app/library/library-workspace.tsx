@@ -1,8 +1,10 @@
 "use client"
 
 import { ImagePlus, Link2, SquareDashedMousePointer } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { useMediaUpload } from "@/components/app/media/use-media-upload"
 import { Button } from "@/components/ui/button"
 import { useMultiSelect } from "@/hooks/use-multi-select"
 import type { Client, LibraryAsset } from "@/lib/domain"
@@ -31,15 +33,36 @@ import { useLibraryAssets } from "./use-library-assets"
 
 export function LibraryWorkspace({
   client,
+  orgId,
   initialAssets,
   contentRefs,
 }: {
   client: Client
+  /**
+   * Org active, résolue côté SERVEUR (cookie httpOnly validé). Elle sert à
+   * construire le chemin Storage `{org}/{client}/…`. La transmettre au
+   * navigateur n'ouvre rien : la policy `can_write_client_media` couple les deux
+   * segments, et `recordUploadedAsset` recoupe le chemin par `pathBelongsTo`
+   * contre l'org qu'il relit lui-même. Une valeur falsifiée ici est refusée
+   * deux fois.
+   */
+  orgId: string
   initialAssets: LibraryAsset[]
   contentRefs: ContentRefMap
 }) {
   const t = useT()
+  const router = useRouter()
   const lib = useLibraryAssets(initialAssets, client.id)
+  const upload = useMediaUpload({
+    orgId,
+    clientId: client.id,
+    // `router.refresh()` seulement une fois la file vidée : rafraîchir à chaque
+    // fichier ferait re-rendre la page pendant les téléversements suivants.
+    onSettled: (assets) => {
+      toast.success(t("library.upload.done", { count: assets.length }))
+      router.refresh()
+    },
+  })
   const select = useMultiSelect()
   const [filters, setFilters] = useState<LibraryFilters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortKey>("recent")
@@ -226,7 +249,10 @@ export function LibraryWorkspace({
       <UploadDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onSimulate={() => toast.info(t("library.upload.pending"))}
+        onFiles={(files) => upload.enqueue(files)}
+        items={upload.items}
+        onCancel={upload.cancel}
+        onDismiss={upload.dismiss}
       />
 
       <DepositLinkDialog

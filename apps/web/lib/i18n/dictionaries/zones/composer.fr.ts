@@ -75,6 +75,8 @@ export const composerFr = {
         "Glisse les vignettes pour réordonner — la 1re slide est la couverture du carrousel.",
       sizeMb: "{size} Mo",
       duration: "{count} s",
+      cropFailed:
+        "Recadrage impossible : l'original n'a pas pu être relu. L'intention est conservée, mais l'image n'est pas recadrée.",
       cropped: "recadré {preset}",
       crop: "Recadrer",
       remove: "Retirer",

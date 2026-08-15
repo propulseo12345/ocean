@@ -34,7 +34,7 @@ function attendre<T>(
   return new Promise<T>((resolve, reject) => {
     const minuteur = setTimeout(() => {
       nettoyer()
-      reject(new MediaDecodeError(`vidéo illisible (${libellé} : délai dépassé)`))
+      reject(new MediaDecodeError("decodage", `vidéo (${libellé}) : délai dépassé`))
     }, CHARGEMENT_MAX_MS)
 
     function nettoyer() {
@@ -48,7 +48,7 @@ function attendre<T>(
     }
     function onKo() {
       nettoyer()
-      reject(new MediaDecodeError(`vidéo illisible (${libellé})`))
+      reject(new MediaDecodeError("decodage", `vidéo (${libellé})`))
     }
 
     video.addEventListener(événement, onOk, { once: true })

@@ -146,14 +146,36 @@ export const libraryEn: Widen<typeof libraryFr> = {
     // Upload dialog
     upload: {
       title: "Add media",
-      description: "File upload arrives with the TUS wiring. Here are the specs to follow already.",
+      description: "Drop your files: they are converted, then sent to the media library.",
       dropTitle: "Drop your photos and videos here",
       dropHint: "or click to browse",
-      pending: "File upload is coming soon (TUS wiring).",
+      browse: "Browse",
       specImage:
         "Instagram images: JPEG ≤ {max} MB, ratio 4:5 to 1.91:1 — PNGs converted automatically.",
       specHeic: "iPhone HEIC: converted to JPEG on import, nothing for you to do.",
       specReel: "Reels: MP4 or MOV, 3 s to 15 min, ≤ {max} MB.",
+      // Progress
+      phasePreparation: "Converting…",
+      phaseTransfert: "Uploading {percent}%",
+      phaseVignette: "Thumbnail…",
+      phaseEnregistrement: "Saving…",
+      stateDone: "Added",
+      stateCanceled: "Canceled",
+      cancel: "Cancel",
+      dismiss: "Remove from list",
+      queued: "Queued",
+      done: "{count, plural, one {# media added} other {# media added}}",
+      // Failures — one sentence per cause: a bare "failed" makes the user guess
+      // whether to retry, pick another file, or sign in again.
+      errType: "Unsupported format. Use JPEG, PNG, HEIC, MP4 or MOV.",
+      errImageTooBig: "Image too large to be processed in the browser.",
+      errVideoTooBig: "Video too large: {max} MB maximum.",
+      errStillTooBig: "Image still too large after maximum compression.",
+      errDecode: "Unreadable file — it may be corrupted.",
+      errSession: "Session expired. Sign in again, then retry.",
+      errThumb: "The thumbnail was rejected by storage.",
+      errPath: "Storage path rejected — reload the page and retry.",
+      errUpload: "Upload interrupted. Try again.",
     },
     // Toasts (workspace)
     toast: {

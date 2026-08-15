@@ -16,7 +16,11 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable"
 import { Crop, ImagePlus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useCallback, useState } from "react"
+import { toast } from "sonner"
+import { MediaDropzone } from "@/components/app/media/media-dropzone"
+import { UploadQueue } from "@/components/app/media/upload-queue"
+import { useMediaUpload } from "@/components/app/media/use-media-upload"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,15 +32,19 @@ import {
   applyCrop,
   type ComposerDraft,
   type ComposerMedia,
+  type CropPreset,
   mediaFromLibrary,
+  mediaFromUpload,
 } from "./composer-types"
 import { MediaCropDialog } from "./media-crop-dialog"
 import { MediaPickerDialog } from "./media-picker-dialog"
 import { MediaSpecSummary } from "./media-spec-summary"
 import { SortableSlide } from "./sortable-slide"
 
-// Section « Médias » : sélection médiathèque, éditeur de carrousel (dnd,
-// 2–10 slides, 1re = couverture), alt text, recadrage mock, specs par plateforme.
+// Section « Médias » : sélection médiathèque, dépôt direct de fichiers, éditeur
+// de carrousel (dnd, 2–10 slides, 1re = couverture), alt text, recadrage RÉEL
+// (P5-9 : l'image est relue, rognée, réencodée et re-téléversée), specs par
+// plateforme.
 
 const MIME_LABELS: Record<string, string> = {
   "image/jpeg": "JPEG",
@@ -47,15 +55,25 @@ const MIME_LABELS: Record<string, string> = {
   "video/quicktime": "MOV",
 }
 
+/** Média que le recadrage doit remplacer (transporté via `meta` de la file). */
+interface CropMeta {
+  remplace: string
+  preset: CropPreset
+}
+
 export function ComposerMediaSection({
   draft,
   platforms,
   libraryAssets,
+  orgId,
+  clientId,
   onPatch,
 }: {
   draft: ComposerDraft
   platforms: Platform[]
   libraryAssets: LibraryAsset[]
+  orgId: string
+  clientId: string
   onPatch: (partial: Partial<ComposerDraft>) => void
 }) {
   const t = useT()
@@ -77,6 +95,66 @@ export function ComposerMediaSection({
 
   function setMedia(next: ComposerMedia[]) {
     onPatch({ media: next })
+  }
+
+  // Le brouillon vit dans l'état du parent : la callback doit lire `draft.media`
+  // au moment où elle s'exécute, jamais la valeur capturée à la création du hook
+  // — un téléversement dure plusieurs secondes, le brouillon a bougé entre-temps.
+  const onUploaded = useCallback(
+    (
+      asset: Parameters<NonNullable<Parameters<typeof useMediaUpload>[0]["onUploaded"]>>[0],
+      meta?: unknown
+    ) => {
+      const crop = (meta as CropMeta | undefined)?.preset
+      const remplace = (meta as CropMeta | undefined)?.remplace
+      onPatch({
+        media: (() => {
+          const courant = draft.media
+          if (remplace) {
+            // Recadrage : on SUBSTITUE, on n'ajoute pas. La version recadrée est
+            // un nouvel asset (nouveau fichier, nouvelles dimensions réelles) ;
+            // l'original reste dans la médiathèque, intact.
+            return courant.map((m) =>
+              m.id === remplace ? mediaFromUpload(asset, courant.indexOf(m), crop) : m
+            )
+          }
+          const ajouté = mediaFromUpload(asset, courant.length)
+          return isCarousel ? [...courant, ajouté] : [ajouté]
+        })(),
+      })
+    },
+    [draft.media, isCarousel, onPatch]
+  )
+
+  const upload = useMediaUpload({ orgId, clientId, onUploaded })
+
+  /**
+   * P5-9 — le recadrage TOUCHE enfin les pixels.
+   *
+   * Depuis P5-4, `applyCrop` ne posait qu'une intention : c'était honnête, mais
+   * rien ne la traitait, donc un contenu « recadré en 4:5 » partait toujours au
+   * ratio d'origine. Ici, l'original est relu depuis son URL signée, décodé,
+   * rogné et réencodé, puis téléversé comme un NOUVEL asset. Le média du
+   * brouillon pointe sur lui ; l'original n'est ni écrasé ni supprimé.
+   *
+   * Le repli sur `applyCrop` n'est pas décoratif : si l'original n'est pas
+   * relisible (URL signée expirée, réseau coupé), on garde l'intention plutôt
+   * que de faire disparaître le geste de l'utilisateur — mais rien n'affirme
+   * alors que l'image est conforme.
+   */
+  async function handleCrop(cible: ComposerMedia, preset: CropPreset) {
+    try {
+      const res = await fetch(cible.fullUrl)
+      if (!res.ok) throw new Error(String(res.status))
+      const blob = await res.blob()
+      const fichier = new File([blob], `recadre-${preset.replace(":", "x")}.jpg`, {
+        type: blob.type || "image/jpeg",
+      })
+      upload.enqueue([fichier], { crop: preset, meta: { remplace: cible.id, preset } })
+    } catch {
+      toast.error(t("composer.media.cropFailed"))
+      setMedia(media.map((m) => (m.id === cible.id ? applyCrop(m, preset) : m)))
+    }
   }
 
   function handleAdd(assets: LibraryAsset[]) {
@@ -133,17 +211,22 @@ export function ComposerMediaSection({
 
       <CardContent className="space-y-4">
         {media.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ImagePlus className="size-5" />
-            {t("composer.media.emptyChoose")}
-            <span className="text-xs text-muted-foreground/70">
-              {t("composer.media.emptyHint")}
-            </span>
-          </button>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlus className="size-5" />
+              {t("composer.media.emptyChoose")}
+              <span className="text-xs text-muted-foreground/70">
+                {t("composer.media.emptyHint")}
+              </span>
+            </button>
+            {/* Déposer un fichier ICI, sans passer par la médiathèque : c'est
+                le geste naturel quand on compose depuis un téléphone. */}
+            <MediaDropzone compact multiple={isCarousel} onFiles={(f) => upload.enqueue(f)} />
+          </div>
         ) : (
           <>
             <DndContext
@@ -226,6 +309,17 @@ export function ComposerMediaSection({
           </>
         )}
 
+        {media.length > 0 ? (
+          <MediaDropzone
+            compact
+            multiple={isCarousel}
+            disabled={isCarousel && media.length >= CAROUSEL_LIMITS.max}
+            onFiles={(f) => upload.enqueue(f)}
+          />
+        ) : null}
+
+        <UploadQueue items={upload.items} onCancel={upload.cancel} onDismiss={upload.dismiss} />
+
         <MediaSpecSummary
           media={media}
           platforms={platforms}
@@ -248,8 +342,7 @@ export function ComposerMediaSection({
           if (!open) setCropId(null)
         }}
         onApply={(preset) => {
-          if (cropMedia)
-            setMedia(media.map((m) => (m.id === cropMedia.id ? applyCrop(m, preset) : m)))
+          if (cropMedia) void handleCrop(cropMedia, preset)
         }}
       />
     </Card>

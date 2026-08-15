@@ -77,6 +77,8 @@ export const composerEn: Widen<typeof composerFr> = {
       carouselReorder: "Drag the thumbnails to reorder — the 1st slide is the carousel cover.",
       sizeMb: "{size} MB",
       duration: "{count}s",
+      cropFailed:
+        "Cannot crop: the original could not be read back. The intent is kept, but the image is not cropped.",
       cropped: "cropped {preset}",
       crop: "Crop",
       remove: "Remove",

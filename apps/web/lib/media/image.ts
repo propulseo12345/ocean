@@ -26,10 +26,28 @@ import {
   thumbDimensions,
 } from "./image-plan"
 
+/**
+ * Causes d'échec de préparation, sous forme de CODE et non de phrase.
+ *
+ * L'interface doit pouvoir dire à l'utilisateur s'il faut réessayer, changer de
+ * fichier, ou se reconnecter. Une chaîne libre (« image encore 9 Mo… ») oblige
+ * l'écran à faire de la reconnaissance de texte pour choisir son message, et
+ * elle n'est traduisible dans aucune langue.
+ */
+export type MediaErrorCode =
+  | "type_non_supporte"
+  | "image_trop_grosse"
+  | "video_trop_grosse"
+  | "encore_trop_gros"
+  | "decodage"
+  | "canvas"
+
 export class MediaDecodeError extends Error {
-  constructor(message: string) {
-    super(message)
+  readonly code: MediaErrorCode
+  constructor(code: MediaErrorCode, detail?: string) {
+    super(detail ? `${code}: ${detail}` : code)
     this.name = "MediaDecodeError"
+    this.code = code
   }
 }
 
@@ -59,7 +77,7 @@ export async function decodeImageFile(file: File): Promise<ImageBitmap> {
     try {
       return await createImageBitmap(file, { imageOrientation: "from-image" })
     } catch (err) {
-      throw new MediaDecodeError(`image illisible (${file.type || "type inconnu"}): ${String(err)}`)
+      throw new MediaDecodeError("decodage", `${file.type || "type inconnu"}: ${String(err)}`)
     }
   }
 
@@ -72,7 +90,7 @@ export async function decodeImageFile(file: File): Promise<ImageBitmap> {
     const { heicTo } = await import("heic-to/next")
     return await heicTo({ blob: file, type: "bitmap" })
   } catch (err) {
-    throw new MediaDecodeError(`HEIC illisible: ${String(err)}`)
+    throw new MediaDecodeError("decodage", `HEIC: ${String(err)}`)
   }
 }
 
@@ -96,7 +114,7 @@ async function rendre(
   if (typeof OffscreenCanvas !== "undefined") {
     const canvas = new OffscreenCanvas(width, height)
     const ctx = canvas.getContext("2d")
-    if (!ctx) throw new MediaDecodeError("contexte 2d indisponible")
+    if (!ctx) throw new MediaDecodeError("canvas", "contexte 2d indisponible")
     ctx.drawImage(bitmap, source.x, source.y, source.width, source.height, 0, 0, width, height)
     return await canvas.convertToBlob({ type: mimeType, quality })
   }
@@ -105,12 +123,12 @@ async function rendre(
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext("2d")
-  if (!ctx) throw new MediaDecodeError("contexte 2d indisponible")
+  if (!ctx) throw new MediaDecodeError("canvas", "contexte 2d indisponible")
   ctx.drawImage(bitmap, source.x, source.y, source.width, source.height, 0, 0, width, height)
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, mimeType, quality)
   )
-  if (!blob) throw new MediaDecodeError("encodage impossible")
+  if (!blob) throw new MediaDecodeError("canvas", "encodage impossible")
   return blob
 }
 
@@ -146,7 +164,8 @@ export async function encodeJpeg(
 
   const taille = dernier ? Math.round(dernier.blob.size / 1024 / 1024) : 0
   throw new MediaDecodeError(
-    `image encore ${taille} Mo après compression maximale (limite ${Math.round(maxBytes / 1024 / 1024)} Mo)`
+    "encore_trop_gros",
+    `${taille} Mo après compression maximale (limite ${Math.round(maxBytes / 1024 / 1024)} Mo)`
   )
 }
 

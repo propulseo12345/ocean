@@ -96,6 +96,41 @@ export function mediaFromLibrary(
   }
 }
 
+/** Convertit un asset tout juste téléversé en média du brouillon. */
+export function mediaFromUpload(
+  asset: {
+    assetId: string
+    type: MediaType
+    thumbUrl: string
+    fullUrl: string
+    width: number
+    height: number
+    byteSize: number
+    mimeType: string
+    durationMs: number | null
+  },
+  position: number,
+  crop?: CropPreset
+): ComposerMedia {
+  return {
+    id: `cm_${asset.assetId}_${position}`,
+    type: asset.type,
+    thumbUrl: asset.thumbUrl,
+    fullUrl: asset.fullUrl,
+    // Ces quatre valeurs sont MESURÉES sur le fichier réellement produit
+    // (canvas + `Blob.size`), pas déduites d'un preset : c'est ce qui rend le
+    // preflight vrai à nouveau. Cf. `applyCrop` ci-dessous.
+    width: asset.width,
+    height: asset.height,
+    fileSizeMb: Math.round((asset.byteSize / (1024 * 1024)) * 10) / 10,
+    mimeType: asset.mimeType,
+    durationSec: asset.durationMs != null ? Math.round(asset.durationMs / 1000) : undefined,
+    altText: "",
+    libraryAssetId: asset.assetId,
+    crop,
+  }
+}
+
 /**
  * Enregistre l'INTENTION de recadrage. Aucun pixel n'est touché — et c'est
  * précisément le point du ticket P5-4.
