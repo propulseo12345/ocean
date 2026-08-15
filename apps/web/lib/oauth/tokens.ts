@@ -80,7 +80,8 @@ async function persistCalendarAccount(
         email,
         label: resolved.providerAccountName ?? email,
         status: "connected",
-        scopes: config.scopes,
+        // Les scopes ACCORDÉS, jamais ceux demandés (P8-6).
+        scopes: resolved.grantedScopes,
         needs_reauth_at: null,
       },
       { onConflict: "org_id,user_id,provider,provider_account_id" }
@@ -136,7 +137,10 @@ async function persistPlatformConnection(
         provider_account_id: resolved.providerAccountId,
         provider_account_name: resolved.providerAccountName ?? null,
         status: "connected",
-        scopes: config.scopes,
+        // Les scopes ACCORDÉS, jamais ceux demandés (P8-6). `config.scopes` est
+        // ce qu'on a DEMANDÉ ; l'utilisateur choisit ce qu'il donne, et Meta
+        // laisse décocher permission par permission.
+        scopes: resolved.grantedScopes,
         needs_reauth_at: null,
       },
       { onConflict: "org_id,provider,provider_account_id" }

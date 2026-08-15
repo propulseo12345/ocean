@@ -46,6 +46,11 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
       "instagram_content_publish",
       "pages_show_list",
       "pages_read_engagement",
+      // ⚠ Permission d'ÉCRITURE sur une Page. Sans elle, tout POST est refusé.
+      // Meta ne rétro-accorde JAMAIS un scope : l'ajouter plus tard ne donne
+      // rien aux connexions déjà établies, il faut les refaire une par une.
+      // Elle doit donc figurer ici avant la toute première connexion réelle.
+      "pages_manage_posts",
       "business_management",
     ],
     providers: ["instagram", "facebook"],
