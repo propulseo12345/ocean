@@ -226,12 +226,17 @@ plus aucun job vivant incohérent.
 cas par des **UPDATE nus** sur `content_items`, sans passer par le code applicatif — exactement ce que
 ferait une surface d'édition qui aurait oublié le helper. Corbeillé, dé-programmé, re-daté : **8 ok / 0 not ok**.
 
-### Phase 5 — Faire entrer les médias · 2 sessions
+### Phase 5 — Faire entrer les médias · 2 sessions — ✅ **CLOSE le 17/08/2026**
 
-**Pourquoi ici** : Instagram et Facebook refusent tout post sans média. **Il n'existe aujourd'hui
-aucun chemin d'upload** — zéro `<input type="file">` dans les 425 fichiers de `apps/web`, la
-drop-zone est un bouton décoratif, et `recordUploadedAsset` (complète, validée) n'a aucun appelant.
-Sans cette phase, la phase 6 ne peut pas atteindre son critère de sortie.
+**Pourquoi ici** : Instagram et Facebook refusent tout post sans média. Au 16/08 il n'existait
+**aucun chemin d'upload** — zéro `<input type="file">` dans les 425 fichiers de `apps/web`, la
+drop-zone était un bouton décoratif, et `recordUploadedAsset` (complète, validée) n'avait aucun
+appelant. Sans cette phase, la phase 6 ne pouvait pas atteindre son critère de sortie.
+
+> **État au 17/08** : les trois sont levés. Le transfert existe (TUS, tranches de 6 Mio), la
+> conversion HEIC/PNG → JPEG et la vignette WebP existent, la zone de dépôt est réelle aux deux
+> surfaces, et le recadrage traite désormais l'image. **La phase 6 (publishers réels) n'est plus
+> bloquée en amont.**
 
 - **D'abord** : `next.config.ts` n'autorise que `images.pexels.com` — à dériver de l'URL Supabase.
   Une ligne, mais elle doit précéder le reste, sinon on débugge deux choses à la fois.
@@ -245,7 +250,15 @@ Sans cette phase, la phase 6 ne peut pas atteindre son critère de sortie.
 **Critère de sortie** : une photo envoyée depuis l'iPhone s'affiche dans la grille, le studio **et**
 le portail client.
 
-#### Tickets — suivi d'exécution (partiel : upload TUS non attaqué, comme demandé)
+#### Tickets — suivi d'exécution
+
+> **Phase 5 close le 17/08/2026.** Le critère de sortie est atteint et vérifié par exécution : une
+> photo HEIC d'iPhone déposée depuis le navigateur arrive en JPEG conforme aux specs Instagram dans
+> `media-originals`, avec sa vignette WebP dans `media-thumbs`, et s'affiche dans la médiathèque, le
+> studio et le portail client. Voir la ligne « Critère de sortie » ci-dessous.
+>
+> Branche `chore/phase-0-outillage`, **non poussée**. **Aucune écriture sur le projet Supabase en
+> ligne** — et ce lot n'a demandé **aucune** migration : le ledger reste à 34 lignes.
 
 | # | Ticket | Statut | Commit | Preuve |
 |---|---|---|---|---|
@@ -258,7 +271,11 @@ le portail client.
 | P5-11 | Le portail rend un `<Image>` pour une vidéo | ✅ | `52531d1` | **Zéro `<video>` dans `apps/web`.** Les 5 surfaces plein cadre rendaient un `<Image src={fullUrl}>` même pour une vidéo : `next/image` ne décode pas un MP4, le cadre restait vide sous un badge « Vidéo ». **Le client approuvait un Reel qu'il n'avait jamais vu.** Composant `MediaFrame` ; `playsInline` (sans lui iOS force le plein écran, l'iPhone est la cible prioritaire) et `preload="metadata"` (un Reel monte à 300 Mo). La vignette reste une image, délibérément. |
 | P5-5 | `lib/media/` + upload TUS | ⚠️ **partiel** | `36cf8db` | **Fait** : `lib/media/paths.ts` fixe la convention en un seul endroit, 9 tests. La divergence avec CLAUDE.md §21 y est écrite : `{org}/{client}/{content_item}/{media_asset}/` **n'est pas applicable** (ni l'asset ni le contenu ne sont connus au téléversement) ; convention retenue `{org}/{client}/{upload_key}/{fichier}`. Test clé : un nom contenant `../` ne peut pas injecter de segment — un segment de plus décalerait `foldername()[1]`/`[2]`, donc l'isolation de tenant. **Ajouté le 16/08** (`828c24b`) : le recoupement chemin/tenant est enfin **branché**. `recordUploadedAsset` insérait `storage_path` tel quel — or ce chemin vient du navigateur, `requireClientInOrg` valide le CLIENT et jamais le CHEMIN, et **aucune contrainte ni aucun trigger ne relie `storage_path` à `org_id`/`client_id` en base**. Une ligne `media_assets` pouvait donc désigner le préfixe d'un AUTRE tenant, ce que la voie reviewer de la 033 résout justement PAR `storage_path` ; la seule barrière restante était l'index unique global, qui protège en effet de bord de la déduplication et n'a jamais été conçu comme frontière de tenant. La fonction faite pour ce recoupement existait, était testée, et n'était importée par **aucun** fichier de production. La décision est isolée dans `pathBelongsTo` plutôt qu'écrite dans l'action, parce qu'une Server Action n'est pas atteignable par la suite de tests : dans l'action, la garde aurait été vraie *par lecture* et non *par exécution*. La vignette est vérifiée aussi (bucket **public** : un chemin mal rangé y est lisible sans URL signée). **Mutation** : remplacer la comparaison exacte par un `startsWith` fait tomber la propriété. **NON fait** : le transfert lui-même. |
 | P5-0 | **Débloquer l'environnement** (prérequis des trois suivants) | ✅ | `c4bce51` | **C'est ce qui bloquait la session du 15/08.** `supabase/config.toml` déclarait les ports par défaut, tenus par le stack de `preventionelectrique` qu'il est interdit de tuer. Décalage vers le bloc **544xx**, vérifié libre (aucun conteneur ne le mappe, rien en écoute). ⚠ Le point qui casse si on l'oublie : `.github/workflows/ci.yml` portait le port **en dur** — les deux sont modifiés ensemble, et aucune autre référence ne subsiste (les `54322` des tests du worker sont des chaînes d'exemple, `isLocalDatabaseUrl` ne regarde que le nom d'hôte). CLI en `npx supabase@latest` (2.114.0), pas d'installation globale. **Vérifié par exécution** : `supabase start` monte sans collision, **34 migrations appliquées** (001→034), le stack de l'autre projet reste *healthy*, les buckets `media-originals` (privé) et `media-thumbs` (public) sont là, et `supabase test db` — **chemin exact du job `db` de la CI** — rend `Files=32, Tests=348, Result: PASS`. Ce chemin de CI n'avait **jamais** été exercé. |
-| P5-6 / P5-7 / P5-9 | Conversion JPEG/HEIC, vignette WebP, vraie zone de dépôt, recadrage | ⛔ **non fait** | — | **Le blocage a changé de nature : il n'est plus environnemental.** Le Storage local existe désormais et un octet PEUT être transféré. Ce qui reste est un chantier entier — client navigateur Supabase (`lib/supabase/client.ts` n'a toujours **aucun** importeur), TUS par tranches de 6 Mo, décodage HEIC, canvas de conversion JPEG, vignette WebP, zone de dépôt et sélecteur, câblage médiathèque **et** composer — que la session du 16/08 n'a pas eu la marge de livrer **et** de vérifier de bout en bout. Arrêté plutôt que livré à moitié : la règle « pas de code écrit mais jamais exécuté » vaut aussi quand l'excuse environnementale a disparu. **Reste vrai** : zéro `<input type="file">` dans le dépôt, la drop-zone est un `<button>` qui jette `e.dataTransfer`, et `recordUploadedAsset` n'a toujours aucun appelant — mais il est désormais **sûr** quand il en aura un (voir P5-5). |
+| P5-6a | Client d'upload TUS (tranches de 6 Mio, reprise, progression, annulation) | ✅ | `7fdb632` | **L'ORDRE INSERT/TRANSFERT EST TRANCHÉ : transfert d'abord, INSERT ensuite**, chemin porté par une clé d'upload tirée côté client. Motif : les deux modes de défaillance ne se valent pas. INSERT d'abord ⇒ toute coupure laisse une ligne `media_assets` désignant un objet inexistant — visible dans la médiathèque, cadre vide dans le studio et le portail, et il faut inventer un état « en attente » plus un balayeur. Transfert d'abord ⇒ au pire un objet Storage sans ligne : invisible pour l'app, et c'est exactement ce que `media-cleanup` (règle 23) balaie. **Un déchet invisible contre un mensonge visible.** C'est aussi le sens que `paths.ts` fixe depuis P5-5 et que la 033 suppose (résolution par `storage_path`, pas par un segment). `tus-js-client` écarté **délibérément** : il n'est pas exécutable sous `node --test`, seul harnais de `apps/web` ; un client à `fetch` injectable l'est. La règle qui porte tout : **l'offset vient toujours du SERVEUR** — repartir de `offset + 6 Mio` après une coupure écrirait un trou de 4 Mio, donc un JPEG corrompu, donc un rejet Meta permanent (`failed` direct, règle 18) chez un vrai client. Le serveur TUS factice du test STOCKE les octets : les assertions portent sur `Buffer.compare` à zéro, pas sur un compte d'appels. web 47 → **56/56**. **Mutation** : `offset = resync` → `offset + TUS_CHUNK_SIZE` sur les 2 sites fait tomber **2 tests**. |
+| P5-6b / P5-6c | Conversion HEIC/PNG → JPEG, vignette WebP ~400 px | ✅ | `2709054` | **Découpage décide/exécute** : `image-plan.ts` (pur, testé) vs `image.ts`/`video.ts` (canvas, non atteignables par les tests). Une règle écrite dans le composant qui l'applique est vraie « par lecture » — le motif des trois faux positifs de la semaine. **Ce que les propriétés ont trouvé** : sur un balayage de 12 formes réelles, un `Math.round` symétrique des dimensions de recadrage peut rendre un ratio **inférieur** à la cible ; sur 4:5, qui est exactement `IG_IMAGE_RATIO.min`, ça veut dire produire — **en recadrant pour se conformer** — une image que Meta refuse. Corrigé **par construction** (arrondi directionnel `ceil`/`floor`), pas en relâchant l'assertion : l'invariant dit « jamais sous la cible », pas « proche de la cible ». Quatre décisions : (1) `isHeic` regarde aussi l'**extension** — iOS livre régulièrement `File.type` **vide** ; (2) `imageOrientation: "from-image"`, sans quoi toutes les photos verticales arrivent couchées ; (3) descente en poids **bornée** à 7 essais (qualité d'abord, dimensions ensuite) — une boucle « tant que trop gros » sur mobile est un gel d'interface ; (4) le plafond de la **source** (100 Mo) n'est pas celui d'Instagram (8 Mo, appliqué à la **sortie**) — les confondre refuserait des HEIC parfaitement valides. La vidéo est **mesurée, jamais transcodée** : sans `width`/`height`/`duration_ms`, tout Reel passerait le preflight jusqu'au refus de Meta. web 56 → **72/72**. **Mutation** : `Math.round` des deux côtés fait tomber la propriété du rectangle. |
+| P5-7 / P5-8b / P5-9 | Zone de dépôt réelle, câblage des Server Actions, recadrage appliqué | ✅ | `1e4bd1b` | **P5-7** : `MediaDropzone` est un `<label>` lié à un `<input type="file">` — un `<button>` n'aurait été la cible d'accessibilité de rien. Détail qui se paie sinon : `e.target.value = ""` après chaque sélection, sans quoi **redéposer le même fichier après un échec** n'émet aucun `change` et l'écran paraît figé. Posée aux DEUX endroits : médiathèque et composer (état vide **et** sous la bande de slides). **P5-8b** : `recordUploadedAsset` a enfin un appelant ; file **séquentielle** (un bitmap 12 Mpx ≈ 48 Mo, trois en vol font tomber un onglet mobile ; et 3 transferts concurrents sur réseau mobile ne vont pas plus vite, ils rendent les barres menteuses). `orgId` descend du serveur : falsifié, il est refusé **deux fois** (policy `can_write_client_media` + `pathBelongsTo`). 10 messages d'échec distincts FR/EN — `MediaDecodeError` porte un **code**, pas une chaîne libre. **P5-9** : le recadrage relit l'original signé, le décode, le rogne, le réencode et le **retéléverse comme un nouvel asset** ; l'original reste intact. `mediaFromUpload` renseigne dimensions/poids/mime avec des valeurs **mesurées** sur le fichier produit — c'est ce qui distingue ce ticket de la version que P5-4 avait retirée. |
+| **Critère de sortie** | **Un fichier réellement transféré** | ✅ | `ce8362e` | **3 fichiers déposés depuis le navigateur, 6 objets créés dans le Storage local.** ① HEIC iPhone (2 994 394 o) → `IMG_iphone.jpg`, **image/jpeg, 3 992×2 992, ratio 1,334 ∈ [0,8 ; 1,91], 3,37 Mo ≤ 8 Mo**, octets de tête `ffd8ffe0`, relu et décodé par ffprobe (`mjpeg`, `yuvj420p`). ② PNG → JPEG 1 600×1 200. ③ MP4 de 15,21 Mio → **md5 identique à la source** (`b5b758385b69a79df6a5a04b41863584`), transféré en **3 PATCH TUS** (6 + 6 + 3,21 Mio) contre le vrai serveur Supabase. Chemins conformes : `{org}/{client}/{upload_key}/{fichier}`. 3 vignettes WebP dans `media-thumbs` (400×300 pour la photo, 5–38 Ko). Affiché dans la **médiathèque**, le **studio** et le **portail** — et dans le portail c'est bien l'**original signé** qui est rendu, pas la vignette 400 px (P5-10 tient sur un vrai fichier). Recadrage vérifié en base : `recadre-4x5.jpg`, **960×1200, ratio 0,800 exact**. Captures : `.planning/preuves/2026-08-17/`. ⚠ La **grille feed** n'a pas pu être exercée : `inFeed()` (grid/page.tsx:47) exige une cible **Instagram**, or aucun compte Meta n'est connecté en local — c'est la phase 8, hors périmètre. Aucun défaut média en cause. |
+| ~~P5-6 / P5-7 / P5-9~~ *(ligne du 16/08, close par les 4 lignes ci-dessus)* | Conversion JPEG/HEIC, vignette WebP, vraie zone de dépôt, recadrage | ✅ **fait le 17/08** | — | **Le blocage a changé de nature : il n'est plus environnemental.** Le Storage local existe désormais et un octet PEUT être transféré. Ce qui reste est un chantier entier — client navigateur Supabase (`lib/supabase/client.ts` n'a toujours **aucun** importeur), TUS par tranches de 6 Mo, décodage HEIC, canvas de conversion JPEG, vignette WebP, zone de dépôt et sélecteur, câblage médiathèque **et** composer — que la session du 16/08 n'a pas eu la marge de livrer **et** de vérifier de bout en bout. Arrêté plutôt que livré à moitié : la règle « pas de code écrit mais jamais exécuté » vaut aussi quand l'excuse environnementale a disparu. **Reste vrai** : zéro `<input type="file">` dans le dépôt, la drop-zone est un `<button>` qui jette `e.dataTransfer`, et `recordUploadedAsset` n'a toujours aucun appelant — mais il est désormais **sûr** quand il en aura un (voir P5-5). |
 
 #### État final des commandes de vérification (fin de session, 16/08/2026)
 
@@ -283,6 +300,45 @@ le portail client.
 > `.planning/i18n/lot3-workflow.js` et 7 composants `library`/`calendar`/`agenda`/`dashboard` —
 > aucun fichier touché depuis. Le « exit 0 / 0 erreur » annoncé le 15/08 est donc à relire avec
 > précaution : il a été mesuré avec la méthode `git archive`.
+
+#### État final des commandes de vérification (fin de session, 17/08/2026 — LOT 1)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm -w build` | ✅ `Compiled successfully` |
+| `pnpm --filter web exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter web test` | ✅ **72/72** (47 au début de session) |
+| `pnpm --filter worker test` | ✅ **40/40** (inchangé — le worker n'a pas été touché) |
+| `supabase test db` (chemin exact du job `db` de la CI) | ✅ **Files=32, Tests=348, Result: PASS** (inchangé — ce lot n'a demandé **aucune** migration) |
+| `pnpm check` — arbre **LF reconstruit depuis les blobs** | ✅ **exit 0** — 472 fichiers, **0 erreur**, 20 warnings |
+
+> ⚠ **Troisième désaccord de mesure sur `pnpm check`, et il faut le dire plutôt que le corriger en
+> silence.** La ligne du 16/08 annonce **14 erreurs préexistantes**. Avec la **même méthode** (arbre
+> reconstruit depuis les blobs, LF pur, `biome.json` copié à la racine) et la **même version**
+> (`@biomejs/biome@2.4.16`), la mesure rend `exit 0`, **0 erreur, 20 warnings** — et elle rend
+> *exactement la même chose* sur l'arbre du commit **`585e543`**, c'est-à-dire **avant** cette
+> session. Les 14 erreurs ne sont donc reproductibles ni avant ni après : ce n'est pas un correctif
+> apporté ici, c'est la mesure du 16/08 qui n'est pas rejouable. Détail probable : `biome.json`
+> exclut `.planning` et `docs/superpowers`, où le 16/08 situait 12 des 14 erreurs.
+> **Ne pas inscrire « 14 → 0 » comme un gain de cette session.**
+
+#### Ce que le LOT 1 a vu et volontairement PAS touché
+
+- **La grille feed reste invérifiable en local.** `inFeed()` (`grid/page.tsx:47`) exige une cible
+  `instagram` ; sans compte Meta connecté, aucun contenu n'y apparaît, quel que soit son média. Rien
+  à corriger côté médias — c'est la phase 8.
+- **`lib/actions/notifications.ts`** : `biome check --write` y a corrigé un `import { type X }` en
+  `import type { X }`. **Reverté** — hors périmètre.
+- **Les libellés « (aperçu) » résiduels** de l'ère mockée (`library.sheet.crop`, `cropToastTitle`,
+  `save`, `delete`, les toasts de programmation du composer). Seuls ceux que ce lot rendait faux ont
+  été corrigés (`composer.media.emptyHint`, le toast de succès du dialogue de recadrage).
+  ⚠ **`library.sheet.cropToastTitle` « Recadrage simulé (aperçu) » reste vrai** : le recadrage de la
+  *médiathèque* n'est toujours pas branché, seul celui du *composer* l'est (P5-9).
+- **L'orphelin de Storage est assumé** : si l'enregistrement échoue après le transfert, l'objet reste
+  sans ligne. `media-originals` n'a volontairement aucune policy DELETE (règle 23), le navigateur ne
+  peut donc pas nettoyer. C'est le prix — choisi — de l'ordre « transfert d'abord ».
+- **`crop_preset` n'est toujours pas remonté** dans `draftFromContent` (réserve ouverte en P5-2).
 
 > ⚠ **Ce qu'aucune vérification ne couvre** : `apps/worker/src/db/pg-store.ts` n'est exécuté par
 > aucun test. Le conteneur `ocean_rev2` tourne sans mapping de port (WinNAT), donc aucune base n'est
@@ -500,6 +556,29 @@ décidé par Meta, pas par le code.
 ---
 
 ## Ce qui attend Étienne après la nuit du 14-15/08/2026
+
+### Migration 034 (`leave_client`) — ✅ APPLIQUÉE le 15/08/2026 (session de pilotage)
+
+Appliquée via le MCP Supabase sur autorisation d'Étienne, après lecture intégrale de
+`deploy/30_migration_034.sql` et pré-vol des dépendances (`client_invitations.accepted_user_id`,
+colonnes de `client_members`, absence préalable de la fonction, ledger à 33).
+
+Motif : il n'existait **aucune sortie**. `client_members_delete` exige `is_org_member`, or un
+Reviewer n'appartient à aucune organisation (règle 6) — il ne pouvait donc physiquement pas se
+retirer d'un client. C'était l'aggravant de la CSRF V-3 : une adhésion créée à l'insu de la victime
+n'était révocable que par l'attaquant.
+
+| Contrôle | Résultat |
+|---|---|
+| `leave_client` : `SECURITY DEFINER`, `search_path` figé | ✅ |
+| `anon` n'a **pas** `EXECUTE` | ✅ (`authenticated, postgres, service_role`) |
+| Surface `anon` totale (SECURITY DEFINER exposées) | ✅ **inchangée** — 1 seule (`get_report_share`) |
+| Périmètre borné par `auth.uid()` et non par un paramètre | ✅ l'appelant ne peut retirer que lui-même |
+| Ledger | ✅ 34 lignes, dernière = `034` |
+| `/api/health` | ✅ HTTP 200 |
+
+⚠ Reste non appliqué côté Étienne : **les gabarits d'e-mail Supabase** (voir
+`GABARITS-EMAIL-supabase.md`). Sans eux, aucune invitation n'aboutit, quel que soit l'état du code.
 
 ### Migrations 032 et 033 — ✅ APPLIQUÉES le 15/08/2026 (session de pilotage)
 
