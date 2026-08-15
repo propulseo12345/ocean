@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { buildAuthorizeUrl, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
-import { codeChallengeOf, createCodeVerifier, signState } from "@/lib/oauth/state"
+import { codeChallengeOf, createCodeVerifier, createNonce, signState } from "@/lib/oauth/state"
+import { openTransaction } from "@/lib/oauth/transaction"
 import { requireSiteOrigin } from "@/lib/site-url"
 
 // Démarrage OAuth custom (CLAUDE.md règle 13). Route PUBLIQUE au niveau du proxy
@@ -47,13 +48,14 @@ export async function GET(
 
   try {
     const codeVerifier = config.usePkce ? createCodeVerifier() : undefined
-    const state = signState({
-      provider,
-      orgId: ctx.org.id,
-      userId: ctx.user.id,
-      clientId,
-      codeVerifier,
-    })
+    const nonce = createNonce()
+
+    // Le state porte l'identité du flux (signée, publique) ; le cookie porte ce
+    // qui doit rester secret ou prouver le navigateur (nonce, vérifieur PKCE).
+    // Séparés délibérément : le state voyage dans l'URL, à côté du code.
+    const state = signState({ provider, orgId: ctx.org.id, userId: ctx.user.id, clientId }, nonce)
+    await openTransaction({ nonce, codeVerifier }, origin.startsWith("https://"))
+
     const authorizeUrl = buildAuthorizeUrl(config, {
       state,
       redirectUri,

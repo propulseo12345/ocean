@@ -1,10 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 import { exchangeCode, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
+import { decideCallback } from "@/lib/oauth/callback-rule"
 import { resolveIdentity } from "@/lib/oauth/identity"
-import { verifyState } from "@/lib/oauth/state"
+import { requireStateSecret } from "@/lib/oauth/state"
 import { persistConnection } from "@/lib/oauth/tokens"
+import { consumeTransaction } from "@/lib/oauth/transaction"
 import { requireSiteOrigin } from "@/lib/site-url"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 
 // Callback OAuth : vérifie le state signé AVANT tout échange, échange le code
 // contre des tokens, résout l'identité de compte via l'API provider (me/pages…),
@@ -35,25 +38,51 @@ export async function GET(
   }
   const config = OAUTH_PROVIDERS[provider]
 
-  const code = searchParams.get("code")
-  const stateToken = searchParams.get("state")
-  const providerError = searchParams.get("error")
-  if (providerError) return NextResponse.redirect(`${origin}${SETTINGS}?error=denied`)
-  if (!code || !stateToken) return NextResponse.redirect(`${origin}${SETTINGS}?error=missing`)
+  // La transaction est consommée AVANT toute décision : quel que soit le
+  // verdict, le nonce ne doit pas rester rejouable.
+  const tx = await consumeTransaction()
 
-  // Anti-CSRF : le state doit être signé par nous et concerner ce provider.
-  const state = verifyState(stateToken)
-  if (!state || state.provider !== provider) {
-    return NextResponse.redirect(`${origin}${SETTINGS}?error=state`)
+  // La session est revalidée auprès de Supabase — `getUser()` et pas
+  // `getSession()`, seul le premier vérifie le jeton au lieu de le décoder.
+  const supabase = await createServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Les QUATRE gardes vivent dans `callback-rule.ts`, exécutable par les tests :
+  // signature + fraîcheur + provider, nonce du cookie, session initiatrice, et
+  // usage unique (assuré par la consommation ci-dessus). Les laisser ici les
+  // aurait rendues vraies « par lecture » seulement.
+  let secret: string
+  try {
+    secret = requireStateSecret()
+  } catch {
+    return NextResponse.redirect(`${origin}${SETTINGS}?error=oauth_unconfigured`)
   }
+
+  const decision = decideCallback({
+    provider,
+    code: searchParams.get("code"),
+    providerError: searchParams.get("error"),
+    stateToken: searchParams.get("state"),
+    transaction: tx,
+    sessionUserId: user?.id ?? null,
+    secret,
+    nowMs: Date.now(),
+  })
+  if (!decision.ok) {
+    return NextResponse.redirect(`${origin}${SETTINGS}?error=${decision.error}`)
+  }
+  const { state } = decision
 
   const redirectUri = `${origin}/api/oauth/${provider}/callback`
 
   try {
     const tokens = await exchangeCode(config, {
-      code,
+      code: decision.code,
       redirectUri,
-      codeVerifier: state.codeVerifier,
+      // Le vérifieur vient du COOKIE, jamais du state (P8-5).
+      codeVerifier: decision.codeVerifier,
     })
 
     // Identité de compte réelle (titulaire du token + comptes publiables).
