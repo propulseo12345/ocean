@@ -117,7 +117,13 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
   return {
     store,
     resolvePublisher: () => pub,
-    prepare: async (): Promise<PublishContext> => ({ accessToken: "t" }),
+    prepare: async (): Promise<PublishContext> => ({
+      accessToken: "t",
+      providerAccountId: "ig-1",
+      media: [],
+      caption: "",
+      format: "post",
+    }),
     checkQuota: async () => ({ ok: true }) as const,
     config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 60000 },
     now: NOW,

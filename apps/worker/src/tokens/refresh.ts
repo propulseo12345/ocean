@@ -39,6 +39,17 @@ export interface RefreshState {
   /** Valeur du refresh token, ou `null`. Sert de clé de compare-and-swap. */
   refreshToken: string | null
   canSelfRefresh: boolean
+  /**
+   * Access token COURANT, déchiffré. Requis par les fournisseurs qui « rafraî-
+   * chissent » en ré-échangeant un token encore valide plutôt qu'en consommant
+   * un refresh token — c'est le cas de Meta (`grant_type=fb_exchange_token`).
+   *
+   * Facultatif : il ne sert PAS de clé de compare-and-swap. La clé reste le
+   * refresh token, parce que c'est lui qui tourne (règle 14) ; comparer aussi
+   * l'access token ferait échouer le CAS chez Meta à chaque fois qu'un autre
+   * chemin l'a rafraîchi sans rotation, et abandonnerait des refresh légitimes.
+   */
+  accessToken?: string | null
 }
 
 /** Résultat d'un échange chez le fournisseur. */

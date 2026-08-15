@@ -1,4 +1,5 @@
-import { createContextProvider, createQuotaChecker } from "./context"
+import { createContextProvider, createQuotaChecker, REAL_REFRESH } from "./context"
+import { createStorageSigner } from "./media/storage-signer"
 import { PgJobStore } from "./db/pg-store"
 import { createPool } from "./db/pool"
 import { LeaseLostError, type PublishJob } from "./domain"
@@ -162,10 +163,35 @@ async function main(): Promise<void> {
   const store = new PgJobStore(pool)
   const stub = config.publishersMode === "stub"
 
+  // Signature des URL de médias (règle 20). Absente en stub — rien ne part —
+  // et absente aussi si le projet Supabase n'est pas configuré : dans ce cas
+  // les publishers recevront `media: []` et refuseront eux-mêmes de publier un
+  // post sans média, plutôt que d'envoyer une URL vide à Meta.
+  const storage =
+    !stub && config.supabaseUrl && config.supabaseServiceRoleKey
+      ? createStorageSigner({
+          supabaseUrl: config.supabaseUrl,
+          serviceRoleKey: config.supabaseServiceRoleKey,
+          fetch: globalThis.fetch,
+        })
+      : null
+  if (!stub && !storage) {
+    log.warn("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY absents : aucun media ne sera signe", {})
+  }
+
   const deps: EngineDeps = {
     store,
     resolvePublisher,
-    prepare: createContextProvider(pool, { stub }),
+    prepare: createContextProvider(pool, {
+      stub,
+      storage,
+      // Le refresh n'a de sens qu'en mode réel : en stub aucun appel ne part,
+      // et consommer un refresh token TikTok (à rotation) pour une simulation
+      // casserait un vrai compte.
+      refresh: stub
+        ? null
+        : { run: REAL_REFRESH, timeoutMs: config.tokenRefreshTimeoutMs },
+    }),
     checkQuota: createQuotaChecker(pool, { stub }),
     config: {
       graceWindowMs: config.graceWindowMs,

@@ -60,6 +60,27 @@ export interface WorkerConfig {
    * le reaper — le seul filet contre un worker bloqué — ne voit jamais rien.
    */
   maxProcessingMs: number
+  /**
+   * URL du projet Supabase — nécessaire pour SIGNER les URL de médias
+   * (règle 20 : `media-originals` est privé). `null` = pas de signature
+   * possible, donc aucun média envoyé aux plateformes.
+   */
+  supabaseUrl: string | null
+  /** Clé service_role, seule habilitée à signer une URL du bucket privé. */
+  supabaseServiceRoleKey: string | null
+  /**
+   * Budget du rafraîchissement de token DANS le chemin de publication. 15 s :
+   * largement au-dessus d'un échange OAuth normal, très en dessous du lease de
+   * 2 min — un fournisseur pendu ne doit pas faire expirer le lease, sinon le
+   * reaper rend le job et un second worker rafraîchit le même compte.
+   */
+  tokenRefreshTimeoutMs: number
+}
+
+/** Variable d'environnement facultative, vide = absente. */
+function optionalStr(name: string): string | null {
+  const raw = process.env[name]?.trim()
+  return raw ? raw : null
 }
 
 function int(name: string, fallback: number): number {
@@ -170,5 +191,8 @@ export function loadConfig(): WorkerConfig {
     // 10 min : large pour un upload chunké de Reel, borné pour que le reaper
     // reprenne un jour la main.
     maxProcessingMs: int("WORKER_MAX_PROCESSING_MS", 10 * 60 * 1000),
+    supabaseUrl: optionalStr("SUPABASE_URL"),
+    supabaseServiceRoleKey: optionalStr("SUPABASE_SERVICE_ROLE_KEY"),
+    tokenRefreshTimeoutMs: int("WORKER_TOKEN_REFRESH_TIMEOUT_MS", 15_000),
   }
 }
