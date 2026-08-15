@@ -1,5 +1,6 @@
 import { CheckCircle2, ClipboardCheck, History } from "lucide-react"
 import type { Metadata } from "next"
+import { LeaveClientButton } from "@/components/portal/leave-client-button"
 import { PortalCard } from "@/components/portal/portal-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { getReviewerContext } from "@/lib/auth/org-context"
@@ -87,6 +88,13 @@ export default async function PortalPage() {
           </div>
         </section>
       ) : null}
+
+      {/* Sortie de secours (V-3). Discrète, mais présente : jusqu'ici, seule
+          l'agence pouvait retirer quelqu'un — un membre ajouté à son insu
+          dépendait donc de celui qui l'avait ajouté pour en sortir. */}
+      <div className="border-t pt-4">
+        <LeaveClientButton clientId={client.id} clientNom={client.name} />
+      </div>
     </div>
   )
 }

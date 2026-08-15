@@ -449,3 +449,36 @@ export async function removeClientMember(input: unknown): Promise<ActionResult> 
   revalidatePath("/portal")
   return { ok: true }
 }
+
+const leaveSchema = z.object({ clientId: z.string().uuid() })
+
+/**
+ * Retire l'appelant LUI-MÊME d'un client (V-3, migration 034).
+ *
+ * Il n'existait aucune sortie : `client_members_delete` (004:101-103) exige
+ * `is_org_member(org_id)`, or un Reviewer n'appartient par construction à
+ * aucune organisation (règle 6). Seule l'agence pouvait le retirer.
+ *
+ * C'était l'aggravant de la CSRF : une adhésion créée à l'insu de la victime
+ * dans le client d'un ATTAQUANT n'était révocable que par l'attaquant. La CSRF
+ * est fermée en amont ; ceci est le filet qui rend l'état réparable par la
+ * personne concernée.
+ *
+ * ⚠️ Volontairement PAS de `requireClientInOrg` ici : cette action sert
+ * précisément à quelqu'un qui n'est membre d'AUCUNE org. L'autorisation est
+ * portée par la RPC, dont le périmètre est borné par `user_id = auth.uid()` —
+ * lu dans le JWT, jamais dans un paramètre. `clientId` ne choisit donc que le
+ * client à quitter, jamais la personne à retirer.
+ */
+export async function leaveClient(input: unknown): Promise<ActionResult> {
+  const parsed = leaveSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc("leave_client", { _client: parsed.data.clientId })
+  if (error) return { ok: false, error: "db_error" }
+
+  revalidatePath("/portal")
+  revalidatePath("/", "layout")
+  return { ok: true }
+}

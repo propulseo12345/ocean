@@ -24,6 +24,16 @@ export const portalEn: Widen<typeof portalFr> = {
       emptyValidatedTitle: "Everything is approved",
       emptyValidatedDescription: "No post is awaiting your review right now.",
     },
+    leave: {
+      trigger: "Leave this workspace",
+      confirmQuestion: "Leave {client}?",
+      confirmDetail:
+        "You will lose access to this client's posts. Your agency will have to invite you again.",
+      confirm: "Yes, leave",
+      cancel: "Cancel",
+      done: "You have left this workspace.",
+      error: "Could not leave this workspace. Try again in a moment.",
+    },
     detail: {
       metaTitle: "Review",
       backToReviewSpace: "Back to the review space",

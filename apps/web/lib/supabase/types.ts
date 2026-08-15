@@ -1861,6 +1861,12 @@ export type Database = {
         Args: { _client: string; _user: string }
         Returns: boolean
       }
+      // Migration 034 — sortie de secours : l'appelant se retire lui-meme.
+      // Pas de `_user` : le perimetre vient de `auth.uid()`, pas d'un parametre.
+      leave_client: {
+        Args: { _client: string }
+        Returns: boolean
+      }
       // Migration 018 — partage public de rapport (snapshot).
       get_report_share: {
         Args: { _token_hash: string }

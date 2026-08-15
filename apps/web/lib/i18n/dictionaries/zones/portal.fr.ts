@@ -25,6 +25,19 @@ export const portalFr = {
       emptyValidatedTitle: "Tout est validé",
       emptyValidatedDescription: "Aucune publication n'attend votre relecture pour l'instant.",
     },
+    // Sortie de secours (V-3) : jusqu'ici, seule l'agence pouvait retirer
+    // quelqu'un. Un membre ajouté à son insu dépendait donc de celui qui l'avait
+    // ajouté pour en sortir.
+    leave: {
+      trigger: "Quitter cet espace",
+      confirmQuestion: "Quitter {client} ?",
+      confirmDetail:
+        "Tu n'auras plus accès aux publications de ce client. Ton agence devra t'inviter à nouveau.",
+      confirm: "Oui, quitter",
+      cancel: "Annuler",
+      done: "Tu as quitté cet espace.",
+      error: "Impossible de quitter cet espace. Réessaie dans un instant.",
+    },
     // Page de relecture d'un contenu.
     detail: {
       metaTitle: "Relecture",
