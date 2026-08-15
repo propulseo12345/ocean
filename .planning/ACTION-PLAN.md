@@ -466,10 +466,10 @@ portail ne plante plus sur une liste vide. Deux réserves, toutes deux nommées 
 > schéma storage ancien (le runner saute les `*_storage.sql`). Le test 033 prouve la **décision**
 > (`can_read_client_media`), pas son câblage dans la policy.
 
-### Phase 8 — OAuth propre · 1 à 2 sessions
+### Phase 8 — OAuth propre · 1 à 2 sessions — ✅ **7 tickets faits le 17/08/2026**
 
-**Pourquoi** : connecter Meta pour un client rattache aujourd'hui **toutes** les Pages et comptes
-Instagram du compte connecté à ce client-là, avec leurs tokens. Et rien ne permet de détacher.
+**Pourquoi** : connecter Meta pour un client rattachait **toutes** les Pages et comptes Instagram du
+compte connecté à ce client-là, avec leurs tokens. Et rien ne permettait de détacher.
 
 - Écran de sélection des sous-comptes.
 - Action de détachement + révocation du secret dans le Vault (aucun `.delete()` nulle part
@@ -481,6 +481,58 @@ Instagram du compte connecté à ce client-là, avec leurs tokens. Et rien ne pe
 
 **Critère de sortie** : deux clients avec deux Pages différentes sont connectés sans mélange, et on
 peut en détacher un.
+ ⚠ **Non atteint — et il ne peut pas l'être depuis le dépôt** : il exige une app
+Meta et deux Pages réelles (phase 1, actions à identifiants). Le code des sept tickets est écrit,
+typé, testé et vérifié par mutation ; le parcours n'a été exercé contre **aucun fournisseur réel**.
+C'est la même limite que celle notée pour le câblage Supabase de la phase 7.
+
+#### Tickets — suivi d'exécution
+
+> Exécution : branche `chore/phase-0-outillage`, session du 17/08/2026, à la suite du LOT 1.
+> **Non poussée.** **Aucune écriture sur le projet Supabase en ligne** : les migrations **035** et
+> **036** sont écrites, appliquées en LOCAL, testées, et livrées dans `deploy/31_` et `deploy/32_`.
+> Ledger en ligne inchangé à 34 lignes.
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| P8-5 | State OAuth durci | ✅ | `03e3fe0` | **Le défaut principal n'était pas l'absence d'`exp`, c'était PKCE rendu inopérant.** `OAuthState` portait `codeVerifier` ; le state est en base64url (pas du chiffrement) et voyage dans l'URL de redirection **à côté du code d'autorisation** — historique, Referer, journaux du fournisseur. Quiconque voyait l'URL voyait les deux moitiés que PKCE existe pour séparer. Le vérifieur vit désormais dans un cookie **httpOnly** ; la primitive est **retirée du type** (idiome P7-1), et un test décode le state pour vérifier la liste EXACTE de ses clés. Trois autres trous fermés par le même couplage : pas d'expiration (TTL 10 min), nonce généré puis **jamais vérifié** (un state capté se rejouait depuis n'importe quel navigateur), et **aucun lien de session** — le callback croyait le `userId` du state sur parole, donc la connexion et ses tokens atterrissaient dans l'org désignée par le state. `getUser()` (revalidé) et pas `getSession()`. ⚠ `sameSite: "lax"` est **obligatoire**, pas un relâchement : le retour du fournisseur est une navigation cross-site de premier niveau, en `strict` aucune connexion n'aboutirait. Gardes extraites dans `callback-rule.ts` (un Route Handler n'est atteignable par aucun test). **Propriété à 54 combinaisons : une seule aboutit.** Mutations : nonce non vérifié → **2 tests** ; userId cru → **3** ; expiration retirée → **3** ; vérifieur remis en state → **1**. |
+| P8-6 | `pages_manage_posts` + scopes ACCORDÉS | ✅ | `274ed75` | Deux défauts, le second expliquant l'urgence du premier. ① `pages_manage_posts` — permission d'ÉCRITURE sur une Page — n'était pas demandé. ② `persistConnection` écrivait `scopes: config.scopes`, la liste **demandée**, alors que l'écran Meta laisse décocher permission par permission : la base affirmait une capacité que la connexion n'avait pas, et on s'en apercevait au POST, en erreur permanente (`failed` direct, règle 18) chez un vrai client. **Ce qui rend ② urgent : Meta ne rétro-accorde JAMAIS un scope** — sans les scopes réels en base, impossible de savoir quelles connexions refaire. Meta ne renvoyant pas de champ `scope`, les permissions se lisent par `GET /me/permissions` (`granted` / `declined`). **Le repli est l'ignorance, pas l'optimisme** : réponse malformée → liste vide. `PUBLISH_SCOPES` est plus étroit que les scopes demandés (`pages_read_engagement` sert aux métriques, son absence n'empêche pas un post) — une alerte qui se déclenche pour rien finit ignorée. Les 2 tests de scope **échouaient AVANT** le correctif. Mutations : ne plus filtrer `granted` → **1** ; retirer le scope → **2**. |
+| P8-3 | Échange long-lived Meta | ✅ | `6224ccc` | `fb_exchange_token` : **0 occurrence** dans le dépôt — aucune connexion Meta ne survivait à l'après-midi de sa création. **Le piège est l'ORDRE** : les tokens de PAGE héritent de la durée de vie du token utilisateur qui les demande, donc appeler `/me/accounts` avec le token court donne des tokens de page courts — et ce sont eux qui publient. On aurait eu une connexion « valide 60 jours » dont les tokens de publication meurent dans l'heure, l'échec n'apparaissant qu'à la première publication programmée. **Verrouillé par le TYPAGE** : `exchangeForLongLivedToken` rend `ReadyTokens`, `resolveIdentity` n'accepte que ce type — inverser l'ordre est une **erreur de compilation**, vérifiée par mutation (`TS2345 … '[marqueLongLived]' is missing`). Un commentaire ne survit pas à un refactor, une signature si. Garde-fou `looksLongLived` sur la réponse. En prime `token-life.ts` : un token Meta non rafraîchi à temps est **définitivement perdu** (aucun refresh token), d'où une marge de 10 j large exprès ; `inconnu` n'est jamais traité comme `ok` ; propriété de **monotonie** (un token ne redevient pas sain en vieillissant). |
+| P8-1 | Sélection des sous-comptes | ✅ | `a05a4b9` (+ migration **035**) | **La fuite la plus directe du produit.** La boucle rattachait TOUS les `subAccounts` au `clientId` du flux : connecter Meta depuis l'espace du client A y rattachait toutes les Pages et tous les comptes IG du compte connecté — ceux de B compris, **avec leurs tokens de publication**. Aucune policy ne s'y opposait, et c'est le point : même org, RLS satisfaite, c'est le code applicatif qui choisissait. Désormais le callback persiste la connexion + un **catalogue sans aucun token ni uuid de secret** (`metadata` est lisible par les membres de l'org), puis redirige vers un écran de sélection. Rien n'est pré-coché — pré-cocher reproduirait le comportement corrigé en laissant croire à un choix. Le token de page est **redemandé** au rattachement : un token qui attend entre deux écrans est un token qui traîne. **Le recoupement porte sur le COUPLE (plateforme, identifiant)** — chez Meta un même id numérique existe des deux côtés, ne comparer que l'id laisserait publier via la mauvaise API. Les clés venant du navigateur sont recoupées au catalogue : propriété testée sur les **16 parties** du catalogue, chacune polluée de bruit. Migration 035 (`read_`/`revoke_integration_secret`, service_role only) : ⚠ **extension réelle du rayon d'explosion, assumée et écrite** — seul le worker pouvait lire un token jusqu'ici. |
+| P8-2 | Détachement + révocation Vault | ✅ | `429e3c1` (+ migration **036**) | `.delete()` n'apparaissait **nulle part** dans le code OAuth : un jeton restait chiffré dans Vault indéfiniment pour un compte que le client croit déconnecté — passif RGPD et risque concret. **Pas une suppression de ligne** : `content_targets.social_account_id` porte `on delete restrict` (006:43) et c'est voulu — la ligne porte le lien vers les posts réellement publiés, le détachement ne doit pas réécrire le passé. **Pas `needs_reauth` non plus** : cet état veut dire « reconnecte-moi » et inviterait à défaire le geste qu'on vient de faire. D'où `disconnected` (036). **L'ordre des deux écritures compte** : la ligne de secret est supprimée AVANT la révocation Vault — l'inverse laisserait une ligne désignant un secret inexistant, donc un compte qui a l'air publiable et ne l'est pas. **L'échec de révocation est remonté, pas avalé** : c'est le geste qu'on ne peut pas vérifier après coup. pgTAP 036 : la valeur est écrivable sur les deux tables, un post publié garde son `external_post_id`, et la suppression reste refusée (23503). |
+| P8-4 | `refresh.ts` réel, HTTP hors du verrou | ✅ | `019db4e` | **Deux règles qui semblent se contredire** : la 14 veut que deux refresh du même compte ne se croisent jamais (chez TikTok/Microsoft l'échange REMPLACE le refresh token) ; la 18 interdit un appel réseau dans une transaction. Le scaffold proposait justement l'appel HTTP **dans** le verrou — l'anti-pattern écrit comme marche à suivre. Résolu en **trois phases** : ① sous verrou lire/décider/mémoriser le refresh token, ② **hors verrou** appeler, ③ sous verrou **compare-and-swap** puis écrire. Le CAS est ce qui rend ② sûr : si un autre worker est passé, chez un fournisseur à rotation le token qu'on s'apprête à écrire est **déjà invalidé par son échange à lui** — l'écrire casserait le compte. Décisions : l'ordre des tests cherche d'abord ce qui rend l'échange IMPOSSIBLE ; une échéance **inconnue** ne déclenche rien (un échange inutile CONSOMME le refresh token) ; Meta traité à part (il ré-échange un token encore valide). Le faux pool **journalise** `begin/lock/commit/http/save` : le test vérifie la SÉQUENCE, pas une intention. Mutations : CAS retiré → **1 test** ; HTTP remis dans le verrou → **2**. |
+| P8-7 | `needs_reauth` lisible par le web | ✅ | `037bccb` | `getSocialAccounts` ne lisait que `social_accounts.status` et ne joignait **jamais** la connexion. L'information la plus importante du produit — « ce compte ne peut plus publier » — était écrite dans une table que le web n'ouvrait jamais : écran vert, bandeau muet, et découverte du problème à l'échec d'un contenu programmé. **La connexion est la racine** : un compte n'a pas d'autorisation propre, il en hérite. Ordre des branches : ① le **détachement prime** (acte délibéré — ne pas inviter à le défaire), ② la connexion, ③ le compte. En branchant les scopes de P8-6, un cas sans statut devient visible : connexion vivante, jeton valide, et tout POST refusé faute de `pages_manage_posts` → `missingScopes`, affiché à part. ⚠ **Une liste de scopes vide veut dire « on ne sait pas »**, pas « rien n'est accordé » : les connexions d'avant P8-6 stockaient les scopes demandés — crier au loup sur toutes rendrait l'alerte inaudible dès le premier jour (même prudence que le `facebook: null` du quota, P3-10). Propriété sur **72 combinaisons** : aucune combinaison dégradée ne ressort « connecté sans réserve ». Mutations : ignorer la connexion → **2 tests** ; scopes vides mal interprétés → **1**. |
+
+#### État final des commandes de vérification (fin de session, 17/08/2026 — LOT 2)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm -w build` | ✅ `Compiled successfully` |
+| `pnpm --filter web exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter web test` | ✅ **124/124** (72 en fin de LOT 1) |
+| `pnpm --filter worker test` | ✅ **51/51** (40 avant — le worker n'avait pas bougé depuis la phase 3) |
+| `supabase test db` (chemin exact du job `db` de la CI) | ✅ **Files=34, Tests=364, Result: PASS** (348 avant : +10 pour la 035, +6 pour la 036) |
+| `pnpm check` — arbre **LF reconstruit depuis les blobs** | ✅ **exit 0** — 490 fichiers, **0 erreur**, 20 warnings |
+
+#### Ce que le LOT 2 a vu et volontairement PAS touché
+
+- **Aucun parcours OAuth n'a été exercé contre un fournisseur réel.** Il n'existe ni app Meta ni
+  identifiants (phase 1). Les tests prouvent les **décisions** — gardes du callback, ordre des
+  opérations, CAS du refresh, santé des comptes — pas le dialogue avec Meta. C'est la limite de
+  couverture la plus importante de ce lot, et elle ne se lève qu'avec l'app Meta.
+- **`AccountStatus` annonce `expired`**, une valeur que l'enum SQL n'a **jamais** eue : rien ne
+  peut la produire, le code qui la teste est mort. Constaté, écrit dans le type et dans la
+  migration 036, **non corrigé** — le retirer touche 4 écrans.
+- **La marge de 10 jours est dupliquée** entre `apps/web/lib/oauth/token-life.ts` et
+  `apps/worker/src/tokens/refresh-plan.ts`. Les deux paquets ne partagent aucun module
+  (`packages/shared` ne porte que des types DB) et importer du web dans le worker créerait une
+  dépendance absente de son image Docker. Le commentaire le dit **des deux côtés**.
+- **Les signatures des 2 RPC de 035 sont ajoutées à la main** dans `lib/supabase/types.ts` :
+  `scripts/gen-types.py` lit le schéma **en ligne**, où 035 n'est pas appliquée. À régénérer
+  après application.
+- **L'e-mail Brevo `needs-reauth`** (règle 14) n'est toujours pas envoyé : `BREVO_API_KEY` est
+  vide et le Lot 2 e-mail n'est pas ouvert. Le statut est posé, la notification non.
 
 ### Phase 9 — Refermer le cercle · 2 sessions
 
