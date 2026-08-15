@@ -64,6 +64,7 @@ export const en: Dictionary = {
       connected: "Connected",
       needs_reauth: "Reconnection required",
       expired: "Expired",
+      disconnected: "Detached",
     },
     review: {
       pending: "Pending",

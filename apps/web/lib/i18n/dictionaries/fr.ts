@@ -66,6 +66,7 @@ export const fr = {
       connected: "Connecté",
       needs_reauth: "Reconnexion requise",
       expired: "Expiré",
+      disconnected: "Détaché",
     },
     review: {
       pending: "En attente",

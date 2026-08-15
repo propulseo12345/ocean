@@ -54,6 +54,7 @@ export const accountStatusMeta: Record<AccountStatus, Meta> = {
   connected: { labelKey: "status.account.connected", tone: "success" },
   needs_reauth: { labelKey: "status.account.needs_reauth", tone: "warning" },
   expired: { labelKey: "status.account.expired", tone: "danger" },
+  disconnected: { labelKey: "status.account.disconnected", tone: "neutral" },
 }
 
 export const reviewStateMeta: Record<ReviewRequestState, Meta> = {

@@ -115,3 +115,88 @@ export async function attachSocialAccounts(
     return { ok: false, error: "forbidden" }
   }
 }
+
+const detachSchema = z.object({
+  clientId: z.string().uuid(),
+  socialAccountId: z.string().uuid(),
+})
+
+/**
+ * Détache un compte social et RÉVOQUE son token dans le Vault (P8-2).
+ *
+ * LE DÉFAUT QUE CETTE ACTION FERME
+ * ---------------------------------
+ * `.delete()` n'apparaissait nulle part dans le code OAuth : rien ne permettait
+ * de défaire une connexion. Un token restait chiffré dans Vault indéfiniment,
+ * pour un compte que le client croit déconnecté. C'est un passif RGPD (droit à
+ * l'effacement) et un risque concret — un token oublié reste un token valide.
+ *
+ * POURQUOI UN STATUT ET PAS UNE SUPPRESSION DE LIGNE
+ * ----------------------------------------------------
+ * `content_targets.social_account_id` porte `on delete restrict` (006:43).
+ * Supprimer la ligne effacerait le lien vers les posts réellement publiés
+ * (`external_post_id`, permalien) : le détachement réécrirait le passé. On pose
+ * donc `disconnected` (migration 036) et on détruit le SECRET, qui est la seule
+ * chose qui devait vraiment disparaître.
+ *
+ * L'ORDRE COMPTE : la ligne de secret est supprimée AVANT la révocation Vault.
+ * L'inverse laisserait, en cas d'échec entre les deux, une ligne qui désigne un
+ * secret inexistant — un compte qui a l'air publiable et qui ne l'est pas.
+ * Dans ce sens-ci, le pire cas est un secret orphelin dans Vault, invisible et
+ * inutilisable puisque plus rien ne le référence.
+ */
+export async function detachSocialAccount(input: unknown): Promise<ActionResult> {
+  const parsed = detachSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { clientId, socialAccountId } = parsed.data
+
+  try {
+    const { orgId } = await requireClientInOrg(clientId)
+    const admin = createAdminClient()
+
+    // Scopé org ET client : un id d'un autre tenant ne résout rien.
+    const { data: account } = await admin
+      .from("social_accounts")
+      .select("id")
+      .eq("id", socialAccountId)
+      .eq("org_id", orgId)
+      .eq("client_id", clientId)
+      .maybeSingle()
+    if (!account) return { ok: false, error: "not_found" }
+
+    const { data: secret } = await admin
+      .from("social_account_secrets")
+      .select("vault_access_token_secret_id")
+      .eq("social_account_id", socialAccountId)
+      .maybeSingle()
+
+    const { error: deleteError } = await admin
+      .from("social_account_secrets")
+      .delete()
+      .eq("social_account_id", socialAccountId)
+    if (deleteError) return { ok: false, error: "db_error" }
+
+    if (secret?.vault_access_token_secret_id) {
+      const { error: revokeError } = await admin.rpc("revoke_integration_secret", {
+        _secret_id: secret.vault_access_token_secret_id,
+      })
+      // Un échec de révocation est REMONTÉ, pas avalé : le token existe encore,
+      // et c'est précisément ce que l'utilisateur a demandé de supprimer. Lui
+      // annoncer un succès serait le mensonge que ce ticket corrige.
+      if (revokeError) return { ok: false, error: "revoke_failed" }
+    }
+
+    const { error: statusError } = await admin
+      .from("social_accounts")
+      .update({ status: "disconnected" })
+      .eq("id", socialAccountId)
+      .eq("org_id", orgId)
+    if (statusError) return { ok: false, error: "db_error" }
+
+    revalidatePath("/settings/accounts")
+    revalidatePath(`/clients/${clientId}/settings`)
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+}

@@ -1,0 +1,26 @@
+-- Migration 036 a appliquer sur hgdeopkmkwyoumsfggrm (SQL Editor). Prerequis : 002 + 005 + 006.
+-- Genere depuis supabase/migrations/036_account_status_disconnected.sql.
+--
+-- ⚠ NON APPLIQUEE A CE JOUR. Ledger attendu avant application : 35 lignes
+-- (001->035). Appliquer 035 D'ABORD. Inserer ensuite la ligne 036 dans
+-- supabase_migrations.schema_migrations.
+--
+-- ⚠ A EXECUTER SEUL, DANS SA PROPRE TRANSACTION. `alter type ... add value` est
+-- autorise dans une transaction depuis PG12 mais la valeur ne peut PAS etre
+-- UTILISEE dans la meme transaction. Ne pas coller ce fichier a la suite d'un
+-- autre, ni suivre d'un `update ... set status = 'disconnected'` : la migration
+-- 024 avait deja du etre livree en deux etapes pour cette raison exacte.
+--
+-- OBJET : il n'existait aucun etat pour un compte DETACHE.
+--   · le supprimer est impossible — `content_targets.social_account_id` porte
+--     `on delete restrict` (006:43), et c'est voulu : la ligne porte le lien
+--     vers les posts reellement publies (external_post_id, permalien) ;
+--   · reutiliser `needs_reauth` aurait menti — cet etat veut dire
+--     « reconnecte-moi », il declenche le bandeau de sante et invite a refaire
+--     ce que l'utilisateur vient deliberement de defaire.
+--
+-- VERIFICATION APRES APPLICATION :
+--   select enum_range(null::public.account_status);
+--   -- attendu : {connected,needs_reauth,disconnected}
+
+alter type public.account_status add value if not exists 'disconnected';

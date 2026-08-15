@@ -35,6 +35,11 @@ export const settingsFr = {
       noAccountForClient: "Aucun compte connecté pour ce client.",
       connect: "Connecter un compte",
       connectPlatform: "Connecter {platform}",
+      detach: "Détacher",
+      detachConfirm:
+        "Le compte {platform} @{username} ne sera plus publiable, et son jeton d'accès sera définitivement détruit. Les publications déjà parues restent visibles dans l'historique. Pour le réutiliser, il faudra le reconnecter.",
+      detached: "Compte détaché, jeton détruit.",
+      detachError: "Détachement incomplet — le jeton est peut-être toujours actif. Réessaie.",
       reconnect: "Reconnecter",
       connectedToast: "Compte {provider} connecté",
       connectErrorTitle: "Connexion impossible",

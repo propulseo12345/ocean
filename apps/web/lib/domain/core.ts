@@ -47,7 +47,13 @@ export type TargetStatus =
   | "skipped"
   | "canceled"
 
-export type AccountStatus = "connected" | "needs_reauth" | "expired"
+/**
+ * ⚠ `expired` n'existe PAS dans l'enum SQL `account_status` (002:47) : rien ne
+ * peut produire ce statut, le code qui le teste est mort. Constaté au ticket
+ * P8-2, laissé en place — le retirer touche 4 écrans et sort du périmètre.
+ * `disconnected` (migration 036) est, lui, bien réel.
+ */
+export type AccountStatus = "connected" | "needs_reauth" | "expired" | "disconnected"
 
 export type CalendarProvider = "google" | "microsoft"
 

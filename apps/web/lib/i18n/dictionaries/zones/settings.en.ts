@@ -38,6 +38,11 @@ export const settingsEn: Widen<typeof settingsFr> = {
       noAccountForClient: "No account connected for this client.",
       connect: "Connect an account",
       connectPlatform: "Connect {platform}",
+      detach: "Detach",
+      detachConfirm:
+        "The {platform} account @{username} will no longer be publishable, and its access token will be permanently destroyed. Already published posts stay visible in the history. To reuse it, you will have to reconnect it.",
+      detached: "Account detached, token destroyed.",
+      detachError: "Detachment incomplete — the token may still be active. Try again.",
       reconnect: "Reconnect",
       connectedToast: "{provider} account connected",
       connectErrorTitle: "Connection failed",
