@@ -396,30 +396,80 @@ décidé par Meta, pas par le code.
 
 ## Ce qui attend Étienne après la nuit du 14-15/08/2026
 
-### Migrations à appliquer à la main, DANS CET ORDRE
+### Migrations appliquées en production — ✅ FAIT le 15/08/2026 (BLOC 0)
 
-Aucune écriture n'a été faite sur `hgdeopkmkwyoumsfggrm`. Neuf migrations attendent dans `deploy/`.
+Les 10 envois ont été appliqués sur `hgdeopkmkwyoumsfggrm` via le MCP Supabase, sur autorisation
+explicite d'Étienne donnée pour ce bloc **et pour lui seul**. Aucune autre écriture en ligne n'a
+suivi. Ordre respecté, vérification après chaque envoi avant de passer au suivant.
 
-| Ordre | Fichier | Objet | Idempotent ? |
+**Méthode — pourquoi pas `apply_migration`.** Le ledger porte des versions courtes (`001`…`031`) ;
+`apply_migration` inscrit une ligne horodatée, ce qui aurait cassé la correspondance avec
+`supabase/migrations/` (c'est le ménage qu'avait dû faire `deploy/17_ledger_catchup.sql`). Donc :
+DDL par `execute_sql` — **vérifié : il ne journalise rien** (ledger inchangé à 22 lignes après la
+023) — puis ligne de ledger écrite à la main, au format exact des lignes existantes
+(`version` + `name`, tout le reste `null`).
+
+**Contrôle préalable des 10 fichiers** : diff logique (hors commentaires et lignes vides) entre
+chaque `deploy/*.sql` et son homologue de `supabase/migrations/` → **8 identiques**, et
+`concat(19_etape1 + 20_etape2)` == `024_needs_verification.sql` → identique. Aucune divergence.
+
+| Ordre | Fichier | Version | Vérification faite après l'envoi |
 |---|---|---|---|
-| 1 | `deploy/18_migration_023.sql` | Ancre d'idempotence sur `content_targets` (+ 2 gardes) | ❌ `add column` — une seule fois |
-| 2 | `deploy/19_migration_024_etape1_enums.sql` | 3 valeurs d'enum `needs_verification` | ✅ (`if not exists`) |
-| 3 | `deploy/20_migration_024_etape2.sql` | Gardes + sortie humaine — **envoi SÉPARÉ de l'étape 1** | ✅ |
-| 4 | `deploy/21_migration_025.sql` | `enqueue_publish_jobs` n'ouvre plus les cibles finies | ✅ |
-| 5 | `deploy/22_migration_026.sql` | Garde de suppression étendue (+ FK stricte en commentaire) | ✅ |
-| 6 | `deploy/23_migration_027.sql` | `cancel_publish_jobs` atteint un job `claimed` | ✅ |
-| 7 | `deploy/24_migration_028.sql` | Publication manuelle → annule le job de SA cible | ✅ |
-| 8 | `deploy/25_migration_029.sql` | Trigger filet de la file | ⚠️ sauf le `create trigger` final |
-| 9 | `deploy/26_migration_030.sql` | `approval_mode` opposable | ✅ |
-| 10 | `deploy/27_migration_031.sql` | Date de programmation jamais dans le passé | ⚠️ sauf le `create trigger` final |
+| 1 | `deploy/18_migration_023.sql` | `023 target_publish_anchor` | 2 colonnes + 2 triggers + 2 fonctions `private` présents |
+| 2 | `deploy/19_migration_024_etape1_enums.sql` | `024` (1/2) | 3 valeurs `needs_verification` lues **depuis une transaction neuve** → étape 1 bien COMMITÉE avant l'étape 2 |
+| 3 | `deploy/20_migration_024_etape2.sql` | `024 needs_verification` | les 3 fonctions portent `needs_verification` |
+| 4 | `deploy/21_migration_025.sql` | `025 enqueue_no_terminal_targets` | filtre d'ancre + exclusions `pushed_to_platform` / `needs_verification` présents |
+| 5 | `deploy/22_migration_026.sql` | `026 target_delete_guard` | garde étendue au job ; FK toujours `c` (cascade) — la bascule `restrict` de P3-8 reste **non appliquée**, comme décidé |
+| 6 | `deploy/23_migration_027.sql` | `027 cancel_claimed_jobs` | `claimed`/`awaiting_media` couverts |
+| 7 | `deploy/24_migration_028.sql` | `028 manual_publish_cancels_job` | annulation scopée `content_target_id` |
+| 8 | `deploy/25_migration_029.sql` | `029 publish_queue_safety_net` | trigger présent (précédé d'un `drop trigger if exists`) |
+| 9 | `deploy/26_migration_030.sql` | `030 approval_mode_gate` | garde porte `approval_mode` + `decided_by_role` + `approval_stale` |
+| 10 | `deploy/27_migration_031.sql` | `031 scheduled_at_bounds` | trigger présent |
 
-Puis : rattraper le ledger (`supabase_migrations.schema_migrations`, versions `023`→`031`) sur le
-modèle de `deploy/17_ledger_catchup.sql`, et lancer `get_advisors` (attendu : aucun nouveau lint —
-toutes les fonctions ajoutées sont dans le schéma `private`, non exposé).
+**État final — critère de sortie du BLOC 0 atteint.**
 
-**L'étape 2 de la 024 doit partir dans un envoi distinct de l'étape 1** : l'éditeur SQL Supabase
-enveloppe chaque envoi dans une transaction, et une valeur d'enum doit être commitée avant d'être
-évaluée.
+| Contrôle | Avant | Après |
+|---|---|---|
+| `list_migrations` | 22 lignes `001`→`022` | **31 lignes `001`→`031`**, 0 version intruse, noms **identiques** aux fichiers (`diff` mécanique) |
+| `get_advisors(security)` | 15 lints | **15 lints — delta ZÉRO** |
+| `/api/health` | — | **HTTP 200**, `{"ok":true,"service":"web"}` |
+
+**Delta d'advisors expliqué** : aucun nouveau lint, et c'est le résultat attendu. Les 5 fonctions
+ajoutées ou réécrites vivent dans le schéma `private`, non exposé par PostgREST ; les 3 fonctions
+`public` modifiées (`enqueue_publish_jobs`, `cancel_publish_jobs`,
+`mark_target_published_manually`) étaient **déjà** dans les 10 WARN 0029 de la baseline. Les 3 INFO
+`rls_enabled_no_policy` restent les `*_secrets` en deny-all (règle 11). Aucun
+`rls_disabled_in_public`, aucun `rls_enabled_no_policy` hors `*_secrets`.
+
+### Parcours désormais bloqués côté code ancien (production)
+
+Le code déployé est antérieur à la phase 3 : la production a maintenant un schéma **en avance sur
+son code**. État réel des données mesuré après application : **0 cible ancrée, 0 job (aucun,
+jamais), 16 contenus, 5 clients**. Conséquence : `023`, `025`, `026`, `027`, `028` et `029` n'ont
+**aucun effet observable** aujourd'hui — ce sont des durcissements qui attendent le worker.
+
+Deux migrations, elles, sont **actives tout de suite** :
+
+1. **`030` — bloque réellement, sur un client réel.** Contrairement à ce que laissait entendre la
+   note du 14/08 (« le défaut est `optional`, donc rien ne bloque »), **2 clients sur 5 sont déjà
+   en `approval_mode = 'required'`** : `Brulerie Lacaze` (5 contenus, dont **2 en amont**) et
+   `testat` (0 contenu). Et **aucun contenu du projet n'a d'approbation `reviewer`** (0 partout).
+   Donc : les 2 contenus en amont de `Brulerie Lacaze` ne peuvent **plus** passer en « Programmé »
+   depuis l'UI déployée. Le geste lève `42501`, et le code en ligne **ne mappe pas**
+   `CLIENT_APPROVAL_REQUIRED` (ce mapping est arrivé avec P4-3, dans la branche non poussée) :
+   l'utilisateur verra une erreur Postgres brute, pas un message clair.
+   *Contournement immédiat sans toucher au code : passer le client en `optional`, ou faire
+   approuver le contenu par un Reviewer — ce que la faille du LOT A empêche justement de faire
+   proprement.*
+2. **`031` — refuse de POSER une date passée** (tolérance 2 min, errcode `22007`). Les **3 contenus
+   déjà `scheduled` avec une date dépassée** restent modifiables (031 tolère une date *inchangée*,
+   c'est exactement le cas prévu) ; en revanche les re-dater vers un autre instant passé est
+   désormais refusé. Le glisser-déposer du calendrier et l'action en lot du board ne validaient
+   rien côté serveur : ces deux gestes peuvent maintenant échouer sans message mappé.
+
+⚠ `024` ajoute `needs_verification` aux 3 enums alors que les types TypeScript déployés l'ignorent.
+Sans effet aujourd'hui (aucun worker déployé ne peut poser ce statut), mais tout déploiement d'un
+worker à jour **doit** s'accompagner du code web à jour, sinon les libellés de statut seront vides.
 
 **Ordre migration → worker.** Appliquer 023 **avant** de déployer le worker à jour : son claim lit
 `ct.publish_started_at`. Et déployer le worker à jour **avant ou avec** la 027 : c'est le fencing
