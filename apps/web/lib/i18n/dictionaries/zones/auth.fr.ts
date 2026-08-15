@@ -112,5 +112,36 @@ export const authFr = {
       haveAccount: "Tu as déjà un compte ?",
       signInLink: "Se connecter",
     },
+    // Acceptation d'une invitation reviewer (V-3). Page de CONFIRMATION : le
+    // simple fait d'ouvrir ce lien ne rejoint plus rien et n'envoie plus rien.
+    invitation: {
+      metaTitle: "Invitation",
+      joinTitle: "Rejoindre {client} ?",
+      joinDescription:
+        "Tu as été invité à valider les contenus de {client}. Personne n'est ajouté tant que tu n'as pas confirmé.",
+      joinSubmit: "Rejoindre {client}",
+      joinSubmitting: "Ajout en cours…",
+      notMe: "Ce n'est pas ce que je veux",
+      proofTitle: "Confirme ton adresse",
+      proofDescription:
+        "Pour rejoindre cet espace, il faut d'abord te connecter à l'adresse qui a reçu l'invitation. On t'envoie le lien.",
+      proofSubmit: "M'envoyer le lien de connexion",
+      proofSubmitting: "Envoi…",
+      proofSentTitle: "Regarde tes e-mails",
+      proofSentDescription:
+        "Si cette invitation est valide, un lien de connexion vient de partir vers l'adresse invitée. Pense à vérifier tes spams.",
+      wrongAccountTitle: "Mauvais compte",
+      wrongAccountDescription:
+        "Tu es connecté avec {courant}, mais cette invitation vise une autre adresse. Déconnecte-toi, puis rouvre le lien.",
+      signOut: "Se déconnecter",
+      invalidTitle: "Lien inutilisable",
+      invalidDescription:
+        "Ce lien d'invitation n'est plus valide. Il a peut-être expiré, été révoqué, ou déjà été utilisé. Demande une nouvelle invitation.",
+      backToLogin: "Retour à la connexion",
+      errorTitle: "Impossible de rejoindre",
+      crossSiteDetail:
+        "Cette demande n'a pas été envoyée depuis Ocean. Par sécurité, elle est refusée. Rouvre le lien depuis ton e-mail.",
+      genericDetail: "Réessaie dans un instant. Si le problème persiste, contacte ton agence.",
+    },
   },
 } as const

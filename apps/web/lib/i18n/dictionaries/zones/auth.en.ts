@@ -115,5 +115,34 @@ export const authEn: Widen<typeof authFr> = {
       haveAccount: "Already have an account?",
       signInLink: "Sign in",
     },
+    invitation: {
+      metaTitle: "Invitation",
+      joinTitle: "Join {client}?",
+      joinDescription:
+        "You have been invited to review content for {client}. Nobody is added until you confirm.",
+      joinSubmit: "Join {client}",
+      joinSubmitting: "Joining…",
+      notMe: "This is not what I want",
+      proofTitle: "Confirm your address",
+      proofDescription:
+        "To join this workspace, sign in with the address that received the invitation. We will email you the link.",
+      proofSubmit: "Email me the sign-in link",
+      proofSubmitting: "Sending…",
+      proofSentTitle: "Check your inbox",
+      proofSentDescription:
+        "If this invitation is valid, a sign-in link has just been sent to the invited address. Remember to check your spam folder.",
+      wrongAccountTitle: "Wrong account",
+      wrongAccountDescription:
+        "You are signed in as {courant}, but this invitation targets a different address. Sign out, then reopen the link.",
+      signOut: "Sign out",
+      invalidTitle: "Link no longer usable",
+      invalidDescription:
+        "This invitation link is no longer valid. It may have expired, been revoked, or already been used. Ask for a new invitation.",
+      backToLogin: "Back to sign-in",
+      errorTitle: "Could not join",
+      crossSiteDetail:
+        "This request did not come from Ocean. It has been refused for your safety. Reopen the link from your email.",
+      genericDetail: "Try again in a moment. If the problem persists, contact your agency.",
+    },
   },
 }

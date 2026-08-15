@@ -14,6 +14,11 @@ const PUBLIC_EXACT = new Set([
   "/login",
   "/signup",
   "/forgot-password",
+  // Page de confirmation d'invitation (V-3) : un invité au compte encore
+  // inexistant doit pouvoir l'atteindre pour demander son lien de connexion.
+  // Elle n'écrit rien — l'écriture est une Server Action, en POST, avec
+  // vérification d'origine.
+  "/invitations",
   "/api/health",
   "/manifest.webmanifest",
 ])
