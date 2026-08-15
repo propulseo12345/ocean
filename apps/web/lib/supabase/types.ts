@@ -1,18 +1,19 @@
 // Types Supabase du schema en ligne (hgdeopkmkwyoumsfggrm).
 //
-// ⚠ CE FICHIER EST MAINTENU A LA MAIN, contrairement a ce que disaient les deux
-// lignes precedentes (15/08/2026). `scripts/gen-types.py` N'ECRIT RIEN : il lit
-// l'OpenAPI de PostgREST, imprime « regenere N tables » et s'arrete — sa
-// fonction `emit()` n'est jamais appelee, aucun fichier n'est ouvert en
-// ecriture. Verifie par execution : le script sort 0 en annoncant 42 tables, et
-// `git status` sur ce fichier reste vide.
+// ⚠ CE FICHIER EST MAINTENU A LA MAIN. Il l'a toujours ete, malgre l'en-tete
+// « genere … ne pas editer a la main » qu'il a porte jusqu'au 15/08/2026. Le
+// script cense le produire, `scripts/gen-types.py`, definissait une fonction
+// `emit()` qu'il n'appelait jamais : il lisait l'OpenAPI de PostgREST, imprimait
+// « regenere 42 tables », sortait 0, et n'ouvrait aucun fichier en ecriture.
+// Retire le 15/08/2026 sur decision d'Etienne, plutot que laisse a produire une
+// preuve de travail sans travail.
 //
 // Consequence pratique : apres une migration, c'est A LA MAIN qu'on met ce
 // fichier a jour. Derive mesuree le 15/08/2026 : 41 tables typees ici contre 42
 // exposees en ligne — `publish_jobs` manque. Sans effet aujourd'hui (le web ne
 // touche la file que par les RPC `enqueue_publish_jobs` / `cancel_publish_jobs`,
 // jamais la table), mais toute lecture directe de `publish_jobs` echouerait au
-// typage. A trancher : finir le generateur, ou assumer la tenue manuelle.
+// typage.
 //
 // Les enums ne sont PAS generes non plus (`Enums: { [_ in never]: never }`) :
 // une colonne enum est typee `string` ici. Les unions vivent dans

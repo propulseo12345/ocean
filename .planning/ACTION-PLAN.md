@@ -536,9 +536,10 @@ C'est la même limite que celle notée pour le câblage Supabase de la phase 7.
   `apps/worker/src/tokens/refresh-plan.ts`. Les deux paquets ne partagent aucun module
   (`packages/shared` ne porte que des types DB) et importer du web dans le worker créerait une
   dépendance absente de son image Docker. Le commentaire le dit **des deux côtés**.
-- **Les signatures des 2 RPC de 035 sont ajoutées à la main** dans `lib/supabase/types.ts` :
-  `scripts/gen-types.py` lit le schéma **en ligne**, où 035 n'est pas appliquée. À régénérer
-  après application.
+- **Les signatures des 2 RPC de 035 sont ajoutées à la main** dans `lib/supabase/types.ts` — comme
+  tout le reste de ce fichier. ⚠ **Rectificatif du 15/08/2026 (pilotage)** : il n'y a rien à
+  « régénérer après application ». `scripts/gen-types.py` n'écrivait aucun fichier et a été
+  **retiré** ; les 2 signatures ont été recoupées avec `pg_proc` sur le schéma réel et correspondent.
 - **L'e-mail Brevo `needs-reauth`** (règle 14) n'est toujours pas envoyé : `BREVO_API_KEY` est
   vide et le Lot 2 e-mail n'est pas ouvert. Le statut est posé, la notification non.
 
@@ -699,9 +700,11 @@ ligne. En allant le faire, trois choses se sont révélées fausses :
 `enqueue_publish_jobs` / `cancel_publish_jobs`, jamais la table (c'est la synchronisation app ↔ file
 de la phase 4) — mais toute lecture directe échouerait au typage. Écrit dans l'en-tête du fichier.
 
-**À trancher (pas fait, hors périmètre du pilotage)** : finir `gen-types.py` pour qu'il écrive
-vraiment, ou assumer la tenue manuelle et retirer le script. Le laisser tel quel est le pire des
-trois : il produit une preuve de travail sans travail.
+**Tranché le 15/08/2026 par Étienne : le script est retiré.** `types.ts` assume désormais sa tenue
+manuelle, et son en-tête le dit. Vérifié avant suppression qu'aucune CI, aucun `package.json` et
+aucun Dockerfile ne l'appelait — seules des notes de planning le mentionnaient, corrigées dans le
+même commit. Les rapports d'audit du 12/08 le mentionnent aussi et ne sont **pas** touchés : ce sont
+des constats datés, vrais à leur date.
 
 ---
 
