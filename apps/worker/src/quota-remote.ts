@@ -1,8 +1,8 @@
 import type pg from "pg"
 import type { PublishJob } from "./domain"
 import type { FetchLike } from "./http"
-import type { PublishContext } from "./publishers/types"
 import { graphCall } from "./publishers/meta/graph"
+import type { PublishContext } from "./publishers/types"
 import type { QuotaKind } from "./quota"
 
 // La moitié DISTANTE de la règle 19 : ce que la PLATEFORME dit de la charge du

@@ -1,7 +1,4 @@
 import { createContextProvider, REAL_REFRESH } from "./context"
-import { createQuotaChecker } from "./quota-check"
-import { createInstagramQuotaProbe } from "./quota-remote"
-import { createStorageSigner } from "./media/storage-signer"
 import { PgJobStore } from "./db/pg-store"
 import { createPool } from "./db/pool"
 import { LeaseLostError, type PublishJob } from "./domain"
@@ -9,11 +6,10 @@ import { type EngineDeps, processJob } from "./engine"
 import { loadConfig, type WorkerConfig } from "./env"
 import { createHealthState, markTickFailed, markTickOk, startHealthServer } from "./health"
 import { errorFields, log } from "./log"
-import {
-  assertLivePublishersAvailable,
-  createLiveResolver,
-  createStubResolver,
-} from "./publishers"
+import { createStorageSigner } from "./media/storage-signer"
+import { assertLivePublishersAvailable, createLiveResolver, createStubResolver } from "./publishers"
+import { createQuotaChecker } from "./quota-check"
+import { createInstagramQuotaProbe } from "./quota-remote"
 import type { JobStore } from "./store"
 
 // Worker de publication (2e app Coolify). Boucle tick 5 s : reaper puis drain des
@@ -195,9 +191,7 @@ async function main(): Promise<void> {
       // Le refresh n'a de sens qu'en mode réel : en stub aucun appel ne part,
       // et consommer un refresh token TikTok (à rotation) pour une simulation
       // casserait un vrai compte.
-      refresh: stub
-        ? null
-        : { run: REAL_REFRESH, timeoutMs: config.tokenRefreshTimeoutMs },
+      refresh: stub ? null : { run: REAL_REFRESH, timeoutMs: config.tokenRefreshTimeoutMs },
     }),
     checkQuota: createQuotaChecker(pool, {
       stub,

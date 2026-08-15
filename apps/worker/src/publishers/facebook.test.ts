@@ -41,7 +41,9 @@ function ctx(over: Partial<PublishContext> = {}): PublishContext {
   }
 }
 
-function fakeGraph(routes: { match: string; body: unknown; status?: number; headers?: Record<string, string> }[]) {
+function fakeGraph(
+  routes: { match: string; body: unknown; status?: number; headers?: Record<string, string> }[]
+) {
   const calls: { method: string; url: string; body?: string; headers: Headers }[] = []
   const fetch: FetchLike = async (url, init) => {
     const method = init?.method ?? "GET"
@@ -129,7 +131,11 @@ test("reel : start -> rupload par file_url -> finish (3 temps)", async () => {
 test("reel : la phase finish porte video_state=PUBLISHED (rien n'est publie avant)", async () => {
   const g = fakeGraph([{ match: "POST 1122334455/video_reels", body: { post_id: "1122_777" } }])
   const pub = createFacebookPublisher({ fetch: g.fetch, base: BASE })
-  const res = await pub.publish(FRESH, "v-1", ctx({ format: "reel", media: [media({ kind: "video" })] }))
+  const res = await pub.publish(
+    FRESH,
+    "v-1",
+    ctx({ format: "reel", media: [media({ kind: "video" })] })
+  )
 
   const body = new URLSearchParams(g.calls[0]?.body ?? "")
   assert.equal(body.get("upload_phase"), "finish")

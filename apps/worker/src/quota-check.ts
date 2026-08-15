@@ -2,7 +2,7 @@ import type pg from "pg"
 import type { PublishJob } from "./domain"
 import { log } from "./log"
 import type { PublishContext } from "./publishers/types"
-import { decideQuota, type LocalQuota, LOCAL_QUOTAS, type QuotaVerdict } from "./quota"
+import { decideQuota, LOCAL_QUOTAS, type LocalQuota, type QuotaVerdict } from "./quota"
 import { type RemoteQuotaProbe, saveRemoteQuota } from "./quota-remote"
 
 // Vérif quota AVANT publication (règle 19) — les deux moitiés réunies.

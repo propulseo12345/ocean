@@ -1,6 +1,6 @@
+import { PermanentPublishError } from "../domain"
 import type { FetchLike } from "../http"
 import { truncateBody } from "../http"
-import { PermanentPublishError } from "../domain"
 
 // Signature d'URL Storage — l'unique endroit du worker qui parle à l'API
 // Storage de Supabase.

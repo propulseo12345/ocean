@@ -121,7 +121,11 @@ export function createTikTokPublisher(deps: TikTokDeps): Publisher {
     if (code && code !== "ok") {
       const message = `tiktok ${path}: ${code} — ${parsed.error?.message ?? ""}`
       // `spam_risk_*` et `invalid_param` ne s'améliorent pas en réessayant.
-      if (code.startsWith("spam_risk") || code === "invalid_param" || code === "url_ownership_unverified") {
+      if (
+        code.startsWith("spam_risk") ||
+        code === "invalid_param" ||
+        code === "url_ownership_unverified"
+      ) {
         throw new PermanentPublishError(message)
       }
       throw new Error(message)
@@ -132,7 +136,7 @@ export function createTikTokPublisher(deps: TikTokDeps): Publisher {
   return {
     async createContainer(_job: PublishJob, ctx: PublishContext) {
       const video = ctx.media[0]
-      if (!video || video.kind !== "video") {
+      if (video?.kind !== "video") {
         throw new PermanentPublishError("tiktok: une video est requise (brouillon video.upload)")
       }
       const size = video.byteSize

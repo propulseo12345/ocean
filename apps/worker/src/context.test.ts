@@ -113,7 +113,10 @@ test("compte detache (036) => PERMANENT, et surtout PAS needs_reauth", async () 
 
 test("compte en needs_reauth => NeedsReauth avant meme d'appeler la plateforme", async () => {
   const { pool } = pooling({ target: { ...TARGET_ROW, connection_status: "needs_reauth" } })
-  await assert.rejects(() => loadPublishTarget(pool, JOB), (err) => err instanceof NeedsReauthError)
+  await assert.rejects(
+    () => loadPublishTarget(pool, JOB),
+    (err) => err instanceof NeedsReauthError
+  )
 })
 
 test("compte introuvable => permanent (aucun retry ne le fera revenir)", async () => {
@@ -165,7 +168,10 @@ test("LE PIEGE DU LEASE : un refresh pendu est borne, il ne mange pas les 2 min"
     // compte — deux échanges concurrents, ce que la règle 14 interdit.
     refresh: { run: () => new Promise<void>(() => {}), timeoutMs: 20 },
   })
-  await assert.rejects(() => prepare(JOB), (err) => err instanceof TokenRefreshTimeoutError)
+  await assert.rejects(
+    () => prepare(JOB),
+    (err) => err instanceof TokenRefreshTimeoutError
+  )
 })
 
 test("prepare : aucun media signe quand il n'y a pas de signataire", async () => {
@@ -184,7 +190,10 @@ test("prepare : sans token, NeedsReauth (on ne part pas publier sans identite)",
     },
   ])
   const prepare = createContextProvider(pool, { stub: false, storage: null, refresh: null })
-  await assert.rejects(() => prepare(JOB), (err) => err instanceof NeedsReauthError)
+  await assert.rejects(
+    () => prepare(JOB),
+    (err) => err instanceof NeedsReauthError
+  )
 })
 
 test("stub : ni refresh, ni cible, ni signature — la simulation n'appelle personne", async () => {

@@ -1,5 +1,5 @@
-import { PermanentPublishError, type PublishJob } from "../domain"
 import type { Queryable } from "../db/queryable"
+import { PermanentPublishError, type PublishJob } from "../domain"
 import { SIGNED_URL_TTL_SECONDS, type StorageSigner } from "./storage-signer"
 
 // Résolution du média d'un job : lire les liaisons `content_media` du contenu,

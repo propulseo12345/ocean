@@ -44,7 +44,10 @@ test("code 10 / 200 (permission) et 100 (parametre) => PERMANENT", () => {
   for (const code of [10, 100, 200]) {
     const out = toPublishError(metaError(code))
     assert.ok(out instanceof PermanentPublishError, `code ${code}`)
-    assert.ok(!(out instanceof NeedsReauthError), "une permission manquante n'est pas un token mort")
+    assert.ok(
+      !(out instanceof NeedsReauthError),
+      "une permission manquante n'est pas un token mort"
+    )
   }
 })
 
@@ -69,8 +72,12 @@ test("code INCONNU => transitoire par defaut (on ne condamne pas sur une supposi
 })
 
 test("500 sans code exploitable => transitoire", () => {
-  assert.ok(!(toPublishError(new MetaApiError(500, null, null, null, "boom")) instanceof
-    PermanentPublishError))
+  assert.ok(
+    !(
+      toPublishError(new MetaApiError(500, null, null, null, "boom")) instanceof
+      PermanentPublishError
+    )
+  )
 })
 
 // --- le transport lui-meme --------------------------------------------------
@@ -107,8 +114,7 @@ test("REGLE 12 : un token recopie par Meta dans son erreur est expurge", async (
       { status: 400 }
     )
   await assert.rejects(
-    () =>
-      graphCall(fetch, { method: "GET", path: "me", accessToken: "EAAG-secret-token" }, BASE),
+    () => graphCall(fetch, { method: "GET", path: "me", accessToken: "EAAG-secret-token" }, BASE),
     (err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err)
       assert.ok(!msg.includes("EAAG-secret-token"), `token en clair : ${msg}`)

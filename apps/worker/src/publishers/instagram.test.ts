@@ -53,9 +53,12 @@ function fakeGraph(routes: { match: string; body: unknown; status?: number }[]) 
         return new Response(JSON.stringify(r.body), { status: r.status ?? 200 })
       }
     }
-    return new Response(JSON.stringify({ error: { message: `route inconnue: ${method} ${path}` } }), {
-      status: 404,
-    })
+    return new Response(
+      JSON.stringify({ error: { message: `route inconnue: ${method} ${path}` } }),
+      {
+        status: 404,
+      }
+    )
   }
   return { fetch, calls }
 }
@@ -295,7 +298,11 @@ test("media rejete (sous-code 2207026) => PERMANENT, failed direct", async () =>
     },
   ])
   await assert.rejects(
-    () => publisher(g.fetch).createContainer(JOB, ctx({ format: "reel", media: [media({ kind: "video" })] })),
+    () =>
+      publisher(g.fetch).createContainer(
+        JOB,
+        ctx({ format: "reel", media: [media({ kind: "video" })] })
+      ),
     (e: unknown) => e instanceof PermanentPublishError && !(e instanceof NeedsReauthError)
   )
 })

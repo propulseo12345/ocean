@@ -14,7 +14,8 @@ const RECOVERY = {
   targetPublishStartedAt: new Date(),
 } as PublishJob
 
-const MEDIA_URL = "https://projet.supabase.co/storage/v1/object/sign/media-originals/v.mp4?token=jwt"
+const MEDIA_URL =
+  "https://projet.supabase.co/storage/v1/object/sign/media-originals/v.mp4?token=jwt"
 
 function video(byteSize: number): JobMedia {
   return {

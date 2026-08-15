@@ -154,12 +154,12 @@ export function createFacebookPublisher(deps: FacebookDeps): Publisher {
       return { containerId: ids.join(",") }
     },
 
-    async publish(job: PublishJob, containerId: string, ctx: PublishContext) {
+    async publish(_job: PublishJob, containerId: string, ctx: PublishContext) {
       if (containerId === TEXT_ONLY_CONTAINER) {
         const post = await call<IdResponse>(ctx, "POST", `${ctx.providerAccountId}/feed`, {
           message: ctx.caption || undefined,
         })
-        return toResult(ctx, post.id)
+        return toResult(post.id)
       }
 
       if (isReel(ctx)) {
@@ -169,7 +169,7 @@ export function createFacebookPublisher(deps: FacebookDeps): Publisher {
           video_state: "PUBLISHED",
           description: ctx.caption || undefined,
         })
-        return toResult(ctx, done.post_id ?? done.id ?? containerId)
+        return toResult(done.post_id ?? done.id ?? containerId)
       }
 
       const params: Record<string, string | undefined> = { message: ctx.caption || undefined }
@@ -177,7 +177,7 @@ export function createFacebookPublisher(deps: FacebookDeps): Publisher {
         params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id })
       })
       const post = await call<IdResponse>(ctx, "POST", `${ctx.providerAccountId}/feed`, params)
-      return toResult(ctx, post.post_id ?? post.id)
+      return toResult(post.post_id ?? post.id)
     },
 
     /**
@@ -218,14 +218,14 @@ export function createFacebookPublisher(deps: FacebookDeps): Publisher {
     },
 
     async resolvePublished(_job: PublishJob, containerId: string, ctx: PublishContext) {
-      if (isReel(ctx)) return toResult(ctx, containerId)
+      if (isReel(ctx)) return toResult(containerId)
       const first = containerId.split(",")[0] as string
       const photo = await call<PhotoStatusResponse>(ctx, "GET", first, { fields: "page_story_id" })
-      return toResult(ctx, photo.page_story_id ?? first)
+      return toResult(photo.page_story_id ?? first)
     },
   }
 
-  function toResult(_ctx: PublishContext, postId: string | undefined): PublishResult {
+  function toResult(postId: string | undefined): PublishResult {
     if (!postId) throw new Error("facebook: publication sans identifiant de post")
     return {
       externalPostId: postId,

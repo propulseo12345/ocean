@@ -9,7 +9,7 @@ import {
   saveConnectionTokens,
 } from "./connection-store"
 import { createExchange } from "./exchange"
-import { refreshConnection, type RefreshOutcome } from "./refresh"
+import { type RefreshOutcome, refreshConnection } from "./refresh"
 
 // T1-2 — brancher le rafraîchissement réel sur le chemin de publication.
 //
