@@ -1,5 +1,10 @@
 -- Migration 037 a appliquer sur hgdeopkmkwyoumsfggrm (SQL Editor). Prerequis :
--- 020 (publish_jobs), 001 (schema private), extension pg_net deja installee.
+-- 020 (publish_jobs), 001 (schema private).
+--
+-- ⚠ CORRECTION DU 15/08/2026 : l'en-tete affirmait « extension pg_net deja
+-- installee ». C'ETAIT FAUX — verifie au pre-vol, `pg_net` n'etait installee ni
+-- en ligne ni en local. La migration l'installe desormais elle-meme (voir le
+-- bloc des extensions plus bas).
 --
 -- ⚠ NON APPLIQUEE. Copie de rejeu, generee depuis
 -- supabase/migrations/037_watchdog_publish_jobs.sql — la SOURCE CANONIQUE est
@@ -67,7 +72,18 @@
 -- Function `watchdog-notify` et attend `BREVO_API_KEY`. Le chemin SQL est
 -- complet et vérifiable dès maintenant ; le dernier maillon attend un compte.
 
+-- ⚠ LES DEUX EXTENSIONS, PAS UNE. Corrigé le 15/08/2026 au pré-vol : `pg_net`
+-- n'était PAS installée sur hgdeopkmkwyoumsfggrm, alors que
+-- `watchdog_publish_jobs()` appelle `net.http_post`. Invisible partout — plpgsql
+-- ne résout pas `net.*` à la création, la fonction sort avant l'appel tant que
+-- les secrets Vault manquent, et les tests pgTAP n'atteignent jamais le réseau.
+-- La panne serait tombée au geste (b) ci-dessus, au moment exact où l'on croit
+-- finir l'installation.
+-- ⚠ `with schema extensions` : sans lui, l'avis Supabase `extension_in_public`
+-- se declenche (constate en ligne le 15/08/2026). Les fonctions vont dans le
+-- schema `net` dans les deux cas — c'est le schema d'ENREGISTREMENT qui change.
 create extension if not exists pg_cron;
+create extension if not exists pg_net with schema extensions;
 
 -- ===========================================================================
 -- 1. Anti-répétition

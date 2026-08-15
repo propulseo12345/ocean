@@ -29,7 +29,33 @@
 -- Function `watchdog-notify` et attend `BREVO_API_KEY`. Le chemin SQL est
 -- complet et vérifiable dès maintenant ; le dernier maillon attend un compte.
 
+-- ⚠ LES DEUX EXTENSIONS, PAS UNE. Corrigé le 15/08/2026 au pré-vol de
+-- l'application en ligne : `pg_net` n'était PAS installée sur
+-- `hgdeopkmkwyoumsfggrm` (ni ici), alors que `watchdog_publish_jobs()` appelle
+-- `net.http_post`. Le défaut ne se voyait NULLE PART, et c'est ce qui le rend
+-- dangereux :
+--   · `create or replace function … language plpgsql` ne résout pas `net.*` à la
+--     création — la migration s'applique sans broncher ;
+--   · la fonction sort AVANT l'appel HTTP tant que les secrets Vault manquent —
+--     donc elle ne casse pas non plus à l'exécution ;
+--   · les tests pgTAP passent, pour la même raison : ils n'atteignent jamais
+--     l'appel réseau.
+-- La panne serait apparue au geste (b) du runbook — poser les deux secrets
+-- Vault — c'est-à-dire au moment PRÉCIS où l'on croit terminer l'installation :
+-- `ERROR: schema "net" does not exist`, toutes les 5 minutes, sur le seul filet
+-- censé nous prévenir quand plus rien ne fonctionne.
+--
+-- ⚠ `with schema extensions` N'EST PAS DÉCORATIF. Un `create extension pg_net`
+-- nu enregistre l'extension dans `public` et déclenche l'avis Supabase
+-- `extension_in_public` — constaté en ligne le 15/08/2026, puis corrigé. Les 12
+-- fonctions atterrissent de toute façon dans le schéma `net` (le script de
+-- l'extension le crée lui-même), donc `net.http_post` fonctionne dans les deux
+-- cas et rien n'est exposé par PostgREST : c'est le SCHÉMA D'ENREGISTREMENT de
+-- l'extension qui change, pas l'emplacement de ses objets. On le corrige quand
+-- même — la règle du projet est qu'`get_advisors` reste propre après migration,
+-- et un avis qu'on apprend à ignorer est un avis qui masquera le suivant.
 create extension if not exists pg_cron;
+create extension if not exists pg_net with schema extensions;
 
 -- ===========================================================================
 -- 1. Anti-répétition
