@@ -69,7 +69,7 @@ export const composerFr = {
       slidesCount: "{count}/{max} slides (limite API Meta)",
       libraryButton: "Médiathèque",
       emptyChoose: "Choisir un visuel dans la médiathèque",
-      emptyHint: "Dépôt de fichiers réel au Lot 1 — la preview pioche dans les médias mockés.",
+      emptyHint: "ou dépose directement un fichier ci-dessous.",
       slidesAria: "Slides du contenu",
       carouselReorder:
         "Glisse les vignettes pour réordonner — la 1re slide est la couverture du carrousel.",

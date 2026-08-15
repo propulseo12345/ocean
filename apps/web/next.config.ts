@@ -34,12 +34,52 @@ function supabaseStoragePatterns(): NonNullable<NextConfig["images"]>["remotePat
 
   if (configured) {
     try {
-      return [{ protocol: "https", hostname: new URL(configured).hostname, pathname }]
+      const url = new URL(configured)
+      // ⚠ Le protocole et le port sont DÉRIVÉS de l'URL, pas figés à `https`.
+      // Le stack Supabase local est en `http://127.0.0.1:54421` : avec un
+      // `protocol: "https"` en dur, l'optimiseur répond 400 `"url" parameter is
+      // not allowed` et AUCUNE image ne s'affiche en développement — donc aucun
+      // téléversement n'est vérifiable localement. En production `configured`
+      // est en https, la valeur dérivée est la même qu'avant.
+      return [
+        {
+          protocol: url.protocol === "http:" ? "http" : "https",
+          hostname: url.hostname,
+          ...(url.port ? { port: url.port } : {}),
+          pathname,
+        },
+      ]
     } catch {
       // URL invalide : on ne casse pas le build pour ça, le repli suffit.
     }
   }
   return [{ protocol: "https", hostname: "*.supabase.co", pathname }]
+}
+
+/**
+ * Le Supabase configuré est-il un stack LOCAL (boucle locale) ?
+ *
+ * Next 16 refuse d'optimiser une image dont l'hôte résout vers une IP privée —
+ * protection anti-SSRF, et elle a raison. Mais le stack Supabase de
+ * développement vit sur `http://127.0.0.1:54421` : sans dérogation, aucune
+ * vignette ne s'affiche en local, donc aucun téléversement n'est vérifiable
+ * dans l'interface.
+ *
+ * La dérogation est donc CONDITIONNÉE à un hôte de boucle locale, calculée à
+ * partir de la même URL que `remotePatterns`. En production, `SUPABASE_URL`
+ * pointe sur `*.supabase.co` : la fonction rend `false` et la protection reste
+ * entière. Poser le drapeau à `true` en dur aurait ouvert le réseau interne du
+ * VPS à l'optimiseur.
+ */
+function supabaseEstLocal(): boolean {
+  const configured = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!configured) return false
+  try {
+    const { hostname } = new URL(configured)
+    return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "[::1]"
+  } catch {
+    return false
+  }
 }
 
 const nextConfig: NextConfig = {
@@ -50,6 +90,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(here, "../.."),
   images: {
     remotePatterns: supabaseStoragePatterns(),
+    dangerouslyAllowLocalIP: supabaseEstLocal(),
   },
 }
 

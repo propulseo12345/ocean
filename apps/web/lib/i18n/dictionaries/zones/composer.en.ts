@@ -72,7 +72,7 @@ export const composerEn: Widen<typeof composerFr> = {
       slidesCount: "{count}/{max} slides (Meta API limit)",
       libraryButton: "Library",
       emptyChoose: "Choose a visual from the library",
-      emptyHint: "Real file upload in Phase 1 — the preview pulls from mocked media.",
+      emptyHint: "or drop a file directly below.",
       slidesAria: "Content slides",
       carouselReorder: "Drag the thumbnails to reorder — the 1st slide is the carousel cover.",
       sizeMb: "{size} MB",
