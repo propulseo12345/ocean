@@ -358,9 +358,78 @@ Reprend la session 3 du brief, désormais exécutable.
 **Critère de sortie** : un post réel, programmé la veille, apparaît sur le compte de test sans
 aucune intervention — et le job correspondant est en `succeeded` avec son permalink.
 
+#### Tickets — suivi d'exécution
+
+> Exécution : branche `chore/phase-0-outillage`, session du 18/08/2026. **Non poussée.**
+> **Aucune écriture sur `hgdeopkmkwyoumsfggrm`** — la migration 037 attend dans
+> `deploy/33_migration_037.sql`, non appliquée.
+>
+> ⚠ **LE CRITÈRE DE SORTIE N'EST PAS ATTEINT, et il ne pouvait pas l'être.** Il n'existe ni app
+> Meta ni identifiants. **Aucun octet n'a transité vers Meta ou TikTok, aucun post n'existe.** Ce
+> lot livre le DIALOGUE, pas la preuve du dialogue : les trois publishers sont écrits et rejoués
+> contre un transport HTTP injecté qui répond les formes documentées, erreurs comprises. Ce qui
+> reste à prouver — que Meta accepte réellement ces requêtes — demande l'app Meta, et rien d'autre.
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| T1-1 | `media/signed-urls.ts` — l'URL signée 48 h | ✅ | `f93f484` | Le répertoire `apps/worker/src/media/` **n'existait pas**, alors que CLAUDE.md §4 le liste et que `PublishContext.mediaUrl` l'attendait : aucun publisher ne pouvait recevoir de média. Trois décisions écrites dans le code : **TTL 48 h long exprès** (5 tentatives avec backoff + 2 h de fenêtre de grâce + le temps que Meta télécharge un Reel — une URL de 15 min produirait un « média invalide », donc un `failed` sans retry, sur un fichier sain) ; **un carrousel signe chaque média**, et le signataire résout ses réponses **par chemin** et non par position (une inversion silencieuse publierait les slides dans le désordre) ; **les deux échecs sont séparés** — Storage 5xx/réseau = TRANSITOIRE (`StorageSignError` n'hérite PAS de `PermanentPublishError`), objet absent / `storage_path` nul / original purgé J+7 = PERMANENT. **Mutation** : faire hériter `StorageSignError` de `PermanentPublishError` → **2 tests tombent** ; résoudre par position → **le test du carrousel tombe**. 10 tests. |
+| T1-2 | `context.ts` — token frais, compte cible, légende | ✅ | `f25dc95` | `prepare()` rendait `{ accessToken }` et rien d'autre ; `tokens/refresh.ts` (P8-4) existait **sans aucune de ses 4 dépendances**, donc **sans appelant** — le token n'était jamais rafraîchi. Quatre points : ① **le piège du lease** — le verrou n'est pas tenu pendant l'appel (refresh.ts est en 3 phases), le risque est qu'un fournisseur pendu fasse expirer le lease de 2 min, que le reaper rende le job et qu'un SECOND worker rafraîchisse le même compte : `WORKER_TOKEN_REFRESH_TIMEOUT_MS` = 15 s ; ② `needs_reauth` est fatal, `skip`/`abandonne` ne le sont pas (refuser de publier parce qu'un renouvellement PRÉVENTIF a échoué transforme une précaution en panne) ; ③ **les hashtags vivent à part en base** — publier `caption` seul amputait chaque post de ses hashtags, sans erreur ni trace ; ④ un compte `disconnected` (036) est permanent mais **PAS** `needs_reauth`. `redactSecrets` efface les valeurs envoyées avant qu'un corps d'erreur fournisseur n'entre dans une exception (Meta recopie l'URL appelée dans `error.message`, qui part dans `publish_jobs.last_error` affiché par l'app). **Mutations** : neutraliser `redactSecrets` → **2 tests** ; `composeCaption` sans hashtags → **3 tests** ; `disconnected` → `NeedsReauthError` → **1 test** ; refresh APRÈS la lecture du token → **1 test** ; retirer la borne de temps → le test du lease tombe (timeout à 4 s). worker 61 → 82. |
+| LOT 2 | Instagram réel | ✅ | `1138b9e` | Stub de 4 lignes → publisher complet, **transport injecté** (`createInstagramPublisher({ fetch })`), `ctx.signal` transmis à **chaque** appel. **La classification des erreurs est le cœur du lot** (règle 18) : 190/102 → reconnexion, 4/17/32/613/1/2/341 → retry, 10/100/200/368 + sous-codes 2207xxx → permanent, **sauf 2207003** (Meta n'a pas su télécharger : souvent son réseau, et l'URL vit 48 h). Un code **inconnu est transitoire** — condamner le contenu d'un client sur une supposition n'est pas une décision qu'on a les moyens de prendre. **`FINISHED` n'est pas `PUBLISHED`** : `ContainerStatus` gagne `ready`, et toute la règle 15 tient sur cette distinction. Conséquence sur le moteur : porte de préparation dans `publishFresh`, **avant l'ancre** — IN_PROGRESS → `awaiting_media` (jamais un `sleep` : la file est séquentielle), PUBLISHED → on résout, ERROR/EXPIRED → nouveau `store.clearContainer` (le conteneur mort est persisté sur la CIBLE depuis 023 : sans cet oubli le job échouerait jusqu'à épuisement sur la même cause ; le SQL porte `publish_started_at is null` sur les deux lignes). Carrousel 2–10, enfants puis parent, légende sur le parent, `alt_text` jamais sur un reel. **Mutations** : code 4 en permanent → **3 tests** ; FINISHED → published → **1** ; `signal` non transmis → **2** ; retirer `clearContainer` → **1** ; retirer la porte → **1**. worker 82 → 118. |
+| LOT 3 | Facebook Pages + TikTok brouillon | ✅ | `34199c9` | **Facebook** : photo téléversée `published=false` puis `/feed` — ce découpage **donne** au flux photo un conteneur au sens de la règle 15 (une étape réversible avant l'irréversible) ; reel en 3 temps avec upload `file_url` ; texte sans conteneur possible. **La question du moteur n'est pas la même selon l'état du job** — frais : « puis-je publier ? », reprise : « a-t-il déjà publié ? ». Instagram répond aux deux avec `status_code`, Facebook non : `page_story_id` est la preuve pour une photo, et un post **texte en reprise est INDÉCIDABLE** — on le dit, l'erreur permanente sur un job ancré produit `needs_verification` (024), ni doublon ni faux échec. **TikTok** : `createContainer` = INIT SEUL, `publish` = LE TRANSFERT. Mettre le transfert dans createContainer aurait rendu le brouillon visible **avant** l'ancre : un crash produirait un second brouillon et brûlerait 1 des 5 quotas/24 h. L'`upload_url` **n'est jamais persistée** (elle porte un jeton, et `external_container_id` est lisible par les membres de l'org — règle 11). Tranches : `floor`, la dernière absorbe le reliquat (un `ceil` produirait une tranche sous le minimum de 5 Mio) ; le `Range` est vérifié octet par octet — un Storage qui l'ignorerait ferait téléverser N fois le fichier entier et TikTok recevrait un fichier corrompu **sans qu'aucune erreur ne le signale**. **Mutations** : `ceil` → **2 tests** ; retirer le contrôle de tranche → **1** ; TikTok interroge `status/fetch` sur un job frais → **1** ; FB texte répond « ready » en reprise → **1** ; FB photo `published=true` → **1**. worker 118 → 147. |
+| LOT 4 | Quota distant + `source = 'api'` | ✅ | `13b6e2d` | **Le fait contre-intuitif** : les deux plateformes ne répondent pas au même moment. IG a une sonde AVANT le post (`GET /content_publishing_limit`) ; FB **n'en a aucune** — son BUC arrive dans l'en-tête `X-Business-Use-Case-Usage` de chaque réponse, donc **en sortie**. Le publisher rend l'en-tête brut (`ctx.reportUsage`), le contexte l'interprète. ⚠ `call_count` est un **POURCENTAGE**, pas un nombre d'appels : le lire comme un compte afficherait « 28/4800 » là où Meta dit « 28 % » — faux d'un facteur ~170, et faux dans le sens qui ne protège de rien. Facebook a enfin un plafond enforçable (`FB_BUC_QUOTA` à 100) là où `LOCAL_QUOTAS.facebook` étant `null` le worker se contentait de journaliser. **Une sonde en panne ne bloque JAMAIS la publication** ; une réponse vide rend `null` et non `used = 0` (écrire zéro effacerait le compteur local). La fenêtre de la plateforme n'est pas repoussée à chaque relevé — la repousser gèlerait un compte au plafond pour toujours. **AUCUNE MIGRATION 037 N'ÉTAIT NÉCESSAIRE** pour `source` : `check (source in ('api','local'))` existe depuis 014:123 — et ce n'est pas une affirmation de lecture, le **test pgTAP 093** l'écrit réellement, plus `quota_kind = 'fb_buc'` qui n'avait jamais eu d'écrivain, plus une 4ᵉ assertion qui vérifie qu'une **troisième valeur est refusée** (sans elle, les précédentes ne prouveraient que l'existence de la colonne). **Mutations** : `call_count` avec limite 4800 → **1** ; ne plus rattraper l'échec de sonde → **1** ; retirer `FB_BUC_QUOTA` → **1** ; repousser la fenêtre → **1** ; pgTAP : source invalide → `'local'` → **« Failed test 4 », Result: FAIL**. worker 147 → 158 ; pgTAP 364 → 369. |
+| LOT 5 | Lever le refus `live` sans ouvrir un trou | ✅ | `34199c9` | **Même commit que le LOT 3, à dessein** : vider `SIMULATED_PLATFORMS` sans poser au même instant le nouveau motif de refus aurait laissé, entre deux commits, un worker `live` qui démarre sans le moindre identifiant. Le motif « les publishers sont des stubs » est **éteint** ; à la place, refus si l'une des **six** variables manque, avec les noms **et la raison de chacune** (4 OAuth Meta/TikTok pour le refresh, `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` pour signer les URL de média). Motif : un worker `live` sans identifiants démarre parfaitement et n'échoue qu'au **premier job, à 7 h du matin** sur le contenu d'un vrai client — le moment où l'erreur coûte le plus et se diagnostique le plus mal. `env.test.ts:69` est **réécrit**, pas supprimé : il vérifie la nouvelle raison. ⚠ **Ce que la garde ne prouve pas** : que les identifiants sont valides, qu'une app Meta existe, qu'un compte est connecté. Elle vérifie la présence, pas la vérité. **Mutation** : la garde cesse de vérifier les identifiants → **3 tests tombent**. |
+| LOT 6 | Watchdog `pg_cron` + Edge Function | ✅ | `572a43a` | Tous les filets existants vivent **dans** le worker (reaper, heartbeat, compteur de ticks) et supposent qu'il tourne. Trois commentaires du dépôt renvoyaient déjà « au watchdog pg_cron », qui n'existait pas (P3-7, P4-4). Découpage décide/exécute : `private.late_publish_jobs()` en SQL pur (**9 tests pgTAP**), `public.watchdog_publish_jobs()` pour l'effet, Edge Function `watchdog-notify` pour l'envoi. **Les tests portent autant sur ce qu'il NE signale PAS** : 30 s de retard (un worker sain vide son lot), job `claimed` (c'est le cas du reaper — l'inclure ferait alerter sur chaque Reel un peu long), `next_attempt_at` futur (backoff normal), déjà alerté il y a 5 min (sans `watchdog_alerted_at`, 288 e-mails par jour sur le même job). Dégradation propre : sans les deux secrets Vault, la fonction marque, émet un `NOTICE` et rend le compte — un watchdog non configuré doit rester **silencieux et vert**. ⚠ **Migration NON appliquée** ; `deploy/33_migration_037.sql` vérifié **identique à sa source hors commentaires**. ⚠ **Aucun e-mail n'a jamais été envoyé** (`BREVO_API_KEY` absente). **Mutation** : retirer la clause de backoff → **2 tests tombent**. ⚠ **Mutation qui N'A PAS falsifié** : remplacer `revoke ... from public, anon, authenticated` par `revoke ... from public` seul laisse le test de baseline **au vert**. Le revoke explicite est conservé (021), mais cette assertion prouve l'invariant, pas que la clause explicite le fasse tenir. Écrit dans le commentaire du test. pgTAP 369 → 378. |
+| — | Documentation d'exploitation | ✅ | `f38815b` | Les six variables du mode `live` ne figuraient dans **aucun** des trois documents d'exploitation : un opérateur suivant le runbook à la lettre aurait obtenu un conteneur qui refuse de partir. Runbook, `.env.local.example` et `Dockerfile` alignés. La section `live` du runbook disait « refusé jusqu'à la phase 6 » — périmé, remplacé par le nouveau motif **et sa limite**. |
+| — | Lint | ✅ | `4b16429` | `biome check --write` sur `apps/worker/src`. Mesuré sur un arbre LF reconstruit **depuis les blobs** (pas `git archive`, qui mesure le mauvais référentiel — impasse notée au handoff). Restent 2 avertissements **préexistants** dans `db/pool.test.ts`, hors périmètre. |
+
+#### État final des commandes de vérification (18/08/2026)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm -w build` | ✅ `Compiled successfully` |
+| `pnpm --filter web exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter web test` | ✅ **124/124** (inchangé — `apps/web` n'a pas été touché) |
+| `pnpm --filter worker test` | ✅ **158/158** (51 au début de session) |
+| `npx supabase@latest db reset --no-seed` puis `test db` | ✅ **Files=36, Tests=378, Result: PASS** (34/364 au début) |
+| `biome check` sur l'arbre LF reconstruit depuis les blobs | ✅ `apps/worker/src` : **0 erreur**, 2 avertissements préexistants |
+
+#### Ce que la phase 6 n'a PAS couvert — la limite est énorme et connue d'avance
+
+- **Aucun octet n'a transité vers Meta ou TikTok. Aucun post n'existe.** Tous les publishers sont
+  vérifiés contre un **faux** Graph API. Ce que les tests prouvent : les décisions, les requêtes
+  composées, la classification des erreurs. Ce qu'ils ne prouvent pas : que Meta accepte ces
+  requêtes. Seule l'app Meta lèvera ce doute.
+- **`PUBLISHERS_MODE=live` n'a jamais été exécuté** — ni en local, ni en conteneur, ni en
+  production. Seule la garde de refus a été exercée.
+- **`apps/worker/src/db/pg-store.ts` reste exécuté par aucun test** (limite héritée de P3-5/7/10,
+  cf. la note de la phase 5). `clearContainer`, ajouté ici, est dans le même cas : son SQL est relu,
+  pas exécuté. Le pgTAP prouve le schéma, jamais le TypeScript du store.
+- **`connection-store.ts` (Vault, rotation) n'est exécuté par aucun test** : il demande une vraie
+  base avec l'extension Vault et un secret réel. Ses appelants et sa logique de décision, eux, sont
+  testés (`refresh.test.ts`, `exchange.test.ts`, `context.test.ts`).
+- **Le premier commentaire Instagram n'est pas posté.** `ctx.firstComment` est résolu et transporté,
+  aucun publisher ne l'utilise. Il faudrait un `POST /{media-id}/comments` après publication, donc
+  une étape supplémentaire **après** l'irréversible — à traiter comme une opération distincte, pas
+  comme une rallonge de `publish`.
+- **Le report pour quota n'envoie aucune notification** (`publish-delayed`, §10) : la décision est
+  prise et journalisée, le canal n'existe pas. Même chose pour `tiktok-draft-ready`.
+- **Facebook : les Reels ne sont pas plafonnés à 30/24 h/Page.** Le sous-quota `fb_reels` existe dans
+  l'enum et n'a toujours pas d'écrivain — il faudrait compter par FORMAT, et le BUC ne le distingue
+  pas. Le plafond global (BUC à 100 %) est en place, celui-là non.
+- **Le premier appel Facebook d'une fenêtre part sans connaître le BUC.** C'est structurel : l'en-tête
+  n'arrive qu'en réponse. Ocean lit donc toujours le BUC de l'appel précédent.
+- **La fenêtre PUBLISHED/FINISHED de Meta reste ouverte** : entre l'acceptation d'un `media_publish`
+  et le passage du conteneur à PUBLISHED, un statut lu vaut encore FINISHED. C'est la raison d'être
+  de `needs_verification` — on ne prétend pas trancher.
+- **La migration 037 n'est pas appliquée** et `pg_cron` n'est **pas** activé sur le projet en ligne.
+  Le pré-vol du fichier `deploy/` le dit : si `create extension pg_cron` échoue, tout le fichier
+  échoue avec lui.
+
 ---
 
 ## PORTE C — Ne pas mentir au client
+
 
 ### Phase 7 — Portes d'entrée · 2 sessions
 
