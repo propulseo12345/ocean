@@ -304,6 +304,30 @@ export class PgJobStore implements JobStore {
     })
   }
 
+  async clearContainer(job: PublishJob): Promise<void> {
+    await this.withTx(async (c) => {
+      const res = await c.query(
+        `update public.publish_jobs
+         set external_container_id = null, step = null
+         where id = $1 and worker_id = $2 and status in ${OWNED_STATUSES}
+           and publish_started_at is null`,
+        [job.id, job.workerId]
+      )
+      assertOwned(res.rowCount, "clearContainer")
+      // La garde `publish_started_at is null` est RÉPÉTÉE sur la cible, et ce
+      // n'est pas de la redondance : les deux ancres sont distinctes (023), et
+      // c'est celle de la CIBLE qui décide. Effacer le conteneur d'une cible
+      // ancrée supprimerait le seul moyen de savoir si un POST est parti.
+      await c.query(
+        `update public.content_targets
+         set external_container_id = null
+         where id = $1 and publish_started_at is null`,
+        [job.contentTargetId]
+      )
+    })
+    log.warn("conteneur oublie (rejete par la plateforme avant publication)", jobFields(job))
+  }
+
   async markAwaitingMedia(job: PublishJob, retryDelayMs: number): Promise<void> {
     const { rowCount } = await this.pool.query(
       `update public.publish_jobs

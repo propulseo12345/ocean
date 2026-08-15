@@ -7,7 +7,11 @@ import { type EngineDeps, processJob } from "./engine"
 import { loadConfig, type WorkerConfig } from "./env"
 import { createHealthState, markTickFailed, markTickOk, startHealthServer } from "./health"
 import { errorFields, log } from "./log"
-import { assertLivePublishersAvailable, resolvePublisher } from "./publishers"
+import {
+  assertLivePublishersAvailable,
+  createLiveResolver,
+  createStubResolver,
+} from "./publishers"
 import type { JobStore } from "./store"
 
 // Worker de publication (2e app Coolify). Boucle tick 5 s : reaper puis drain des
@@ -181,7 +185,8 @@ async function main(): Promise<void> {
 
   const deps: EngineDeps = {
     store,
-    resolvePublisher,
+    // Le transport réel n'entre qu'ici : partout ailleurs c'est un paramètre.
+    resolvePublisher: stub ? createStubResolver() : createLiveResolver(globalThis.fetch),
     prepare: createContextProvider(pool, {
       stub,
       storage,

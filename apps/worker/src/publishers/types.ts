@@ -12,7 +12,22 @@ export type ContentFormat = "post" | "carousel" | "reel" | "story"
 // puis publié (POST /media_publish). Le worker peut interroger son status pour
 // savoir si une publication a DÉJÀ eu lieu (règle 15, reprise après crash).
 
-export type ContainerStatus = "published" | "in_progress" | "error" | "expired"
+/**
+ * État d'un conteneur de publication, miroir de `status_code` chez Meta.
+ *
+ * `ready` (FINISHED chez Meta) est distinct de `published` (PUBLISHED), et la
+ * distinction porte toute la règle 15 : un conteneur FINISHED est PRÊT à être
+ * publié, donc rien n'est en ligne ; un conteneur PUBLISHED l'est déjà, et le
+ * republier créerait le doublon. Les confondre dans un seul « ok » rendrait la
+ * reprise après crash indécidable.
+ *
+ * ⚠ LIMITE CONNUE ET NON FERMABLE ICI : entre l'acceptation d'un
+ * `media_publish` par Meta et le passage du conteneur à PUBLISHED, il existe
+ * une fenêtre où le statut lu vaut encore FINISHED. C'est précisément pourquoi
+ * `needs_verification` (024) existe : on ne prétend pas trancher, on dit qu'on
+ * ne sait pas.
+ */
+export type ContainerStatus = "published" | "ready" | "in_progress" | "error" | "expired"
 
 /** Contexte fourni au publisher (token déjà rafraîchi, média résolu). */
 export interface PublishContext {

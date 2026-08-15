@@ -66,6 +66,22 @@ export interface JobStore {
    */
   markPublishStarted(job: PublishJob, containerId: string): Promise<void>
 
+  /**
+   * Oublie le conteneur (job ET cible) : la prochaine tentative en créera un
+   * neuf.
+   *
+   * Appelé UNIQUEMENT quand la plateforme a répondu `error`/`expired` sur un
+   * conteneur AVANT toute publication (donc sans ancre). Sans ce geste, le
+   * conteneur mort — persisté sur la cible depuis 023 — serait réutilisé à
+   * chaque tentative et le job échouerait jusqu'à épuisement sur la même cause.
+   *
+   * ⚠ N'EFFACE JAMAIS L'ANCRE `publish_started_at`. La condition
+   * `publish_started_at is null` est écrite dans le SQL, pas seulement dans la
+   * tête de l'appelant : effacer un conteneur ancré rendrait indécidable la
+   * question « un POST est-il parti ? », c'est-à-dire la règle 15 elle-même.
+   */
+  clearContainer(job: PublishJob): Promise<void>
+
   /** Média encore en préparation côté plateforme : re-vérifier plus tard. */
   markAwaitingMedia(job: PublishJob, retryDelayMs: number): Promise<void>
 

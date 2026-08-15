@@ -65,6 +65,9 @@ class FakeStore implements JobStore {
   async markPublishStarted(_job: PublishJob, containerId: string) {
     this.events.push(`markPublishStarted:${containerId}`)
   }
+  async clearContainer() {
+    this.events.push("clearContainer")
+  }
   async markAwaitingMedia() {
     this.events.push("markAwaitingMedia")
   }
@@ -90,9 +93,11 @@ class FakePublisher implements Publisher {
   resolveCalls = 0
   createCalls = 0
   statusCalls = 0
+  // Défaut `ready` = FINISHED chez Meta : c'est l'état d'un conteneur qui vient
+  // d'être créé. Les tests de REPRISE passent explicitement « published ».
   constructor(
     readonly events: string[],
-    readonly containerStatus: ContainerStatus = "published"
+    readonly containerStatus: ContainerStatus = "ready"
   ) {}
   async createContainer(job: PublishJob) {
     this.createCalls++
@@ -135,7 +140,7 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
 test("job frais : publish_started_at posé AVANT publish, succès, publish 1 fois", async () => {
   const events: string[] = []
   const store = new FakeStore(events)
-  const pub = new FakePublisher(events, "published")
+  const pub = new FakePublisher(events, "ready")
   await processJob(makeJob(), deps(store, pub))
 
   assert.equal(pub.publishCalls, 1, "publish appelé exactement une fois")
@@ -239,7 +244,7 @@ test("RÈGLE 15 : job NEUF (ancre de job nulle) sur cible ANCRÉE => jamais repu
 test("conteneur porté par la cible seule (crash avant la marque) => réutilisé, pas recréé", async () => {
   const events: string[] = []
   const store = new FakeStore(events)
-  const pub = new FakePublisher(events, "published")
+  const pub = new FakePublisher(events, "ready")
   const job = makeJob({
     publishStartedAt: null,
     externalContainerId: null,
@@ -420,7 +425,7 @@ test("isOutcomeUnknown : décide entre « échec » et « on ne sait pas » (024
 test("lease perdu avant publish => AUCUNE publication, et aucun statut écrasé", async () => {
   const events: string[] = []
   const store = new FakeStore(events)
-  const pub = new FakePublisher(events, "published")
+  const pub = new FakePublisher(events, "ready")
   // Le store refuse la marque : le job appartient à un autre worker.
   store.markPublishStarted = async () => {
     throw new LeaseLostError("markPublishStarted")
@@ -514,4 +519,53 @@ test("quota atteint => report au créneau annoncé, aucune publication, aucun é
     !events.some((e) => e.startsWith("failPermanent") || e.startsWith("deadLetter")),
     "un quota atteint n'est PAS un échec"
   )
+})
+
+// ── LA PORTE DE PRÉPARATION DU CONTENEUR (phase 6) ──────────────────────────
+// Un Reel n'est pas publiable à l'instant où son conteneur est créé : Meta
+// télécharge puis transcode. Le contrôle a lieu AVANT `markPublishStarted`,
+// donc avant l'ancre — à cet instant rien n'est parti, tout est réversible.
+
+test("job frais, conteneur encore IN_PROGRESS (reel) => awaiting_media, AUCUNE ancre", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "in_progress")
+  await processJob(makeJob(), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0, "on ne publie pas un conteneur en transcodage")
+  assert.ok(events.includes("markAwaitingMedia"))
+  assert.ok(
+    !events.some((e) => e.startsWith("markPublishStarted:")),
+    "l'ancre n'est PAS posée : rien n'est parti, la reprise reste libre"
+  )
+  // L'attente passe par la machine à états, jamais par un sleep dans le
+  // publisher : la file est séquentielle, une pause y gèlerait tous les jobs.
+})
+
+test("job frais, conteneur en ERROR => on l'OUBLIE, sinon il serait rejoué a vie", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  // Conteneur déjà persisté sur la cible : sans `clearContainer`, chaque
+  // tentative le réutiliserait et échouerait sur la même cause jusqu'à
+  // épuisement des 5 tentatives.
+  await processJob(makeJob({ targetExternalContainerId: "c-mort" }), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0)
+  assert.ok(events.includes("clearContainer"), "le conteneur mort est effacé")
+  assert.ok(events.includes("retryOrFail"), "et le job repart en retry")
+})
+
+test("job frais dont le conteneur est DÉJÀ PUBLISHED => jamais republier (ancre perdue)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  // Cas limite de la règle 15 : le conteneur existe et il a publié, mais AUCUNE
+  // ancre n'a survécu (ni sur le job, ni sur la cible). Republier aveuglément
+  // serait le doublon.
+  await processJob(makeJob({ targetExternalContainerId: "c-deja-publie" }), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0, "AUCUNE republication")
+  assert.equal(pub.resolveCalls, 1, "on résout le post existant")
+  assert.ok(events.some((e) => e.startsWith("succeed:")))
 })

@@ -122,7 +122,7 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
   }
 
   try {
-    await publishFresh(job, publisher, ctx, store, config.httpTimeoutMs)
+    await publishFresh(job, publisher, ctx, store, config)
   } catch (err) {
     await handleError(store, job, err, nextDelay())
   }
@@ -188,8 +188,9 @@ async function publishFresh(
   publisher: Publisher,
   ctx: PublishContext,
   store: JobStore,
-  httpTimeoutMs: number
+  config: { awaitMediaDelayMs: number; httpTimeoutMs: number }
 ): Promise<void> {
+  const { httpTimeoutMs } = config
   // Un conteneur déjà créé par une tentative précédente est réutilisé — y
   // compris s'il a été persisté sur la cible et non sur cette ligne de job.
   let container = effectiveAnchor(job).containerId
@@ -202,6 +203,47 @@ async function publishFresh(
     container = created.containerId
     await store.patchProgress(job, { step: "create_container", externalContainerId: container })
   }
+
+  // UN REEL N'EST PAS PRÊT À L'INSTANT OÙ SON CONTENEUR EST CRÉÉ : Meta
+  // télécharge la vidéo puis la transcode, ce qui prend de quelques secondes à
+  // plusieurs minutes. Publier tout de suite échouerait.
+  //
+  // Cette attente passe par la machine à états (`awaiting_media`), JAMAIS par un
+  // `sleep` dans le publisher : le traitement de la file est séquentiel, une
+  // pause de deux minutes dans un publisher gèlerait tous les autres jobs, et
+  // elle survivrait mal au lease de 2 min.
+  //
+  // Le contrôle a lieu AVANT `markPublishStarted`, donc avant l'ancre : à cet
+  // instant rien n'est parti, et repartir de zéro reste sûr.
+  const readiness = await withTimeout(
+    publisher.getContainerStatus(job, container, ctx),
+    httpTimeoutMs,
+    "getContainerStatus"
+  )
+  if (readiness === "in_progress") {
+    await store.markAwaitingMedia(job, config.awaitMediaDelayMs)
+    return
+  }
+  if (readiness === "published") {
+    // Le conteneur est DÉJÀ publié alors qu'aucune ancre n'existe : une
+    // tentative précédente a publié et sa marque n'a pas survécu. Republier
+    // serait le doublon même que la règle 15 existe pour empêcher.
+    const res = await withTimeout(
+      publisher.resolvePublished(job, container, ctx),
+      httpTimeoutMs,
+      "resolvePublished"
+    )
+    await store.succeed(job, res)
+    return
+  }
+  if (readiness === "error" || readiness === "expired") {
+    // Le conteneur est inutilisable. Il faut l'OUBLIER, sinon la tentative
+    // suivante le réutiliserait (il est persisté sur la cible) et le job
+    // boucherait jusqu'à épuisement sur un conteneur mort.
+    await store.clearContainer(job)
+    throw new Error(`conteneur ${readiness} avant publication : un neuf sera cree`)
+  }
+
   // RÈGLE 15 : la marque est posée et COMMITÉE avant tout appel de publication,
   // sur le job ET sur la cible (migration 023) dans la même transaction.
   await store.markPublishStarted(job, container)
