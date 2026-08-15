@@ -99,7 +99,17 @@ export interface SocialAccount {
   platform: Platform
   username: string
   displayName: string
+  /**
+   * Santé EFFECTIVE, connexion parente comprise (P8-7). Un compte n'a pas
+   * d'autorisation propre : il hérite de celle de `platform_connections`.
+   */
   status: AccountStatus
+  /**
+   * Scopes de publication manquants. Non vide = le compte est « connecté » mais
+   * tout POST sera refusé — un état qu'aucun statut ne sait dire, et que Meta
+   * ne répare que par une reconnexion (il ne rétro-accorde jamais un scope).
+   */
+  missingScopes: string[]
   followers: number
 }
 

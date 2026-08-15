@@ -35,6 +35,8 @@ export const settingsFr = {
       noAccountForClient: "Aucun compte connecté pour ce client.",
       connect: "Connecter un compte",
       connectPlatform: "Connecter {platform}",
+      missingScopes:
+        "Permission manquante ({scopes}) — reconnecte le compte, Meta ne l'accorde jamais après coup.",
       detach: "Détacher",
       detachConfirm:
         "Le compte {platform} @{username} ne sera plus publiable, et son jeton d'accès sera définitivement détruit. Les publications déjà parues restent visibles dans l'historique. Pour le réutiliser, il faudra le reconnecter.",

@@ -38,6 +38,8 @@ export const settingsEn: Widen<typeof settingsFr> = {
       noAccountForClient: "No account connected for this client.",
       connect: "Connect an account",
       connectPlatform: "Connect {platform}",
+      missingScopes:
+        "Missing permission ({scopes}) — reconnect the account, Meta never grants it after the fact.",
       detach: "Detach",
       detachConfirm:
         "The {platform} account @{username} will no longer be publishable, and its access token will be permanently destroyed. Already published posts stay visible in the history. To reuse it, you will have to reconnect it.",

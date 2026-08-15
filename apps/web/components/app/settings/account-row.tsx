@@ -72,6 +72,15 @@ export function AccountRow({ account }: { account: SocialAccount }) {
         <p className="truncate text-xs text-muted-foreground">
           {t("settings.accounts.followers", { count: f.followers(account.followers) })}
         </p>
+        {/* P8-7 — l'état qu'aucun statut ne sait dire : la connexion est
+            vivante, le jeton valide, et pourtant tout POST sera refusé. */}
+        {account.missingScopes.length > 0 ? (
+          <p className="truncate text-xs text-warning">
+            {t("settings.accounts.missingScopes", {
+              scopes: account.missingScopes.join(", "),
+            })}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
