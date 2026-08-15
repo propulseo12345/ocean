@@ -332,6 +332,32 @@ contenu — sans intervention manuelle en base.
 | P7-9 | Le portail plante si la liste de clients est vide | ✅ | `8f8e338` | `ctx.clients[0] as Client` puis `client.timezone` → `TypeError`. **C'est le cast qui rendait le trou invisible au typage.** Atteignable en deux clics : la landing publique porte un lien « Voir le portail client », et tout compte sans ligne `client_members` tombe dessus — à commencer par le patron d'agence. Le layout gérait déjà le cas (`?? null`) ; seule la page supposait la liste non vide. État vide explicite qui dit quoi faire. |
 | P7-10 | Le wizard jette le token puis affiche un succès | ✅ | `71eef5c` | Le retour d'`inviteReviewer` était jeté — il porte la **seule copie en clair** du jeton. Le wizard annonçait « Invitation enregistrée » sans jamais vérifier. **La situation devenait définitive** : l'index unique partiel sur `(client_id, lower(email))` tient tant que ni `accepted_at` ni `revoked_at` ne sont posés, donc toute ré-invitation échouait en `already_invited`, sans recours autre qu'un SQL à la main. `createClientAction` renvoie désormais un `CreateClientInvite` explicite (`none`/`created`/`failed`) et le wizard rend les trois cas, lien copiable inclus. Rétrocompatible (`data.id` inchangé). |
 
+#### LOT 0 — Ce que la vérification adversariale a démoli (session du 16/08/2026)
+
+> Rapport source : `_research/audits/2026-08-12/13-VERIF-phase7.md`. La passe a confirmé que
+> **la prise de contrôle de compte P7-1 est réellement fermée** — primitive retirée du *type*,
+> une quinzaine de variantes bloquées, test validé par mutation. `accept.ts` n'a **pas** été
+> modifié dans ce lot ; la mutation a été rejouée en fin de session pour le vérifier :
+> neutraliser la garde `sameAddress` fait tomber **2 tests sur 6**, dont le test ATO principal.
+>
+> Mais quatre choses ne tenaient pas. Branche `chore/phase-0-outillage`, **non poussée**.
+> **Aucune écriture en ligne** : la migration 034 est écrite, testée et livrée dans `deploy/`,
+> elle n'est **pas appliquée**.
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| V-1 | L'open redirect P7-8 n'était **pas** corrigé | ✅ | `b1950da` | **Le filtre était du mauvais côté du parser, et c'est le parser qui fabriquait la chaîne interdite.** `/..//evil.tld` n'a qu'une barre en tête : il passait la garde d'entrée. Le parser WHATWG repliait le `..` contre un chemin vide (sans effet) puis empilait le segment **vide** entre les deux barres, donc `url.pathname` valait `//evil.tld`. Le juge d'origine ne voyait rien : l'hôte est fixé par la base **avant** l'analyse du chemin. **Sortie réelle du module, avant** : `/..//evil.tld`, `/.//evil.tld`, `/%2e%2e//evil.tld`, `/dashboard/../..//evil.tld` rendaient tous `"//evil.tld"`. **Après** : tous `"/dashboard"`. Le correctif valide la **sortie** par le même principe que l'entrée (re-résolution contre la sentinelle), pas par une énumération de plus — interdire `..` aurait été un second correctif inopérant, `/.//evil.tld` n'en contient pas. **Le test est refait de fond en comble** : l'octet NUL est retiré (le fichier était classé **binaire** par git, `git show` n'affichait rien, et la ligne lue `"/ //evil.tld"` testait en réalité un NUL — le piège s'est d'ailleurs reproduit en cours de session, le cas est désormais écrit en échappe **visible**) ; l'ancien « invariant » était une énumération de 7 cas déjà tués en amont, **aucun avec dot-segment**, donc une assertion qui ne pouvait pas se déclencher. Remplacé par une **propriété** sur un corpus généré (~800 entrées) vérifiée sous les **deux** motifs de consommation, plus une garde anti-corpus-mou. **Mutation** : sans la garde de sortie, **5 des 9 tests tombent**. Un test fige au passage la protection *accidentelle* de `/auth/callback` et `/auth/landing` (concaténation par origine), qu'aucun test n'exprimait. |
+| V-2 | Le flux d'invitation était un cul-de-sac dans ses **deux** branches | ✅ | `c9ae75b` | **Aucun invité ne pouvait aboutir, par aucun chemin.** *Compte neuf* : `redirectTo` n'est pas l'URL du lien cliqué mais la destination **finale**, exposée au gabarit par `{{ .RedirectTo }}`. Avec le gabarit par défaut, GoTrue redirige lui-même en déposant les jetons dans le **fragment** ; or ce Route Handler ne lit ni fragment ni `?code`, et **aucun client navigateur n'est monté** (`lib/supabase/client.ts` n'a aucun importeur, vérifié par grep) : `detectSessionInUrl` ne tourne jamais. La route reconcluait `proof_required` et renvoyait un e-mail — **boucle infinie**. *Compte existant* : `reset-password/page.tsx` ne lisait aucun `searchParams` et le formulaire n'émettait aucun champ `next`, donc `updatePassword` recevait `null` et renvoyait sur `/onboarding` sans org ni client : **jeton perdu**. Correctifs : `/auth/callback` accepte le `next` **absolu** du gabarit via `safeNextFromRedirectTo` (une absolue n'est admise que si son origine est **octet pour octet** la nôtre — pas un `startsWith`, le test couvre `…sslip.io.evil.tld`), `/reset-password` transporte `next`, et `next` n'est plus encodé qu'**une seule fois**. ⚠ **Dépendance hors code** : le gabarit Supabase doit pointer sur `/auth/callback?token_hash=…&type=…&next={{ .RedirectTo }}` — procédure et vérification dans `deploy/GABARITS-EMAIL-supabase.md`. Ordre respecté : V-1 fait **avant**, puisque faire suivre `next` arme `updatePassword` comme second puits. |
+| V-3 | CSRF : forcer l'adhésion avec la session de la victime | ✅ | `0acb1db` + `f12405a` | **Le correctif P7-1 prouve la POSSESSION de l'adresse, jamais l'INTENTION de rejoindre** — son invariant est *littéralement* satisfait par la session de la victime. L'acceptation était un **GET à effet de bord** écrivant en service_role, sans contrôle d'origine, sur des cookies `SameSite=Lax`. Gain vérifié, pas supposé : `shares_scope_with` devient vraie, donc `profiles_select_shared` ouvre à l'attaquant la ligne `profiles` de la victime. L'intention est désormais établie par trois choses : `/invitations` est une **page** qui n'écrit rien et **nomme le client**, rejoindre est une **Server Action** (POST) déclenchée par un bouton, et l'origine est vérifiée **explicitement** (`lib/auth/same-origin.ts`, fail-closed, 5 tests dont une propriété sur toutes les combinaisons cross-site). Le contrôle est écrit et testé plutôt que délégué à la protection intégrée des Server Actions : une propriété de sécurité qui n'est écrite nulle part est une propriété qu'on « simplifie » sans le savoir. **Effets de bord voulus** : l'émetteur d'e-mails non authentifié disparaît (sans session, plus aucun envoi ne part d'un GET) ; la consommation du jeton vérifie enfin son erreur et exige `revoked_at` et `accepted_at` nuls, ce qui ferme la fenêtre TOCTOU. **Migration 034** (`f12405a`) : `leave_client` — il n'existait **aucune sortie**, `client_members_delete` exigeant `is_org_member`, ce qu'un Reviewer n'est jamais (règle 6) ; une adhésion créée à l'insu de la victime n'était donc révocable que par l'**attaquant**. Périmètre borné par `auth.uid()`, jamais par un paramètre. Adresse résolue sur `auth.users` et **pas** `profiles` (réinscriptible par son sujet). **pgTAP 10/10, garantie neuve validée par mutation** : retirer le bloc de révocation fait tomber le test 6 — précisément ce que le test de la 032 ne faisait pas. Suite complète : **348 ok / 0 not ok**. |
+| V-4 | Appels morts et messages génériques masquant de vrais échecs | ✅ | `23d5ad9` | Les 5 RPC des 032/033 **existent bien** en ligne (vérifié en lecture seule, signatures conformes aux appels). Quatre défauts en remontant ces chemins : (1) **branche morte** — `inviteReviewer` ne renvoie plus jamais `already_invited` depuis la RPC 032 (elle supersède et ne lève un 23505 que pour « déjà **membre** »), or deux écrans testaient encore l'ancien code : l'utilisateur lisait « l'invitation n'a pas pu être créée ». Clés i18n renommées plutôt que laissées à mentir sous un nom juste ; (2) **erreur avalée** — le 22023 « adresse invalide » retombait sur `db_error`, une faute de frappe et une panne se ressemblaient trait pour trait ; (3) **500 sur le portail** — `portal/[contentId]` castait le retour de `getClient` en `Client`, avec un `orgId` valant `memberships[0]` sur une requête **sans `.order()`** : pour un Reviewer travaillant avec **deux** agences, c'est l'org de l'autre client, et le cast masquait le `null`. C'est le défaut P7-9 corrigé dans `portal/page.tsx` et laissé intact dans le fichier voisin ; `getReviewerContext` expose désormais `orgFor(clientId)` et `orgId` est marqué **déprécié** ; (4) UI morte après V-3. **Non fait, volontairement** : « laisser passer `error` dans `proxy.ts` ». Vérifié — ce correctif d'une ligne ne rend **rien** affichable, la cible du hop étant `/auth/landing`, qui redirige sans reporter aucun paramètre. La raison est écrite dans `proxy.ts` pour que personne ne « corrige » ce non-correctif. |
+
+**Critère de sortie du LOT 0** — (a) `safeNext` ne rend plus jamais de chaîne commençant par
+`//`, prouvé par une **propriété** et non par une liste : ✅ ; (b) le code d'une invitation
+aboutissant à une session reviewer est en place, **mais reste suspendu au gabarit Supabase** —
+c'est la seule pièce non vérifiable depuis le dépôt : ⚠ ; (c) la route d'acceptation refuse une
+requête cross-site : ✅ ; (d) un membre peut se retirer lui-même : ✅ **côté code et pgTAP**, la
+RPC n'existant pas encore en ligne (034 non appliquée).
+
 **Critère de sortie — atteint côté code, sauf une configuration hors dépôt.** Les 10 tickets sont
 faits sauf **P7-6**, arbitrage produit délibérément laissé à Étienne. Le parcours complet existe :
 `/signup` → `/onboarding` → créer un client → inviter → révoquer / ré-inviter / retirer, et le
@@ -460,6 +486,32 @@ décidé par Meta, pas par le code.
 ---
 
 ## Ce qui attend Étienne après la nuit du 14-15/08/2026
+
+### Migrations 032 et 033 — ✅ APPLIQUÉES le 15/08/2026 (session de pilotage)
+
+Appliquées via le MCP Supabase sur autorisation explicite d'Étienne, après lecture intégrale des
+deux fichiers `deploy/` et un pré-vol vérifiant l'existence de toutes les dépendances
+(`private.is_reviewer_visible_media`, `is_client_member`, `can_write_client_media`,
+`is_org_member`, colonnes de `client_invitations`, enum `invitation_status`,
+`media_assets.storage_path`).
+
+Motif : le front qui appelle ces RPC était déjà mergé **sans garde**, donc les boutons « révoquer »
+et « retirer » répondaient `PGRST202 → db_error`, et la révocation immédiate exigée par la règle 4
+n'existait pas en base.
+
+Vérifications faites après application :
+
+| Contrôle | Résultat |
+|---|---|
+| Les 3 RPC de 032 existent, `SECURITY DEFINER`, `search_path` figé | ✅ |
+| `anon` n'a **pas** `EXECUTE` sur les 3 nouvelles RPC | ✅ (`authenticated, postgres, service_role`) |
+| `private.can_read_client_media` : **une seule** signature `(uuid, uuid, text)` | ✅ l'ancienne `(uuid,uuid,uuid)` est bien retirée, pas de surcharge ambiguë |
+| Policies `storage.objects` | ✅ 5, inchangé ; `media_originals_select` recréée en SELECT |
+| `media_thumbs_select_public` (fuite de listing corrigée en phase 0) | ✅ toujours absente |
+| Surface exposée : `anon` | ✅ **inchangée** — 1 seule fonction (`get_report_share`) |
+| Surface exposée : `authenticated` | 10 → 13 SECURITY DEFINER (+3 attendus, conformes) |
+| Ledger | ✅ 33 lignes, `001` → `033`, zéro doublon |
+| `/api/health` | ✅ HTTP 200 |
 
 ### Migrations appliquées en production — ✅ FAIT le 15/08/2026 (BLOC 0)
 
