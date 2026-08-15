@@ -160,8 +160,11 @@ export function WizardShell() {
     } else if (invite.status === "failed") {
       toast.success(t("onboarding.shell.clientCreated", { name }))
       toast.warning(
-        invite.error === "already_invited"
-          ? t("onboarding.shell.reviewerAlreadyInvited")
+        // Voir reviewer-invite-dialog : depuis la RPC 032, le seul cas
+        // « rien à inviter » est `already_member`. `already_invited` était
+        // une branche morte.
+        invite.error === "already_member"
+          ? t("onboarding.shell.reviewerAlreadyMember")
           : t("onboarding.shell.reviewerInviteFailed")
       )
     } else {

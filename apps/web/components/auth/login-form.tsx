@@ -25,17 +25,15 @@ function useAvis(): { ton: "info" | "erreur"; texte: string } | null {
   const t = useT()
   const params = useSearchParams()
 
-  if (params.get("invite") === "sent") {
-    return { ton: "info", texte: t("auth.login.inviteSent") }
-  }
   if (params.get("pending") === "1") {
     return { ton: "info", texte: t("auth.login.signupPending") }
   }
+  // Les etats d'invitation (`invite=sent`, `error=invite`,
+  // `error=invite_other_account`) ne transitent plus par /login : depuis V-3,
+  // c'est la page /invitations qui les affiche, en contexte et sans rediriger.
+  // `invite_other_account` etait de toute facon inaffichable — il n'etait
+  // atteignable QUE session ouverte, et le proxy intercepte alors /login.
   switch (params.get("error")) {
-    case "invite_other_account":
-      return { ton: "erreur", texte: t("auth.login.inviteOtherAccount") }
-    case "invite":
-      return { ton: "erreur", texte: t("auth.login.inviteInvalid") }
     case "auth":
       return { ton: "erreur", texte: t("auth.login.authFailed") }
     default:

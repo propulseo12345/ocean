@@ -56,6 +56,16 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/landing"
     const next = request.nextUrl.searchParams.get("next")
+    // `error` n'est VOLONTAIREMENT pas transmis ici. On pourrait croire qu'il
+    // suffirait de le recopier comme `next` pour rendre affichable un
+    // `/login?error=...` recu avec une session valide — mais la cible de ce hop
+    // est `/auth/landing`, qui redirige vers `resolveLanding()` sans reporter
+    // aucun parametre : le message mourrait un hop plus loin, et on aurait du
+    // code qui a l'air de faire quelque chose sans rien faire.
+    // Le seul cas encore concerne est `error=auth` (lien d'authentification
+    // perime) chez quelqu'un DEJA connecte, pour qui « authentification
+    // echouee » serait de toute facon trompeur. Sans session, le proxy
+    // n'intercepte pas et le message s'affiche normalement.
     url.search = next ? `?next=${encodeURIComponent(next)}` : ""
     return NextResponse.redirect(url)
   }

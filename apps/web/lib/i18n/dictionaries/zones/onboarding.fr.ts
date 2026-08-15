@@ -27,8 +27,8 @@ export const onboardingFr = {
     shell: {
       copyInviteLink: "Copier le lien d'invitation",
       inviteLinkCopied: "Lien d'invitation copié.",
-      reviewerAlreadyInvited:
-        "Une invitation est déjà en cours pour cette adresse. Ouvre la fiche du client pour la retrouver.",
+      reviewerAlreadyMember:
+        "Cette adresse est déjà membre de ce client. Ouvre la fiche du client pour la retrouver.",
       reviewerInviteFailed:
         "Le client est créé, mais l'invitation du valideur a échoué. Relance-la depuis la fiche du client.",
       progressLabel: "Progression",

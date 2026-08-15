@@ -148,7 +148,7 @@ export const clientSettingsFr = {
       inviteCopy: "Copier le lien",
       inviteCopied: "Lien copié",
       inviteDone: "Terminé",
-      inviteAlreadyInvited: "Une invitation est déjà en attente pour cet email.",
+      inviteAlreadyMember: "Cette adresse est déjà membre de ce client.",
       inviteInvalid: "Adresse email invalide.",
       inviteError: "L'invitation n'a pas pu être créée.",
     },

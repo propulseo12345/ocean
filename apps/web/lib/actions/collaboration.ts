@@ -356,9 +356,19 @@ export async function inviteReviewer(input: unknown): Promise<ActionResult<{ tok
       _token_hash: tokenHash,
       _expires_at: expiresAt,
     })
-    // 23505 ne signifie plus « déjà invité » mais « déjà MEMBRE » : la RPC
-    // supersède les invitations et ne lève que dans ce cas.
-    if (error) return { ok: false, error: error.code === "23505" ? "already_member" : "db_error" }
+    // Les codes que la RPC lève réellement (032) sont traduits ici. Sans ce
+    // mapping, ils retombaient tous sur `db_error`, donc sur un message
+    // générique : l'utilisateur voyait « l'invitation n'a pas pu être créée »
+    // pour une adresse mal tapée comme pour une panne, et croyait à un bug
+    // transitoire dans les deux cas.
+    //   23505 ne signifie plus « déjà invité » mais « déjà MEMBRE » : la RPC
+    //         supersède les invitations vivantes et ne lève que dans ce cas.
+    //   22023 = adresse rejetée par la RPC (vide, ou sans « @ »).
+    if (error) {
+      if (error.code === "23505") return { ok: false, error: "already_member" }
+      if (error.code === "22023") return { ok: false, error: "invalid_email" }
+      return { ok: false, error: "db_error" }
+    }
   } catch {
     return { ok: false, error: "forbidden" }
   }

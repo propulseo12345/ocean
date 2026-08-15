@@ -146,7 +146,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       inviteCopy: "Copy link",
       inviteCopied: "Link copied",
       inviteDone: "Done",
-      inviteAlreadyInvited: "An invitation is already pending for this email.",
+      inviteAlreadyMember: "This address is already a member of this client.",
       inviteInvalid: "Invalid email address.",
       inviteError: "The invitation could not be created.",
     },

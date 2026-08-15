@@ -28,8 +28,8 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
     shell: {
       copyInviteLink: "Copy invitation link",
       inviteLinkCopied: "Invitation link copied.",
-      reviewerAlreadyInvited:
-        "An invitation is already pending for this address. Open the client page to find it.",
+      reviewerAlreadyMember:
+        "This address is already a member of this client. Open the client page to find it.",
       reviewerInviteFailed:
         "The client was created, but inviting the reviewer failed. Retry from the client page.",
       progressLabel: "Progress",
