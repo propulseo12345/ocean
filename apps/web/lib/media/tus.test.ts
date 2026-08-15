@@ -93,8 +93,8 @@ function serveurTus(options: ServeurOptions = {}) {
   return { fetchImpl, uploads, journal }
 }
 
-function motif(taille: number): Uint8Array {
-  const u = new Uint8Array(taille)
+function motif(taille: number): Uint8Array<ArrayBuffer> {
+  const u = new Uint8Array(new ArrayBuffer(taille))
   for (let i = 0; i < taille; i++) u[i] = (i * 31 + (i >> 8)) & 0xff
   return u
 }
