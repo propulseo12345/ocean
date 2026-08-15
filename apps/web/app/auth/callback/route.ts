@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { safeNext } from "@/lib/auth/safe-next"
 import { createClient } from "@/lib/supabase/server"
 
 // Callback d'authentification email (récupération de mot de passe, confirmation).
@@ -13,9 +14,9 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const tokenHash = searchParams.get("token_hash")
   const type = searchParams.get("type") as EmailOtpType | null
-  const nextParam = searchParams.get("next")
-  // On n'accepte qu'un chemin relatif interne (jamais une URL absolue → open redirect).
-  const next = nextParam?.startsWith("/") ? nextParam : "/dashboard"
+  // On n'accepte qu'un chemin relatif interne. `startsWith("/")` ne suffisait
+  // pas : `//evil.tld` le satisfait et pointe vers un autre hôte (P7-8).
+  const next = safeNext(searchParams.get("next"))
 
   const supabase = await createClient()
 

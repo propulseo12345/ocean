@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+import { safeNext } from "@/lib/auth/safe-next"
 import { siteOrigin } from "@/lib/site-url"
 import { createClient } from "@/lib/supabase/server"
 
@@ -39,10 +40,10 @@ export async function signInWithPassword(
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
   if (error) return { error: "invalid_credentials" }
 
-  const next = formData.get("next")
-  const target = typeof next === "string" && next.startsWith("/") ? next : "/dashboard"
+  // `startsWith("/")` laissait passer `//evil.tld` — redirection hors domaine
+  // depuis une origine authentique, juste après la saisie du mot de passe (P7-8).
   revalidatePath("/", "layout")
-  redirect(target)
+  redirect(safeNext(formData.get("next")))
 }
 
 /**
