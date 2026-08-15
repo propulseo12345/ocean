@@ -305,6 +305,56 @@ n'importe quelle adresse email, sans preuve de possession.
 **Critère de sortie** : un vrai client reçoit un email, clique, arrive dans le portail, approuve un
 contenu — sans intervention manuelle en base.
 
+#### Tickets — suivi d'exécution
+
+> Exécution : branche `chore/phase-0-outillage`, nuit du 15/08/2026. **Non poussée.**
+> Aucune écriture en ligne après le BLOC 0.
+>
+> **`apps/web` n'avait AUCUN test** — ni vitest, ni jest, ni un seul fichier. Les correctifs de
+> sécurité de cette phase n'auraient donc été prouvés par rien. Infrastructure ajoutée au ticket
+> P7-1, sur le même idiome que le worker (`node --test` natif + `tsx`, zéro framework), avec un
+> **job CI bloquant**. C'est ce qui rend les colonnes « Preuve » ci-dessous vérifiables.
+
+| # | Ticket | Statut | Commit | Preuve |
+|---|---|---|---|---|
+| P7-1 | ATO sur `/api/invitations/accept` | ✅ | `56422bd` | **Décision de conception : un jeton dit QUEL client rejoindre, jamais QUI le présente.** L'ancienne route résolvait le compte **par email** puis redirigeait le navigateur appelant vers `admin.generateLink({type:'magiclink'})` — elle fabriquait une session pour l'adresse invitée au profit de quiconque détenait le jeton. Or le jeton n'est pas détenu par l'invité : `inviteReviewer` le **retourne en clair** à son appelant, et `create_organization` est ouverte à tout `authenticated` (confirmé par les advisors). Trois gestes suffisaient. **Invariant retenu** : une adhésion n'est créée QUE si la requête porte déjà une session dont l'email est exactement celui de l'invitation ; aucun chemin ne fabrique de session. La primitive est **retirée, pas contournée** — `AcceptOutcome` n'a aucun membre capable de transporter un lien, `AcceptDeps` aucune capacité de ce type. La preuve de possession vient désormais d'un secret livré à la **boîte aux lettres**. **Test avant/après, mesuré** : comportement vulnérable temporairement restauré dans le module → **5 échecs / 6** (dont « jeton valide SANS session » qui rendait `accepted` et créait l'adhésion) ; après correctif → **6/6**. |
+| P7-2 | L'invitation n'ouvre jamais de session, et le jeton est brûlé | ✅ | `56422bd` + `5b3c5ee` | Traité pour l'essentiel avec P7-1 : le jeton n'est **consommé qu'une fois l'adhésion réellement créée** (test « un jeton non consommé reste rejouable »). L'ancienne route le brûlait puis redirigeait vers un lien déposant ses jetons dans le **fragment** d'URL, illisible côté serveur : invitation consommée, session jamais ouverte, lien non rejouable. `5b3c5ee` ferme la moitié visible — la page de connexion n'affichait **aucun** des 5 paramètres d'état que le flux lui envoie. ⚠ **Dépendance hors code** : voir « Ce qui attend Étienne ». |
+| P7-3 | `/onboarding` n'existe pas (404 nu) | ✅ | `052f1cb` | `getActiveOrg` (org-context.ts:79) y renvoie tout compte sans organisation — c'est le cas de **tout Reviewer par construction**. La page re-résout d'abord la destination (un Reviewer arrivé là file au portail au lieu de se voir proposer de créer une agence) et porte une sortie « ce n'est pas mon compte » : sans elle, quelqu'un invité sur la mauvaise adresse est piégé, sa seule issue étant de vider ses cookies. `pnpm -w build` : `/onboarding` présent au manifeste. |
+| P7-4 | Aucune route `/signup` ; retour de `create_organization` non testé | ⚠️ **partiel** | `052f1cb` | **Fait** : la collision de slug n'est plus avalée. `signUpWithPassword` appelait la RPC sans lire son retour — deux « Marie Dupont » produisent le même slug, la seconde recevait un 23505 silencieux puis un 404. Candidats successifs, retry **uniquement** sur 23505. 6 tests sur `slugify`/`slugCandidates` (dont un cas corrigé **par** le test : « ç » se décompose en « c » sous NFD, le slug est donc `"c"` et non le repli — la première version du test attendait l'inverse). **NON fait** : la route `/signup` n'existe toujours pas, `signUpWithPassword` reste sans appelant. |
+| P7-5 | Point unique de résolution de rôle | ✅ | `052f1cb` | `/dashboard` était en dur à **quatre** endroits (le proxy — qui **effaçait `next`** —, `signInWithPassword`, `signUpWithPassword`, `updatePassword`). Tous délèguent à `/auth/landing`. La règle vit dans `landing-rule.ts`, **séparé** de `landing.ts` parce que ce dernier importe `server-only`, qui rend le module inexécutable hors runtime Next donc intestable. Le proxy n'interroge pas la base (la doc Next l'exclut comme lieu d'autorisation). Ordre org > client > onboarding : en phase solo Étienne est owner **et** reviewer sur ses propres clients, l'agence prime. 5 tests. |
+| P7-6 | Reviewer créé sans mot de passe ; `signInWithOtp` absent | ⛔ **non fait** | — | **Arbitrage produit — le brief interdit de trancher seul.** Voir « Décisions qui te reviennent ». Le correctif P7-1 est volontairement **neutre** sur ce point : il exige une preuve de possession sans imposer par quel canal, donc il ne présume pas de l'issue. |
+| P7-7 | Invitation ratée = définitive (pas de révocation, pas de retrait) | ⛔ **non fait** | — | Non attaqué : demande une migration (écriture de `revoked_at`, index unique partiel à revoir) **plus** une RPC de retrait de `client_members` **plus** son test pgTAP et une surface UI. C'est le plus gros ticket restant de la phase, et le seul qui touche au schéma. `71eef5c` en réduit la fréquence (le lien n'est plus perdu à la création) sans fermer le sujet. |
+| P7-8 | Open redirect sur `next` | ✅ | `0769db1` | `startsWith("/")` laissait passer `//evil.tld` — protocol-relative, résolu en `https://evil.tld`, **depuis une origine authentique et après une connexion réussie**. Mesuré sur l'ancienne validation : **6/6 entrées hostiles acceptées**. La règle n'énumère pas les formes dangereuses : résolution contre une origine sentinelle (`.invalid`, TLD réservé) et exigence d'origine identique ; le chemin est **reconstruit** depuis l'URL analysée. 8 tests, dont un invariant de sortie. |
+| P7-9 | Le portail plante si la liste de clients est vide | ✅ | `8f8e338` | `ctx.clients[0] as Client` puis `client.timezone` → `TypeError`. **C'est le cast qui rendait le trou invisible au typage.** Atteignable en deux clics : la landing publique porte un lien « Voir le portail client », et tout compte sans ligne `client_members` tombe dessus — à commencer par le patron d'agence. Le layout gérait déjà le cas (`?? null`) ; seule la page supposait la liste non vide. État vide explicite qui dit quoi faire. |
+| P7-10 | Le wizard jette le token puis affiche un succès | ✅ | `71eef5c` | Le retour d'`inviteReviewer` était jeté — il porte la **seule copie en clair** du jeton. Le wizard annonçait « Invitation enregistrée » sans jamais vérifier. **La situation devenait définitive** : l'index unique partiel sur `(client_id, lower(email))` tient tant que ni `accepted_at` ni `revoked_at` ne sont posés, donc toute ré-invitation échouait en `already_invited`, sans recours autre qu'un SQL à la main. `createClientAction` renvoie désormais un `CreateClientInvite` explicite (`none`/`created`/`failed`) et le wizard rend les trois cas, lien copiable inclus. Rétrocompatible (`data.id` inchangé). |
+
+**Critère de sortie — PAS atteint.** Le parcours est réparé de bout en bout **côté code**, mais il
+reste deux manques : P7-7 (aucune révocation possible) et une dépendance de configuration hors
+dépôt pour que le lien reçu par email ouvre une session dans un autre navigateur que celui qui a
+déclenché l'envoi. Détail dans « Ce qui attend Étienne ».
+
+#### État final des commandes de vérification (fin de session, 15/08/2026)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm -w build` | ✅ `Compiled successfully` — `/onboarding` et `/auth/landing` présents au manifeste |
+| `pnpm --filter web exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker exec tsc --noEmit` | ✅ 0 erreur |
+| `pnpm --filter worker test` | ✅ **40/40** (inchangé — aucun code worker touché) |
+| `pnpm --filter web test` | ✅ **26/26** — *la suite n'existait pas au début de la session* |
+| `pnpm check` (arbre LF via `git -c core.autocrlf=false archive`) | ✅ **exit 0** — 455 fichiers, 0 erreur, 17 warnings, 2 infos |
+| Rejeu migrations + pgTAP complet (`ocean_rev2`) | ✅ 30 migrations (1 sautée, `*_storage.sql`), 29 fichiers, **315 ok / 0 not ok / 0 erreur psql** ; `plan` == assertions émises sur **les 29 fichiers** |
+
+> Les 2 infos de `pnpm check` portent sur `biome.json` lui-même (version de schéma et une clé
+> dépréciée), pas sur du code — préexistantes, hors périmètre de cette session.
+>
+> ⚠ **Ce qu'aucune vérification ne couvre.** Les tests web sont des tests de **décision** : ils
+> exercent la logique extraite (acceptation d'invitation, `next`, aiguillage, slug) avec des
+> dépendances injectées. Le câblage Supabase de `route.ts` — requêtes PostgREST, `inviteUserByEmail`,
+> `resetPasswordForEmail` — n'est exécuté par **aucun** test, faute de stack Supabase local
+> disponible sur cette machine (ports 54321/54322 pris). Il est relu, pas exécuté. Même limite que
+> `pg-store.ts` côté worker.
+
 ### Phase 8 — OAuth propre · 1 à 2 sessions
 
 **Pourquoi** : connecter Meta pour un client rattache aujourd'hui **toutes** les Pages et comptes
@@ -478,8 +528,12 @@ worker à jour **doit** s'accompagner du code web à jour, sinon les libellés d
 ### Changements de comportement visibles, à connaître avant d'appliquer
 
 1. **Client en `approval_mode = 'required'`** : le drag « Brouillon → Programmé » lève désormais
-   42501. Le défaut de la colonne est `'optional'`, donc rien ne bloque tant qu'un client n'est pas
-   explicitement passé en `required`. Le kanban ne grise pas encore le geste.
+   42501. Le kanban ne grise pas encore le geste.
+   ⚠️ **Correction du 15/08** : la phrase « le défaut est `'optional'`, donc rien ne bloque tant
+   qu'un client n'est pas explicitement passé en `required` » était rassurante **et fausse en
+   pratique**. Comptage fait en base après application : **2 clients sur 5 sont déjà en
+   `required`**, et aucun contenu du projet n'a d'approbation `reviewer`. Le blocage est donc
+   effectif dès maintenant sur `Brulerie Lacaze`. Voir le bloc « Parcours désormais bloqués ».
 2. **Recadrer ne fait plus disparaître l'avertissement de ratio** dans le composer. C'est voulu :
    rien n'est recadré tant que le traitement d'image réel n'existe pas.
 3. **Une date de programmation dans le passé est refusée** (tolérance 2 min).
@@ -487,8 +541,43 @@ worker à jour **doit** s'accompagner du code web à jour, sinon les libellés d
    `ok: false` là où elles renvoyaient toujours `ok: true` — un toast d'erreur peut apparaître sur
    des cas qui passaient en silence. C'est le but.
 
+### Ce qui attend Étienne après la nuit du 15/08/2026 (phase 7)
+
+1. **Gabarit d'e-mail Supabase — c'est le seul point qui empêche le parcours reviewer de marcher
+   de bout en bout.** Le flux d'invitation envoie désormais le secret à la boîte aux lettres
+   (`inviteUserByEmail`, ou lien de mot de passe si le compte existe). Mais le gabarit **par
+   défaut** utilise `{{ .ConfirmationURL }}`, qui passe par le flux implicite et dépose ses jetons
+   dans le **fragment** de l'URL — invisible côté serveur. À changer dans *Authentication > Email
+   Templates* (gabarits « Invite » et « Reset password »), pour pointer vers :
+   `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=invite&next=/portal`.
+   `/auth/callback` sait **déjà** lire `token_hash` : il n'y a rien à coder, seulement à configurer.
+   Sans ce changement, le lien ne fonctionne que dans le navigateur qui a déclenché l'envoi.
+2. **`get_advisors` : activer la protection contre les mots de passe compromis** (*Authentication >
+   Password*). C'est le seul des 15 lints qui se corrige d'un clic, et il est là depuis le début.
+3. **Le blocage `approval_mode` sur `Brulerie Lacaze`** (voir plus haut) : soit repasser le client
+   en `optional`, soit pousser la branche pour que l'UI mappe enfin `CLIENT_APPROVAL_REQUIRED`.
+4. **Pousser la branche.** `chore/phase-0-outillage` porte maintenant 8 commits de plus et **la
+   première suite de tests de `apps/web`**, câblée en job CI bloquant. Aucun run de CI n'a jamais
+   été observé au vert : le compte GitHub de la session n'a que la lecture sur le dépôt.
+
 ### Décisions qui te reviennent
 
+- **P7-6 — mode de connexion du Reviewer (arbitrage produit, non tranché volontairement).**
+  `CLAUDE.md` §1 prescrit « magic link desktop / OTP 6 chiffres mobile » ; le code fait
+  **password-only**, et `signInWithOtp` n'existe nulle part. Un Reviewer est créé **sans mot de
+  passe** : il ne peut donc pas se connecter par le seul chemin qui existe. Le correctif P7-1 est
+  délibérément **neutre** là-dessus — il exige une preuve de possession de l'adresse sans imposer
+  par quel canal —, donc les trois options restent ouvertes :
+  *(a)* garder password-only et faire définir un mot de passe au reviewer à la première visite
+  (c'est ce que fait le code aujourd'hui, via le lien de définition de mot de passe : **aucun
+  changement pour toi**) ;
+  *(b)* ajouter `signInWithOtp` pour les reviewers seulement, en gardant ton propre login par mot
+  de passe (conforme à `CLAUDE.md`, ne change rien pour toi, mais double la surface d'auth) ;
+  *(c)* basculer tout le monde sur OTP, comme prescrit — **cela change TA connexion**, c'est
+  pourquoi je ne l'ai pas fait.
+  Ma recommandation : **(a) maintenant, (b) avant le premier vrai client**. Le mot de passe est le
+  seul facteur déjà câblé et testé ; l'OTP mobile devient nécessaire quand la PWA iOS arrive
+  (le magic link ouvre la session dans Safari, pas dans la PWA installée — anti-pattern §8).
 - **FK `publish_jobs.content_target_id` en `restrict`** (ticket P3-8) : non appliquée, avec sa
   justification mesurée. La bascule est prête en commentaire dans `deploy/22_migration_026.sql`.
 - **Sortie « rien n'est parti » d'un `needs_verification`** : la direction inverse (« j'ai vérifié,
@@ -513,6 +602,19 @@ worker à jour **doit** s'accompagner du code web à jour, sinon les libellés d
   réouverture. Sans conséquence tant que rien ne traite l'image.
 - Le triple canal du §10 n'existe toujours pas : report de quota, `needs_verification` et
   `SCHEDULED_WITHOUT_JOB` sont **journalisés**, rien de plus.
+- **(15/08)** `create_organization` reste accordée à tout `authenticated` : n'importe quel compte
+  peut créer une organisation, donc des clients, donc des invitations. C'est ce qui rendait la
+  faille P7-1 exploitable par un compte quelconque. Le correctif ferme l'usage (une invitation ne
+  donne plus de session), **pas la capacité** : la RPC reste ouverte, ce qui est cohérent avec un
+  produit en auto-inscription mais mérite un plafond (nombre d'orgs par compte) avant l'ouverture
+  SaaS. Hors périmètre d'un ticket de phase 7.
+- **(15/08)** `getReviewerContext` ne lit que `memberships[0]` pour `orgId` et `clientId` : un
+  reviewer rattaché à deux clients de deux orgs différentes ne voit correctement que le premier.
+  P7-9 empêche désormais le crash sur la liste vide, mais le multi-client reste approximatif.
+- **(15/08)** L'invitation est envoyée à l'adresse invitée à **chaque** ouverture du lien sans
+  session. C'est volontaire (c'est le seul geste sûr), mais c'est aussi un vecteur d'e-mails
+  répétés vers un tiers si quelqu'un rejoue le lien. Les quotas Supabase limitent la casse ;
+  un compteur par invitation serait plus propre.
 - Commit `a4d031d` : le travail « annotations portail + notifications agence » trouvé **non
   commité** dans l'arbre au démarrage a été commité tel quel, sans relecture, pour que les commits
   de tickets restent atomiques (plusieurs de ses fichiers devaient être touchés par P3-3). Seule
