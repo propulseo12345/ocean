@@ -9,6 +9,7 @@ export const routes = {
   notifications: "/notifications",
   portal: "/portal",
   login: "/login",
+  signup: "/signup",
   client: (id: string) => `/clients/${id}`,
   clientGrid: (id: string) => `/clients/${id}/grid`,
   clientCalendar: (id: string) => `/clients/${id}/calendar`,

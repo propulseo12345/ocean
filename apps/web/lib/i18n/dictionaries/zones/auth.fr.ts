@@ -27,6 +27,8 @@ export const authFr = {
       cardDescription: "Saisis ton adresse e-mail et ton mot de passe.",
     },
     login: {
+      noAccount: "Pas encore de compte ?",
+      signUpLink: "Créer un compte",
       inviteSent:
         "Un e-mail vient de partir vers l'adresse invitée. Ouvre-le pour accéder à ton espace de validation.",
       inviteOtherAccount:
@@ -87,6 +89,28 @@ export const authFr = {
       invalidNameDetail: "Le nom doit faire entre 1 et 120 caractères.",
       genericDetail: "Réessaie dans un instant. Si le problème persiste, contacte le support.",
       signOut: "Ce n'est pas mon compte — se déconnecter",
+    },
+    // Inscription (P7-4) — la route /signup n existait pas.
+    signup: {
+      metaTitle: "Créer un compte",
+      cardTitle: "Créer un compte",
+      cardDescription: "Quelques secondes, et ton espace de travail est prêt.",
+      nameLabel: "Ton nom",
+      namePlaceholder: "Étienne Guimbard",
+      nameHelp: "Il sert aussi de nom à ton organisation — modifiable ensuite.",
+      emailLabel: "Adresse e-mail",
+      emailPlaceholder: "toi@exemple.fr",
+      passwordLabel: "Mot de passe",
+      passwordPlaceholder: "••••••••",
+      passwordHelp: "8 caractères minimum.",
+      submit: "Créer mon compte",
+      submitting: "Création…",
+      errorTitle: "Inscription impossible",
+      invalidFormatDetail:
+        "Vérifie ton nom, ton adresse e-mail et un mot de passe d'au moins 8 caractères.",
+      genericDetail: "Cette adresse est peut-être déjà utilisée. Essaie de te connecter.",
+      haveAccount: "Tu as déjà un compte ?",
+      signInLink: "Se connecter",
     },
   },
 } as const

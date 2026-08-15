@@ -12,6 +12,7 @@ import { updateSession } from "@/lib/supabase/middleware"
 const PUBLIC_EXACT = new Set([
   "/",
   "/login",
+  "/signup",
   "/forgot-password",
   "/api/health",
   "/manifest.webmanifest",
@@ -46,7 +47,7 @@ export async function proxy(request: NextRequest) {
   // Rendering, prefetch) et `/dashboard` en dur envoyait tout Reviewer sur un
   // 404. On delegue au point unique de resolution de role (P7-5), en preservant
   // `next` au lieu de l'effacer.
-  if (user && pathname === "/login") {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/landing"
     const next = request.nextUrl.searchParams.get("next")

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useT } from "@/lib/i18n"
+import { routes } from "@/lib/routes"
 
 /**
  * Message d'état porté par l'URL (P7-2).
@@ -129,6 +130,17 @@ export function LoginForm() {
         <LogIn />
         {pending ? t("auth.login.submitting") : t("auth.login.submit")}
       </Button>
+
+      {/* P7-4 : sans ce lien, /signup existe mais reste injoignable depuis l'app. */}
+      <p className="text-center text-sm text-muted-foreground">
+        {t("auth.login.noAccount")}{" "}
+        <Link
+          href={routes.signup}
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          {t("auth.login.signUpLink")}
+        </Link>
+      </p>
     </form>
   )
 }

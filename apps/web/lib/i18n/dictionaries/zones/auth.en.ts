@@ -30,6 +30,8 @@ export const authEn: Widen<typeof authFr> = {
       cardDescription: "Enter your email address and password.",
     },
     login: {
+      noAccount: "No account yet?",
+      signUpLink: "Create one",
       inviteSent:
         "An email was just sent to the invited address. Open it to reach your review space.",
       inviteOtherAccount:
@@ -90,6 +92,28 @@ export const authEn: Widen<typeof authFr> = {
       invalidNameDetail: "The name must be between 1 and 120 characters.",
       genericDetail: "Try again in a moment. If the problem persists, contact support.",
       signOut: "Not my account - sign out",
+    },
+    // Sign-up (P7-4) - the /signup route did not exist.
+    signup: {
+      metaTitle: "Create an account",
+      cardTitle: "Create an account",
+      cardDescription: "A few seconds, and your workspace is ready.",
+      nameLabel: "Your name",
+      namePlaceholder: "Etienne Guimbard",
+      nameHelp: "It also names your organization - you can change it later.",
+      emailLabel: "Email address",
+      emailPlaceholder: "you@example.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "••••••••",
+      passwordHelp: "At least 8 characters.",
+      submit: "Create my account",
+      submitting: "Creating…",
+      errorTitle: "Sign-up failed",
+      invalidFormatDetail:
+        "Check your name, email address and a password of at least 8 characters.",
+      genericDetail: "This address may already be in use. Try signing in.",
+      haveAccount: "Already have an account?",
+      signInLink: "Sign in",
     },
   },
 }
