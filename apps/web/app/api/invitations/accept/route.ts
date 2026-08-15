@@ -1,102 +1,123 @@
-import { createHash } from "node:crypto"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { type AcceptDeps, acceptInvitation, type InvitationRecord } from "@/lib/invitations/accept"
+import { routes } from "@/lib/routes"
+import { siteOrigin } from "@/lib/site-url"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 
-// Acceptation d'une invitation reviewer (D8/D9). Route PUBLIQUE (préfixe
-// /api/invitations du proxy) : le reviewer n'a pas encore de session. Le TOKEN
-// (256 bits, usage unique, hashé en base) fait autorité.
+// Acceptation d'une invitation reviewer. Route PUBLIQUE (préfixe /api/invitations
+// du proxy) : l'invité n'a pas forcément encore de session.
 //
-// Flux (service_role, jamais côté client) :
-//   1. valider client_invitations par token_hash (non acceptée, non révoquée, non expirée)
-//   2. trouver/créer l'utilisateur auth par email (le trigger handle_new_user crée profiles)
-//   3. adhésion client_members (idempotent) + marquer l'invitation acceptée
-//   4. connexion sans mot de passe : admin.generateLink(magiclink) → redirection
-//      directe vers le lien d'action Supabase (aucun email requis) → /portal
-//
-// SCAFFOLDING Tier D : fonctionnel dès que SUPABASE_SERVICE_ROLE_KEY est présent
-// (déjà en runtime). Sans lui, createAdminClient échoue et on renvoie vers /login.
-
-function fail(origin: string): NextResponse {
-  return NextResponse.redirect(`${origin}/login?error=invite`)
-}
+// ⚠️ Ce handler ne décide RIEN — toute la logique de sécurité vit dans
+// `lib/invitations/accept.ts`, qui est testée (ticket P7-1 : prise de contrôle de
+// compte). Ici on ne fait que câbler les dépendances et traduire l'issue en
+// réponse HTTP. En particulier, et c'est le correctif : **aucun appel à
+// `admin.auth.admin.generateLink`, et aucune redirection vers un lien d'action
+// Supabase**. C'était la primitive de la faille — présenter un jeton suffisait à
+// obtenir la session de l'adresse invitée.
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const token = searchParams.get("token")
-  if (!token) return fail(origin)
-
-  const tokenHash = createHash("sha256").update(token).digest("hex")
+  const token = new URL(request.url).searchParams.get("token")
+  const origin = await siteOrigin()
 
   let admin: ReturnType<typeof createAdminClient>
   try {
     admin = createAdminClient()
   } catch {
-    return fail(origin)
+    return NextResponse.redirect(`${origin}/login?error=invite`)
   }
+  const supabase = await createClient()
 
-  // 1. Invitation valide ?
-  const { data: invite } = await admin
-    .from("client_invitations")
-    .select("id, org_id, client_id, email, role, accepted_at, revoked_at, expires_at")
-    .eq("token_hash", tokenHash)
-    .maybeSingle()
-  if (
-    !invite ||
-    invite.accepted_at ||
-    invite.revoked_at ||
-    new Date(invite.expires_at).getTime() < Date.now()
-  ) {
-    return fail(origin)
-  }
-
-  // 2. Utilisateur reviewer (créer si absent ; le trigger amorce profiles).
-  let userId: string | null = null
-  const created = await admin.auth.admin.createUser({
-    email: invite.email,
-    email_confirm: true,
-  })
-  if (created.data.user) {
-    userId = created.data.user.id
-  } else {
-    // Existe déjà : le retrouver (pas de filtre email direct dans l'API admin).
-    const { data: list } = await admin.auth.admin.listUsers()
-    userId =
-      list?.users.find((u) => u.email?.toLowerCase() === invite.email.toLowerCase())?.id ?? null
-  }
-  if (!userId) return fail(origin)
-
-  // 3. Adhésion (idempotent) + invitation marquée acceptée.
-  const { error: memberError } = await admin.from("client_members").upsert(
-    {
-      org_id: invite.org_id,
-      client_id: invite.client_id,
-      user_id: userId,
-      role: invite.role,
+  const deps: AcceptDeps = {
+    async findInvitation(tokenHash) {
+      const { data } = await admin
+        .from("client_invitations")
+        .select("id, org_id, client_id, email, role, accepted_at, revoked_at, expires_at")
+        .eq("token_hash", tokenHash)
+        .maybeSingle()
+      return (data as InvitationRecord | null) ?? null
     },
-    { onConflict: "client_id,user_id" }
-  )
-  if (memberError) return fail(origin)
 
-  await admin
-    .from("client_invitations")
-    .update({
-      status: "accepted",
-      accepted_at: new Date().toISOString(),
-      accepted_user_id: userId,
-    })
-    .eq("id", invite.id)
+    // L'identité vient de la SESSION de la requête, jamais de l'invitation.
+    async currentIdentity() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user?.email) return null
+      return { userId: user.id, email: user.email }
+    },
 
-  // 4. Connexion sans mot de passe : lien d'action magiclink (non envoyé par
-  //    email — on redirige directement dessus), retour vers le portail.
-  const { data: link } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: invite.email,
-    options: { redirectTo: `${origin}/portal` },
-  })
-  const actionLink = link?.properties?.action_link
-  if (actionLink) return NextResponse.redirect(actionLink)
+    async bindMembership(invitation, userId) {
+      const { error } = await admin.from("client_members").upsert(
+        {
+          org_id: invitation.org_id,
+          client_id: invitation.client_id,
+          user_id: userId,
+          role: invitation.role as "reviewer" | "editor",
+        },
+        { onConflict: "client_id,user_id" }
+      )
+      if (error) return false
 
-  // Repli : pas de lien (SMTP/redirect non configuré) → login manuel vers portail.
-  return NextResponse.redirect(`${origin}/login?next=/portal`)
+      // Le jeton n'est consommé qu'ICI : une fois l'adhésion réellement créée.
+      // L'ancienne route le brûlait avant même qu'une session existe, rendant
+      // l'invitation non rejouable pour son destinataire légitime (P7-2).
+      await admin
+        .from("client_invitations")
+        .update({
+          status: "accepted",
+          accepted_at: new Date().toISOString(),
+          accepted_user_id: userId,
+        })
+        .eq("id", invitation.id)
+      return true
+    },
+
+    /**
+     * Le secret part vers la BOÎTE AUX LETTRES de l'invité — jamais vers
+     * l'appelant. C'est la preuve de possession de l'adresse, et c'est ce qui
+     * remplace le `generateLink` renvoyé au navigateur.
+     *
+     * `redirectTo` repasse par cette même route : une fois la session ouverte,
+     * l'invité revient ici avec son jeton et l'adhésion est créée.
+     */
+    async sendProofOfPossession(email) {
+      const redirectTo = `${origin}${routes.acceptInvite(token ?? "")}`
+
+      const invited = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+      if (!invited.error) return true
+
+      // Compte déjà existant : Supabase refuse l'invitation. On envoie alors un
+      // lien de définition de mot de passe — même canal, même preuve.
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
+          `/reset-password?next=${routes.acceptInvite(token ?? "")}`
+        )}`,
+      })
+      return !error
+    },
+
+    now: () => Date.now(),
+  }
+
+  const outcome = await acceptInvitation(token, deps)
+
+  switch (outcome.kind) {
+    case "accepted":
+      return NextResponse.redirect(`${origin}/portal`)
+
+    // Le secret est parti par email. On ne dit PAS si le compte existait : la
+    // page est la même dans les deux cas.
+    case "proof_required":
+      return NextResponse.redirect(`${origin}/login?invite=sent`)
+
+    // Session ouverte sur une autre adresse : l'utilisateur doit se déconnecter.
+    // Surtout pas de bascule automatique — ce serait rouvrir la faille.
+    case "wrong_account":
+      return NextResponse.redirect(`${origin}/login?error=invite_other_account`)
+
+    default:
+      return NextResponse.redirect(`${origin}/login?error=invite`)
+  }
 }

@@ -154,6 +154,14 @@ jobs:
       - name: Typecheck
         run: pnpm --filter web exec tsc --noEmit
 
+      # `apps/web` n'avait AUCUN test — ni vitest, ni jest, ni un seul fichier.
+      # Les correctifs de securite de la phase 7 (prise de controle de compte sur
+      # /api/invitations/accept) n'etaient donc prouves par rien. Meme idiome que
+      # le worker : `node --test` natif + tsx, aucune dependance de framework.
+      # A garder BLOQUANT.
+      - name: Tests
+        run: pnpm --filter web test
+
       - name: Build
         run: pnpm build
 
