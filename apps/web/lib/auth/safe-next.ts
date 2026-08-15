@@ -19,6 +19,24 @@
 // celle-là. Tout ce qui s'en échappe est rejeté, quelle que soit l'astuce
 // d'encodage. Le chemin est ensuite reconstruit à partir de l'URL analysée,
 // jamais recopié tel quel.
+//
+// POURQUOI VALIDER LA SORTIE AUSSI
+// --------------------------------
+// La première version ne testait le motif protocol-relative que sur l'ENTRÉE,
+// donc du mauvais côté du parser — et c'est le parser qui fabrique la chaîne
+// interdite. `/..//evil.tld` n'a qu'une barre en tête : il passe la garde
+// d'entrée. Le parser WHATWG replie ensuite le segment `..` contre un chemin
+// vide (sans effet) puis empile le segment VIDE situé entre les deux barres, et
+// `url.pathname` vaut `//evil.tld`. Le juge d'origine ne voit rien : l'hôte a
+// été fixé par la base AVANT l'analyse du chemin, `url.origin` vaut toujours la
+// sentinelle. La fonction renvoyait donc exactement la chaîne qu'elle existe
+// pour refuser (`/.//evil.tld` et `/%2e%2e//evil.tld` de même).
+//
+// La garde n'est donc pas sur l'entrée mais sur la SORTIE : on re-résout la
+// chaîne que l'on s'apprête à rendre, et on exige à nouveau la sentinelle.
+// C'est le même principe appliqué au bon endroit — pas une énumération de plus.
+// Interdire `..` en entrée serait un correctif inopérant : `/.//evil.tld` n'en
+// contient pas.
 
 /** Origine sentinelle : le TLD `.invalid` est réservé, il ne résout jamais. */
 const SENTINELLE = "https://ocean.invalid"
@@ -61,9 +79,23 @@ export function safeNext(candidate: unknown, fallback: string = DEFAULT_NEXT): s
     return fallback
   }
 
-  // Le juge final : tout ce qui a changé d'origine est hostile.
+  // Premier juge : tout ce qui a changé d'origine à l'analyse est hostile.
   if (url.origin !== SENTINELLE) return fallback
 
   // Reconstruit depuis l'URL analysée — jamais la chaîne d'entrée.
-  return `${url.pathname}${url.search}${url.hash}`
+  const sortie = `${url.pathname}${url.search}${url.hash}`
+
+  // Second juge, et c'est lui qui compte : le parser a pu FABRIQUER une
+  // autorité (`//evil.tld`) à partir d'une entrée qui n'en portait pas. On
+  // soumet la sortie exactement au traitement que lui appliquera le navigateur.
+  if (PROTOCOL_RELATIVE.test(sortie)) return fallback
+  let verif: URL
+  try {
+    verif = new URL(sortie, SENTINELLE)
+  } catch {
+    return fallback
+  }
+  if (verif.origin !== SENTINELLE) return fallback
+
+  return sortie
 }
