@@ -685,6 +685,60 @@ décidé par Meta, pas par le code.
 
 ---
 
+## Migration 037 (watchdog) — ✅ APPLIQUÉE le 15/08/2026, avec deux défauts trouvés au pré-vol
+
+Appliquée via le MCP Supabase (`execute_sql`) sur feu vert d'Étienne. **Le pré-vol a arrêté
+l'application une première fois** — et c'est la troisième fois de la journée qu'il attrape quelque
+chose qu'aucun test ne voyait.
+
+### Défaut 1 — `pg_net` n'était pas installée
+
+L'en-tête du fichier `deploy/` déclarait « extension pg_net deja installee » comme un prérequis
+satisfait. **Faux** : elle n'était installée ni en ligne ni en local, alors que
+`watchdog_publish_jobs()` appelle `net.http_post`.
+
+Ce qui rend ce défaut vicieux, c'est qu'il n'était **visible nulle part** :
+
+- `create or replace function … language plpgsql` ne résout pas `net.*` à la création → la
+  migration se serait appliquée **sans broncher** ;
+- la fonction sort **avant** l'appel HTTP tant que les secrets Vault manquent → elle n'aurait pas
+  cassé à l'exécution non plus ;
+- les 378 tests pgTAP passaient, pour la même raison : ils n'atteignent jamais le réseau.
+
+La panne serait apparue au **geste (b) du runbook** — poser les deux secrets Vault — c'est-à-dire au
+moment précis où l'on croit terminer l'installation : `schema "net" does not exist`, toutes les
+5 minutes, **sur le seul filet censé prévenir quand plus rien ne fonctionne**. Corrigé avant
+application (commit `a83f2bf`), prouvé en local : `net.http_post` resolvable après, pas avant.
+
+### Défaut 2 — trouvé APRÈS application, par `get_advisors`
+
+`create extension pg_net` nu enregistre l'extension dans `public` → nouvel avis
+`extension_in_public`. Les 12 fonctions vont dans le schéma `net` dans les deux cas (le script de
+l'extension le crée lui-même), donc **rien n'est exposé par PostgREST** : c'est le schéma
+d'*enregistrement* qui change. Corrigé dans le fichier ; **la correction en ligne exige un
+`drop extension pg_net` — geste destructif, en attente du feu vert d'Étienne.**
+
+### Contrôles après application
+
+| Contrôle | Résultat |
+|---|---|
+| `pg_cron` / `pg_net` installées | ✅ 1.6.4 / 0.20.3 |
+| `net.http_post` résolvable en ligne | ✅ |
+| Tâche cron | ✅ `ocean-watchdog-publish-jobs`, `*/5 * * * *`, `active=true` |
+| `publish_jobs.watchdog_alerted_at` | ✅ créée |
+| `public.watchdog_publish_jobs` | ✅ `SECURITY DEFINER`, `search_path=""`, `anon`=false, `authenticated`=false, `service_role`=true |
+| `private.late_publish_jobs` | ✅ `SECURITY DEFINER`, `search_path=""`, **aucun rôle** n'a `EXECUTE` |
+| **Surface `anon` (SECURITY DEFINER)** | ✅ **inchangée — 1** (`get_report_share`) |
+| Ledger | ✅ **37 lignes** |
+| `get_advisors` | ⚠ **1 avis nouveau** : `extension_in_public` sur `pg_net` (cf. défaut 2) |
+
+⚠ **Le watchdog détecte mais ne prévient encore personne** : les deux secrets Vault
+(`watchdog_edge_url`, `watchdog_service_role_key`) ne sont pas posés et l'Edge Function
+`watchdog-notify` n'est pas déployée. C'est voulu — la fonction émet un `NOTICE` et rend le compte
+plutôt que de faire échouer le cron. Mais ne pas confondre « installé » et « opérationnel ».
+
+---
+
 ## Migrations 035 et 036 — ✅ APPLIQUÉES le 15/08/2026 (session de pilotage)
 
 Appliquées via le MCP Supabase (`execute_sql`, **jamais** `apply_migration` : le ledger est en
