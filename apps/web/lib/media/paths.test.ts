@@ -4,6 +4,7 @@ import { test } from "node:test"
 import {
   fileExtension,
   originalPath,
+  pathBelongsTo,
   sanitizeFileName,
   tenantOf,
   thumbPath,
@@ -102,4 +103,67 @@ test("tenantOf relit les deux segments d isolation, et refuse un chemin trop cou
   assert.equal(tenantOf(`${ORG}/${CLIENT}/photo.jpg`), null, "3 segments : pas notre convention")
   assert.equal(tenantOf("photo.jpg"), null)
   assert.equal(tenantOf(""), null)
+})
+
+// --- pathBelongsTo : le recoupement chemin/tenant (LOT 1) --------------------
+//
+// `recordUploadedAsset` insérait `storage_path` tel quel, alors que le chemin
+// vient du NAVIGATEUR et qu'aucune contrainte en base ne le relie à
+// org_id/client_id. Une ligne `media_assets` pouvait donc désigner le préfixe
+// d'un AUTRE tenant — ce que la voie reviewer de la 033 résout justement par
+// `storage_path`, sans reconfronter le chemin à la ligne.
+
+const AUTRE_ORG = "99999999-9999-4999-8999-999999999999"
+const AUTRE_CLIENT = "88888888-8888-4888-8888-888888888888"
+
+test("un chemin bien range est accepte", () => {
+  assert.equal(pathBelongsTo(`${ORG}/${CLIENT}/cle/photo.jpg`, ORG, CLIENT), true)
+  assert.equal(pathBelongsTo(`${ORG}/${CLIENT}/cle/sous/photo.jpg`, ORG, CLIENT), true)
+})
+
+test("PROPRIETE : aucun chemin visant un autre tenant n est accepte", () => {
+  const hostiles = [
+    `${AUTRE_ORG}/${CLIENT}/cle/f.jpg`,
+    `${ORG}/${AUTRE_CLIENT}/cle/f.jpg`,
+    `${AUTRE_ORG}/${AUTRE_CLIENT}/cle/f.jpg`,
+    // Le piège du startsWith : commence bien par l'org, ne lui appartient pas.
+    `${ORG}extra/${CLIENT}/cle/f.jpg`,
+    `${ORG}/${CLIENT}extra/cle/f.jpg`,
+    // Remontee de chemin : `..` est un segment litteral, il ne decale rien —
+    // mais le premier segment n'est alors plus le notre.
+    `../${ORG}/${CLIENT}/cle/f.jpg`,
+    `${AUTRE_ORG}/../${ORG}/${CLIENT}/f.jpg`,
+    // Trop peu de segments : on ne devine pas, on refuse.
+    `${ORG}/${CLIENT}/f.jpg`,
+    `${ORG}/${CLIENT}`,
+    `${ORG}`,
+    "",
+    "/",
+    // Segment vide en tete : `/org/client/...` decale tout d'un cran.
+    `/${ORG}/${CLIENT}/cle/f.jpg`,
+  ]
+  for (const chemin of hostiles) {
+    assert.equal(pathBelongsTo(chemin, ORG, CLIENT), false, `doit etre refuse : ${chemin}`)
+  }
+})
+
+test("la comparaison des segments est sensible a la casse", () => {
+  // Un uuid se compare octet pour octet. (Ce cas vivait d'abord dans la liste
+  // ci-dessus, ou il ne prouvait RIEN : les uuid de test n'ont que des
+  // chiffres, `toUpperCase()` y est sans effet et la chaine restait le chemin
+  // legitime. C'est le test qui avait tort, et c'est l'execution qui l'a dit.)
+  const orgAvecLettres = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+  assert.equal(pathBelongsTo(`${orgAvecLettres}/${CLIENT}/cle/f.jpg`, orgAvecLettres, CLIENT), true)
+  assert.equal(
+    pathBelongsTo(`${orgAvecLettres.toUpperCase()}/${CLIENT}/cle/f.jpg`, orgAvecLettres, CLIENT),
+    false
+  )
+})
+
+test("les chemins que construit l app sont acceptes par leur propre tenant", () => {
+  // La garde ne doit pas refuser ce que le module fabrique lui-meme : sans ce
+  // test, un durcissement casserait l'upload legitime sans que rien ne le dise.
+  const parts = { orgId: ORG, clientId: CLIENT, uploadKey: "abc123", fileName: "Photo Été.HEIC" }
+  assert.equal(pathBelongsTo(originalPath(parts), ORG, CLIENT), true, originalPath(parts))
+  assert.equal(pathBelongsTo(thumbPath(parts), ORG, CLIENT), true, thumbPath(parts))
 })

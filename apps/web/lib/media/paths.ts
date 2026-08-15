@@ -121,3 +121,27 @@ export function tenantOf(path: string): { orgId: string; clientId: string } | nu
   if (!orgId || !clientId) return null
   return { orgId, clientId }
 }
+
+/**
+ * Un chemin fourni par le NAVIGATEUR vise-t-il bien le tenant attendu ?
+ *
+ * POURQUOI CETTE FONCTION EST SÉPARÉE DE SON APPELANT
+ * ---------------------------------------------------
+ * `tenantOf` existait, était testée, et n'était importée par aucun fichier de
+ * production : la défense en profondeur avait été écrite puis jamais branchée.
+ * `recordUploadedAsset` insérait `storage_path` tel quel — `requireClientInOrg`
+ * valide le CLIENT, jamais le CHEMIN — alors qu'aucune contrainte ni aucun
+ * trigger ne relie `storage_path` à `org_id`/`client_id` en base.
+ *
+ * La décision est isolée ici parce qu'une Server Action n'est pas atteignable
+ * par la suite de tests (le glob ne couvre que `lib/**`). Mettre la comparaison
+ * dans l'action l'aurait rendue vraie « par lecture » et non par exécution —
+ * exactement le motif qui a laissé passer les défauts de la salve précédente.
+ */
+export function pathBelongsTo(path: string, orgId: string, clientId: string): boolean {
+  const tenant = tenantOf(path)
+  if (!tenant) return false
+  // Comparaison EXACTE des deux segments. Pas de `startsWith` sur le chemin
+  // complet : `{orgA}extra/...` commence bien par `{orgA}` sans lui appartenir.
+  return tenant.orgId === orgId && tenant.clientId === clientId
+}
