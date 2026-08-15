@@ -30,6 +30,13 @@ export const authEn: Widen<typeof authFr> = {
       cardDescription: "Enter your email address and password.",
     },
     login: {
+      inviteSent:
+        "An email was just sent to the invited address. Open it to reach your review space.",
+      inviteOtherAccount:
+        "This invitation targets a different address than your current session. Sign out, then reopen the link.",
+      inviteInvalid: "This invitation link is invalid, expired or already used.",
+      authFailed: "The link expired or was already used. Please sign in again.",
+      signupPending: "Account created. Confirm your email address, then sign in.",
       emailLabel: "Email address",
       emailPlaceholder: "you@studio.com",
       passwordLabel: "Password",

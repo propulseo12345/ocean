@@ -27,6 +27,13 @@ export const authFr = {
       cardDescription: "Saisis ton adresse e-mail et ton mot de passe.",
     },
     login: {
+      inviteSent:
+        "Un e-mail vient de partir vers l'adresse invitée. Ouvre-le pour accéder à ton espace de validation.",
+      inviteOtherAccount:
+        "Cette invitation vise une autre adresse que celle de ta session. Déconnecte-toi, puis rouvre le lien.",
+      inviteInvalid: "Ce lien d'invitation est invalide, expiré ou déjà utilisé.",
+      authFailed: "Le lien a expiré ou a déjà servi. Reconnecte-toi.",
+      signupPending: "Compte créé. Confirme ton adresse e-mail, puis connecte-toi.",
       emailLabel: "Adresse e-mail",
       emailPlaceholder: "toi@studio.fr",
       passwordLabel: "Mot de passe",
