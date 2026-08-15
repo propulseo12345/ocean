@@ -1,10 +1,17 @@
 -- Migration 035 a appliquer sur hgdeopkmkwyoumsfggrm (SQL Editor). Prerequis : 019.
 -- Genere depuis supabase/migrations/035_read_and_revoke_integration_secret.sql.
 --
--- ⚠ NON APPLIQUEE A CE JOUR. La session du 17/08 n'a eu AUCUNE autorisation
--- d'ecriture en ligne. Ledger attendu avant application : 34 lignes (001->034).
--- Apres application, inserer la ligne 035 dans
--- supabase_migrations.schema_migrations, comme pour les precedentes.
+-- ✅ APPLIQUEE EN LIGNE le 15/08/2026 (session de pilotage, MCP `execute_sql`),
+-- ledger passe de 34 a 35 lignes (`035` / `read_and_revoke_integration_secret`).
+--
+-- ⚠ CE FICHIER ETAIT CORROMPU JUSQU'AU 15/08/2026, et il n'aurait pas pu
+-- s'executer : il portait, AVANT la section 1, un fragment orphelin — un corps
+-- de fonction (`returns text` … `$$;` puis ses `revoke`/`grant`) prive de son
+-- en-tete `create or replace function`. Postgres s'arretait en erreur de
+-- syntaxe des la premiere ligne de SQL. La 035 a donc ete appliquee depuis la
+-- source canonique `supabase/migrations/`, et ce fichier a ete regenere.
+-- Lecon : les 10 tests pgTAP de la 035 mesuraient `supabase/migrations/`,
+-- jamais `deploy/` — une preuve qui ne porte pas sur le referentiel livre.
 --
 -- OBJET : la migration 019 avait ouvert l'ECRITURE dans Vault (store_, update_).
 -- Les deux autres moities du cycle de vie manquaient, et chacune bloque un
@@ -36,29 +43,7 @@
 --    where n.nspname = 'public'
 --      and p.proname in ('read_integration_secret','revoke_integration_secret')
 --      and has_function_privilege(r.rolname, p.oid, 'execute');
-
-returns text
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_secret text;
-begin
-  if _secret_id is null then
-    raise exception 'read_integration_secret: id null';
-  end if;
-  select decrypted_secret into v_secret
-    from vault.decrypted_secrets
-   where id = _secret_id;
-  -- `null` si l'uuid n'existe pas : l'appelant distingue « pas de secret » d'une
-  -- erreur, sans qu'on lui dise si l'uuid a jamais existé.
-  return v_secret;
-end;
-$$;
-
-revoke execute on function public.read_integration_secret(uuid) from public, anon, authenticated;
-grant execute on function public.read_integration_secret(uuid) to service_role;
+--   -- Rendu : 0 ligne le 15/08/2026.
 
 -- ===========================================================================
 -- 1. Lecture d'un secret (service_role uniquement)

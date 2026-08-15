@@ -48,10 +48,21 @@ export type TargetStatus =
   | "canceled"
 
 /**
- * ⚠ `expired` n'existe PAS dans l'enum SQL `account_status` (002:47) : rien ne
- * peut produire ce statut, le code qui le teste est mort. Constaté au ticket
- * P8-2, laissé en place — le retirer touche 4 écrans et sort du périmètre.
- * `disconnected` (migration 036) est, lui, bien réel.
+ * ⚠ `expired` EXISTE bien dans l'enum SQL — ajouté par la migration 010
+ * (`010_cablage_foundations.sql:51`), et présent dans le schéma en ligne
+ * (vérifié le 15/08/2026 : `{connected, needs_reauth, expired, disconnected}`).
+ * Le vrai défaut est ailleurs : **rien n'écrit jamais cette valeur**, donc le
+ * code qui la teste est mort. Constaté au ticket P8-2, laissé en place — le
+ * retirer touche 4 écrans et sort du périmètre.
+ *
+ * Rectificatif du 15/08/2026 : ce commentaire affirmait auparavant que la
+ * valeur « n'existe PAS dans l'enum SQL (002:47) ». C'était faux — 002 crée
+ * l'enum, 010 l'élargit. Diagnostic différent, correctif différent : il ne
+ * s'agit pas d'aligner le type sur le schéma, mais de décider si quelque chose
+ * doit produire `expired`, ou de le retirer des deux côtés.
+ *
+ * `disconnected` (migration 036, appliquée le 15/08/2026) est, lui, écrit par
+ * le détachement de compte (P8-2).
  */
 export type AccountStatus = "connected" | "needs_reauth" | "expired" | "disconnected"
 

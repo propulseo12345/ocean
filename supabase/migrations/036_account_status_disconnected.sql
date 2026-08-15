@@ -24,9 +24,15 @@
 -- cette raison exacte (`deploy/19_..._etape1_enums.sql` / `20_..._etape2.sql`).
 --
 -- ⚠ DIVERGENCE PRÉEXISTANTE, CONSTATÉE ET NON CORRIGÉE ICI : le type TypeScript
--- `AccountStatus` (lib/domain/core.ts:50) annonce `expired`, une valeur que
--- l'enum SQL n'a jamais eue. Rien ne peut donc produire ce statut ; le code qui
--- le teste est mort. Hors périmètre de ce ticket, mais à trancher — soit on
--- l'ajoute ici, soit on le retire du TypeScript.
+-- `AccountStatus` (lib/domain/core.ts:50) annonce `expired`. Rien ne produit ce
+-- statut ; le code qui le teste est mort. Hors périmètre de ce ticket, mais à
+-- trancher — soit quelque chose l'écrit, soit on le retire du TypeScript.
+--
+-- ⚠ CORRECTION DU 15/08/2026 (pilotage, après application en ligne) : la version
+-- initiale de ce commentaire affirmait que `expired` était « une valeur que
+-- l'enum SQL n'a jamais eue ». C'est FAUX — `expired` a été ajouté à l'enum par
+-- la migration 010 (`010_cablage_foundations.sql:51`), et il est bien présent en
+-- ligne. L'enum réel après cette migration est donc
+-- {connected, needs_reauth, expired, disconnected}, pas un triplet.
 
 alter type public.account_status add value if not exists 'disconnected';

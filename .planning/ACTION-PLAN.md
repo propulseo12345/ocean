@@ -489,9 +489,13 @@ C'est la même limite que celle notée pour le câblage Supabase de la phase 7.
 #### Tickets — suivi d'exécution
 
 > Exécution : branche `chore/phase-0-outillage`, session du 17/08/2026, à la suite du LOT 1.
-> **Non poussée.** **Aucune écriture sur le projet Supabase en ligne** : les migrations **035** et
-> **036** sont écrites, appliquées en LOCAL, testées, et livrées dans `deploy/31_` et `deploy/32_`.
-> Ledger en ligne inchangé à 34 lignes.
+> **Non poussée.** Les migrations **035** et **036** sont écrites, appliquées en LOCAL, testées, et
+> livrées dans `deploy/31_` et `deploy/32_`.
+>
+> **Mise à jour du 15/08/2026 (pilotage)** : les deux sont désormais **APPLIQUÉES EN LIGNE** sur
+> `hgdeopkmkwyoumsfggrm`, ledger à **36 lignes**. Détail et contrôles : section « Migrations 035 et
+> 036 » plus bas. ⚠ `deploy/31_migration_035.sql` était **corrompu** et n'aurait pas pu s'exécuter —
+> 035 a été appliquée depuis la source canonique `supabase/migrations/`.
 
 | # | Ticket | Statut | Commit | Preuve |
 |---|---|---|---|---|
@@ -521,9 +525,13 @@ C'est la même limite que celle notée pour le câblage Supabase de la phase 7.
   identifiants (phase 1). Les tests prouvent les **décisions** — gardes du callback, ordre des
   opérations, CAS du refresh, santé des comptes — pas le dialogue avec Meta. C'est la limite de
   couverture la plus importante de ce lot, et elle ne se lève qu'avec l'app Meta.
-- **`AccountStatus` annonce `expired`**, une valeur que l'enum SQL n'a **jamais** eue : rien ne
-  peut la produire, le code qui la teste est mort. Constaté, écrit dans le type et dans la
-  migration 036, **non corrigé** — le retirer touche 4 écrans.
+- **`AccountStatus` annonce `expired`** : rien ne produit cette valeur, le code qui la teste est
+  mort. Constaté, écrit dans le type et dans la migration 036, **non corrigé** — le retirer touche
+  4 écrans. ⚠ **Rectificatif du 15/08/2026 (pilotage)** : la formulation d'origine disait « une
+  valeur que l'enum SQL n'a **jamais** eue ». C'est faux — `expired` est dans l'enum depuis la
+  **migration 010** (`010_cablage_foundations.sql:51`), et l'enum en ligne le porte bien. Le
+  problème n'est pas un type qui invente une valeur absente du schéma, c'est une valeur du schéma
+  que **plus rien n'écrit**. Diagnostic différent, correctif différent.
 - **La marge de 10 jours est dupliquée** entre `apps/web/lib/oauth/token-life.ts` et
   `apps/worker/src/tokens/refresh-plan.ts`. Les deux paquets ne partagent aucun module
   (`packages/shared` ne porte que des types DB) et importer du web dans le worker créerait une
@@ -604,6 +612,96 @@ décidé par Meta, pas par le code.
 ---
 
 *Rien n'est appliqué sans validation. Ce document est un plan, pas un patch.*
+
+---
+
+## Migrations 035 et 036 — ✅ APPLIQUÉES le 15/08/2026 (session de pilotage)
+
+Appliquées via le MCP Supabase (`execute_sql`, **jamais** `apply_migration` : le ledger est en
+versions courtes) sur feu vert explicite d'Étienne, après lecture intégrale des fichiers et pré-vol.
+
+### ⚠ Défaut trouvé à la lecture : `deploy/31_migration_035.sql` est CORROMPU
+
+Le fichier de déploiement porte, aux lignes 40–61, un **fragment orphelin** : un corps de fonction
+(`returns text` … `$$;` puis ses `revoke`/`grant`) **privé de son en-tête
+`create or replace function`**. Postgres s'arrête en erreur de syntaxe dès la ligne 40 — le fichier
+n'aurait jamais pu s'exécuter. La vraie définition suit, complète, plus bas : la première copie a
+perdu sa ligne d'en-tête pendant la génération du fichier `deploy/`.
+
+La source canonique `supabase/migrations/035_read_and_revoke_integration_secret.sql` est **saine**,
+et c'est **elle** qui a été appliquée. C'est le faux positif n° 3 du handoff en conditions réelles :
+les 10 tests pgTAP de la 035 mesuraient `supabase/migrations/`, jamais `deploy/`. **Le fichier
+`deploy/31_` reste à régénérer** — la preuve ne portait pas sur le référentiel livré.
+
+### Pré-vol (avant toute écriture)
+
+| Contrôle | Résultat |
+|---|---|
+| Ledger | ✅ 34 lignes, max `034` ; ni `035` ni `036` |
+| `vault.decrypted_secrets` (vue) et `vault.secrets` (table) | ✅ présentes |
+| Prérequis 019 (`store_`/`update_integration_secret`) | ✅ présents |
+| `read_`/`revoke_integration_secret` déjà là ? | ✅ non — pas de recouvrement silencieux |
+| Baseline `anon` sur les `SECURITY DEFINER` de `public` | ✅ **1 seule** (`get_report_share`) |
+| `enum_range(account_status)` avant | `connected, needs_reauth, expired` |
+
+### Contrôles après application
+
+| Contrôle | Résultat |
+|---|---|
+| 035 — les 2 RPC existent, `prosecdef = true` | ✅ |
+| 035 — `proconfig` = `search_path=""` (figé) sur les 2 | ✅ |
+| 035 — requête de contrôle du fichier (doit rendre **0**) | ✅ **0** — ni `anon` ni `authenticated` n'ont `EXECUTE` |
+| 035 — `PUBLIC` (grantee 0) sur les 2 | ✅ 0 — le `revoke from public` a bien mordu |
+| 035 — `service_role` a `EXECUTE` sur les 2 | ✅ |
+| **Surface `anon` totale (`SECURITY DEFINER`)** | ✅ **inchangée — 1 seule** (`get_report_share`) |
+| Surface `anon` toutes fonctions `public` confondues | ✅ 3, aucune nouvelle : `get_report_share` (definer), `reorder_content_media` et `set_updated_at` (**non**-definer, donc soumises à RLS) |
+| 036 — passée **seule** dans sa transaction, après 035 | ✅ `alter type … add value` isolé, aucune autre instruction dans l'appel |
+| 036 — `enum_range(account_status)` après | ✅ `connected, needs_reauth, expired, disconnected` |
+| Ledger final | ✅ **36 lignes** — `035=read_and_revoke_integration_secret`, `036=account_status_disconnected` |
+| `get_advisors` (security) | ✅ **aucun avis nouveau** imputable à 035/036 ; les 3 `rls_enabled_no_policy` sur les tables `*_secrets` sont la règle 11 (deny-all volontaire), les `WARN` sur les RPC `authenticated` préexistent |
+| `/api/health` | ✅ HTTP 200 |
+
+### Écart de documentation relevé au passage
+
+La ligne « **`AccountStatus` annonce `expired`**, une valeur que l'enum SQL n'a **jamais** eue »
+(fin de la phase 8) est **fausse**. `expired` a été ajouté par la **migration 010**
+(`010_cablage_foundations.sql:51`) et il est bien présent dans l'enum en ligne. Le constat utile
+tient toujours — *rien ne produit cette valeur, le code qui la teste est mort* — mais le motif
+avancé était le mauvais. À corriger dans le texte, pas dans le schéma.
+
+### Suites directes de l'application — traitées le 15/08/2026
+
+**1. `deploy/31_migration_035.sql` régénéré** depuis la source canonique (fichier corrompu, cf.
+ci-dessus). ✅
+
+**2. « Régénérer les types » — la tâche n'existait pas, et sa disparition est instructive.**
+
+Le plan annonçait qu'il fallait régénérer `apps/web/lib/supabase/types.ts` une fois 035/036 en
+ligne. En allant le faire, trois choses se sont révélées fausses :
+
+- **`scripts/gen-types.py` n'écrit RIEN.** Il lit l'OpenAPI de PostgREST, construit une liste de
+  tables, imprime `regenere 42 tables: …` et s'arrête. Sa fonction `emit()` — celle qui fabrique le
+  TypeScript — **n'est jamais appelée**, et aucun fichier n'est ouvert en écriture. Vérifié par
+  exécution : sortie 0, message rassurant, **`git status` sur `types.ts` vide**. C'est le pire genre
+  de faux positif du lot, parce que l'outil *annonce* le travail qu'il ne fait pas. Tout `types.ts`
+  est maintenu **à la main**, sous un en-tête qui disait « Ne pas editer a la main ».
+- **`disconnected` n'avait rien à faire dans `types.ts`** : le fichier ne génère aucun enum
+  (`Enums: { [_ in never]: never }`), une colonne enum y est typée `string`. Les unions vivent dans
+  `lib/domain/core.ts`, où `AccountStatus` portait **déjà** `disconnected`. Ma note initiale était
+  donc fausse sur ce point ; elle est corrigée ici.
+- **Les 2 signatures RPC de 035 étaient déjà exactes.** Recoupées avec `pg_proc` sur le schéma réel :
+  `read_integration_secret(_secret_id uuid) → text` et `revoke_integration_secret(_secret_id uuid)
+  → boolean` correspondent à `Args {_secret_id: string}` / `Returns string | null` et `boolean`.
+  Seul le commentaire « ⚠ ajoutées à la main, 035 pas encore appliquée » était périmé — retiré.
+
+**Dérive mesurée au passage** : **41 tables typées** dans `types.ts` contre **42 exposées** en ligne.
+`publish_jobs` manque. **Sans effet aujourd'hui** — le web ne touche la file que par les RPC
+`enqueue_publish_jobs` / `cancel_publish_jobs`, jamais la table (c'est la synchronisation app ↔ file
+de la phase 4) — mais toute lecture directe échouerait au typage. Écrit dans l'en-tête du fichier.
+
+**À trancher (pas fait, hors périmètre du pilotage)** : finir `gen-types.py` pour qu'il écrive
+vraiment, ou assumer la tenue manuelle et retirer le script. Le laisser tel quel est le pire des
+trois : il produit une preuve de travail sans travail.
 
 ---
 

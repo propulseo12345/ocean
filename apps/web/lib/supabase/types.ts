@@ -1,6 +1,23 @@
-// Types Supabase generes depuis le schema en ligne (hgdeopkmkwyoumsfggrm).
-// Regenerer apres chaque migration : voir scripts/gen-types.py.
-// Ne pas editer a la main.
+// Types Supabase du schema en ligne (hgdeopkmkwyoumsfggrm).
+//
+// ⚠ CE FICHIER EST MAINTENU A LA MAIN, contrairement a ce que disaient les deux
+// lignes precedentes (15/08/2026). `scripts/gen-types.py` N'ECRIT RIEN : il lit
+// l'OpenAPI de PostgREST, imprime « regenere N tables » et s'arrete — sa
+// fonction `emit()` n'est jamais appelee, aucun fichier n'est ouvert en
+// ecriture. Verifie par execution : le script sort 0 en annoncant 42 tables, et
+// `git status` sur ce fichier reste vide.
+//
+// Consequence pratique : apres une migration, c'est A LA MAIN qu'on met ce
+// fichier a jour. Derive mesuree le 15/08/2026 : 41 tables typees ici contre 42
+// exposees en ligne — `publish_jobs` manque. Sans effet aujourd'hui (le web ne
+// touche la file que par les RPC `enqueue_publish_jobs` / `cancel_publish_jobs`,
+// jamais la table), mais toute lecture directe de `publish_jobs` echouerait au
+// typage. A trancher : finir le generateur, ou assumer la tenue manuelle.
+//
+// Les enums ne sont PAS generes non plus (`Enums: { [_ in never]: never }`) :
+// une colonne enum est typee `string` ici. Les unions vivent dans
+// `lib/domain/core.ts` — ajouter une valeur a un enum SQL ne change donc rien
+// dans ce fichier.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -1806,10 +1823,12 @@ export type Database = {
       }
     }
     Functions: {
-      // ⚠ AJOUTÉES À LA MAIN — la migration 035 n'est PAS encore appliquée en
-      // ligne, donc `scripts/gen-types.py` (qui lit le schéma distant) ne peut
-      // pas encore les produire. À retirer de ce commentaire, sans les toucher,
-      // dès que 035 sera appliquée et les types régénérés.
+      // Migration 035 ✅ appliquée en ligne le 15/08/2026. Les deux signatures
+      // ci-dessous ont été recoupées avec `pg_proc` sur le schéma réel :
+      // `read_integration_secret(_secret_id uuid) returns text` et
+      // `revoke_integration_secret(_secret_id uuid) returns boolean`. Elles
+      // correspondent. Elles restent écrites à la main — comme tout ce fichier,
+      // cf. l'en-tête : le générateur n'écrit rien.
       read_integration_secret: {
         Args: { _secret_id: string }
         Returns: string | null
