@@ -28,7 +28,7 @@ export interface EngineDeps {
    * reporter de 60 s en boucle jusqu'à épuiser la fenêtre de grâce transforme un
    * quota atteint en publication perdue.
    */
-  checkQuota: (job: PublishJob) => Promise<QuotaVerdict>
+  checkQuota: (job: PublishJob, ctx: PublishContext) => Promise<QuotaVerdict>
   config: { graceWindowMs: number; awaitMediaDelayMs: number; httpTimeoutMs: number }
   /** Horloge de référence = now() Postgres (fourni par le store au claim). */
   now: Date
@@ -111,7 +111,9 @@ export async function processJob(job: PublishJob, deps: EngineDeps): Promise<voi
 
   // 3. Quota plateforme (règle 19) : atteint => report au prochain créneau.
   try {
-    const quota = await checkQuota(job)
+    // `ctx` porte le token et l'identifiant du compte CHEZ la plateforme : sans
+    // eux, aucune sonde distante n'est possible (règle 19, moitié distante).
+    const quota = await checkQuota(job, ctx)
     if (!quota.ok) {
       await store.deferForQuota(job, quota.retryAfterMs, quota.reason)
       return

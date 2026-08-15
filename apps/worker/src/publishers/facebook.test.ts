@@ -211,11 +211,10 @@ test("l'en-tete de charge (BUC) est remonte a chaque appel — le quota FB se li
       headers: { "x-business-use-case-usage": '{"1122334455":[{"call_count":12}]}' },
     },
   ])
-  await createFacebookPublisher({
-    fetch: g.fetch,
-    base: BASE,
-    onUsage: (h) => vu.push(h),
-  }).createContainer(FRESH, ctx())
+  await createFacebookPublisher({ fetch: g.fetch, base: BASE }).createContainer(
+    FRESH,
+    ctx({ reportUsage: (h) => void vu.push(h) })
+  )
 
   assert.equal(vu.length, 1)
   assert.ok(vu[0]?.includes("call_count"))

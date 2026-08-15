@@ -56,6 +56,15 @@ export interface PublishContext {
   /** Premier commentaire Instagram (posté après la publication). */
   firstComment?: string | null
   /**
+   * Relève de charge renvoyée par la plateforme EN SORTIE d'appel.
+   *
+   * Facebook n'expose aucune sonde « avant le post » : son BUC arrive dans
+   * l'en-tête `X-Business-Use-Case-Usage` de chaque réponse. Le publisher rend
+   * donc l'en-tête BRUT et ne l'interprète pas ; c'est le contexte, qui connaît
+   * la plateforme et la base, qui décide quoi en faire (quota-remote.ts).
+   */
+  reportUsage?: (rawUsageHeader: string | null) => Promise<void> | void
+  /**
    * Signal d'annulation à passer à `fetch` (phase 6). Le moteur borne déjà
    * chaque appel dans le temps (`withTimeout`), mais une course de promesses
    * rend seulement la main : sans ce signal, la requête HTTP continue de vivre

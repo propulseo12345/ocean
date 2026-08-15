@@ -61,8 +61,6 @@ interface ReelStatusResponse {
 export interface FacebookDeps {
   fetch: FetchLike
   base?: string
-  /** Reçoit l'en-tête de charge Meta après chaque appel (règle 19, LOT 4). */
-  onUsage?: (header: string | null) => void
 }
 
 /** `video_status` des Reels -> état Ocean. */
@@ -96,8 +94,9 @@ export function createFacebookPublisher(deps: FacebookDeps): Publisher {
       { method, path, params, accessToken: ctx.accessToken, signal: ctx.signal },
       deps.base
     )
-    // Le quota Page se relève ICI, en sortie : c'est la seule source.
-    deps.onUsage?.(res.headers.get("x-business-use-case-usage"))
+    // Le quota Page se relève ICI, en sortie : c'est la seule source. Le
+    // publisher rend l'en-tête brut, il ne l'interprète pas.
+    await ctx.reportUsage?.(res.headers.get("x-business-use-case-usage"))
     return res.data
   }
 

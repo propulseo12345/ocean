@@ -1,4 +1,6 @@
-import { createContextProvider, createQuotaChecker, REAL_REFRESH } from "./context"
+import { createContextProvider, REAL_REFRESH } from "./context"
+import { createQuotaChecker } from "./quota-check"
+import { createInstagramQuotaProbe } from "./quota-remote"
 import { createStorageSigner } from "./media/storage-signer"
 import { PgJobStore } from "./db/pg-store"
 import { createPool } from "./db/pool"
@@ -197,7 +199,12 @@ async function main(): Promise<void> {
         ? null
         : { run: REAL_REFRESH, timeoutMs: config.tokenRefreshTimeoutMs },
     }),
-    checkQuota: createQuotaChecker(pool, { stub }),
+    checkQuota: createQuotaChecker(pool, {
+      stub,
+      // Instagram est la seule plateforme qui expose une sonde AVANT le post.
+      // Facebook rend son BUC dans l'en-tête de chaque réponse (ctx.reportUsage).
+      probes: stub ? {} : { instagram: createInstagramQuotaProbe(globalThis.fetch) },
+    }),
     config: {
       graceWindowMs: config.graceWindowMs,
       awaitMediaDelayMs: AWAIT_MEDIA_DELAY_MS,
