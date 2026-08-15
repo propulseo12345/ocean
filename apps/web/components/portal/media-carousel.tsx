@@ -1,8 +1,8 @@
 "use client"
 
 import { ChevronLeft, ChevronRight, Film } from "lucide-react"
-import Image from "next/image"
 import type { ReactNode } from "react"
+import { MediaFrame } from "@/components/shared/media-frame"
 import { Button } from "@/components/ui/button"
 import type { MediaAsset } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
@@ -41,14 +41,11 @@ export function MediaCarousel({
   return (
     <div className="flex flex-col gap-3">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10">
-        <Image
-          key={current.id}
-          src={current.fullUrl}
+        <MediaFrame
+          media={current}
           alt={total > 1 ? t("portal.carousel.altSlide", { alt, index: index + 1 }) : alt}
-          fill
           sizes="(max-width: 768px) 100vw, 640px"
           priority={index === 0}
-          className="object-cover"
         />
 
         {overlay}

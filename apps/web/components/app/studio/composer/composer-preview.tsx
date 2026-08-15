@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 import { ClientAvatar } from "@/components/shared/client-avatar"
+import { MediaFrame } from "@/components/shared/media-frame"
 import { PlatformIcon } from "@/components/shared/platform-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,12 +75,10 @@ export function ComposerPreview({
           >
             {current ? (
               <>
-                <Image
-                  src={current.fullUrl}
+                <MediaFrame
+                  media={current}
                   alt={current.altText || draft.title || t("composer.preview.mediaAlt")}
-                  fill
                   sizes="320px"
-                  className="object-cover"
                 />
                 {media.length > 1 ? (
                   <>
