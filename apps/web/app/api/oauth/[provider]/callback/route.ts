@@ -102,12 +102,21 @@ export async function GET(
 
     // Persistance : connexion + tokens chiffrés dans Vault, tables *_secrets
     // deny-all. userId vient du state signé (jamais du client untrusted).
-    await persistConnection(
+    const outcome = await persistConnection(
       config,
       { orgId: state.orgId, userId: state.userId, clientId: state.clientId },
       resolved,
       tokens
     )
+
+    // P8-1 — plus AUCUN rattachement automatique. S'il y a des comptes
+    // publiables, l'utilisateur choisit lesquels, et pour quel client.
+    if (outcome.kind === "social" && outcome.availableCount > 0) {
+      const cible = state.clientId ? `&client=${encodeURIComponent(state.clientId)}` : ""
+      return NextResponse.redirect(
+        `${origin}${SETTINGS}/rattacher/${outcome.connectionId}?connected=${provider}${cible}`
+      )
+    }
 
     return NextResponse.redirect(`${origin}${SETTINGS}?connected=${provider}`)
   } catch {

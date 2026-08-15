@@ -2,11 +2,12 @@ import "server-only"
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase/admin"
-import type { Database } from "@/lib/supabase/types"
+import type { Database, Json } from "@/lib/supabase/types"
 import type { OAuthProviderConfig } from "./config"
 import type { ResolvedIdentity, SocialSubAccount } from "./identity"
 import type { OAuthTokens } from "./index"
 import { upsertSecret, upsertTokenPair } from "./secrets"
+import type { AvailableSubAccount } from "./sub-accounts"
 
 // Persistance d'une connexion OAuth + ses tokens (règle 12 : les tokens ne vivent
 // JAMAIS en clair en base). Chaque token part dans Supabase Vault via les helpers
@@ -42,21 +43,26 @@ function refreshExpiresIso(tokens: OAuthTokens): string | null {
   return secondsToIso(top ?? nested)
 }
 
+/** Ce que le callback doit faire ensuite. */
+export type PersistOutcome =
+  | { kind: "calendar" }
+  | { kind: "social"; connectionId: string; availableCount: number }
+
 export async function persistConnection(
   config: OAuthProviderConfig,
   ctx: ConnectionContext,
   resolved: ResolvedIdentity,
   tokens: OAuthTokens
-): Promise<void> {
+): Promise<PersistOutcome> {
   if (!resolved.providerAccountId) {
     throw new Error(`Identité ${config.key} non résolue (providerAccountId vide)`)
   }
   const admin = createAdminClient()
   if (config.isCalendar) {
     await persistCalendarAccount(admin, config, ctx, resolved, tokens)
-  } else {
-    await persistPlatformConnection(admin, config, ctx, resolved, tokens)
+    return { kind: "calendar" }
   }
+  return await persistPlatformConnection(admin, config, ctx, resolved, tokens)
 }
 
 // --- Agenda (google / microsoft) -------------------------------------------
@@ -120,13 +126,25 @@ async function persistCalendarAccount(
 
 // --- Réseau social (meta / tiktok) -----------------------------------------
 
+/** Catalogue stocké dans `metadata` — SANS aucun token (règle 12). */
+function catalogue(resolved: ResolvedIdentity): AvailableSubAccount[] {
+  return resolved.subAccounts.map((s) => ({
+    platform: s.platform,
+    providerAccountId: s.providerAccountId,
+    username: s.username,
+    displayName: s.displayName,
+    followers: s.followers,
+    avatarUrl: s.avatarUrl,
+  }))
+}
+
 async function persistPlatformConnection(
   admin: Admin,
   config: OAuthProviderConfig,
   ctx: ConnectionContext,
   resolved: ResolvedIdentity,
   tokens: OAuthTokens
-): Promise<void> {
+): Promise<PersistOutcome> {
   const { data: connection, error } = await admin
     .from("platform_connections")
     .upsert(
@@ -136,6 +154,11 @@ async function persistPlatformConnection(
         connected_by: ctx.userId,
         provider_account_id: resolved.providerAccountId,
         provider_account_name: resolved.providerAccountName ?? null,
+        // Catalogue des comptes publiables DÉCOUVERTS, sans aucun token :
+        // l'écran de sélection s'en sert pour proposer, et rien de plus.
+        // `metadata` est lisible par les membres de l'org — un token n'y entre
+        // jamais (règle 12), et un uuid de secret Vault non plus.
+        metadata: { available_accounts: catalogue(resolved) } as unknown as Json,
         status: "connected",
         // Les scopes ACCORDÉS, jamais ceux demandés (P8-6). `config.scopes` est
         // ce qu'on a DEMANDÉ ; l'utilisateur choisit ce qu'il donne, et Meta
@@ -176,16 +199,24 @@ async function persistPlatformConnection(
   })
   if (secretError) throw new Error(`platform_connection_secrets upsert: ${secretError.message}`)
 
-  // Les comptes publiables (pages/IG/créateur) ne se rattachent qu'avec un client
-  // cible. Sans clientId (ex. connexion initiée hors espace client), on s'arrête à
-  // la connexion org-level : l'admin rattachera les comptes ensuite.
-  if (!ctx.clientId) return
-  for (const sub of resolved.subAccounts) {
-    await persistSocialAccount(admin, ctx, ctx.clientId, connection.id, config, sub)
+  // ⚠ P8-1 — AUCUN RATTACHEMENT AUTOMATIQUE ICI, ET C'EST TOUT LE TICKET.
+  //
+  // Cette boucle rattachait auparavant TOUS les sous-comptes découverts au
+  // `ctx.clientId` du flux. Connecter Meta depuis l'espace du client A
+  // rattachait donc à A toutes les Pages et tous les comptes Instagram du
+  // compte connecté — y compris ceux du client B, avec leurs tokens de
+  // publication. Aucune policy ne s'y opposait : tout est dans la même org, et
+  // c'est le code applicatif qui choisissait le client.
+  //
+  // Le rattachement est désormais un geste explicite (`attachSocialAccounts`).
+  return {
+    kind: "social",
+    connectionId: connection.id,
+    availableCount: resolved.subAccounts.length,
   }
 }
 
-async function persistSocialAccount(
+export async function persistSocialAccount(
   admin: Admin,
   ctx: ConnectionContext,
   clientId: string,

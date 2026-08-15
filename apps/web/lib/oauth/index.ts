@@ -7,7 +7,7 @@ import { looksLongLived } from "./token-life"
 // pour tous les providers ; les particularités vivent dans les configs.
 
 export type { OAuthProviderKey } from "./config"
-export { isOAuthProviderKey, OAUTH_PROVIDERS } from "./config"
+export { isOAuthProviderKey, OAUTH_PROVIDERS, providerKeyForConnection } from "./config"
 
 declare const marqueLongLived: unique symbol
 
@@ -144,6 +144,19 @@ export async function exchangeForLongLivedToken(
   // Meta ne renvoie pas de refresh token : on conserve celui d'origine s'il
   // existait, plutôt que de l'effacer par un `undefined`.
   return { ...échangé, refreshToken: échangé.refreshToken ?? tokens.refreshToken } as ReadyTokens
+}
+
+/**
+ * Requalifie un token DÉJÀ STOCKÉ en `ReadyTokens`.
+ *
+ * Un token en base est passé par `exchangeForLongLivedToken` au moment de la
+ * connexion : sa durée de vie est donc déjà réglée. Cette fonction existe pour
+ * que ce fait soit écrit UNE fois, à un endroit nommé, plutôt que par un `as`
+ * disséminé dans chaque appelant — un `as` anonyme viderait la marque de son
+ * sens sans que personne ne s'en aperçoive.
+ */
+export function storedTokensAsReady(accessToken: string): ReadyTokens {
+  return { accessToken, raw: {} } as ReadyTokens
 }
 
 /**

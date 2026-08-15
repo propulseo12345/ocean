@@ -109,6 +109,21 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
   },
 }
 
+/**
+ * Retrouve la config depuis la valeur stockée sur la ligne de connexion.
+ *
+ * Meta se connecte via Facebook Login : `connectionProvider` vaut `facebook`,
+ * alors que la clé de config est `meta`. Sans cette table de correspondance, un
+ * rattachement relisant `platform_connections.provider` chercherait une config
+ * « facebook » qui n'existe pas.
+ */
+export function providerKeyForConnection(provider: string): OAuthProviderKey | null {
+  for (const config of Object.values(OAUTH_PROVIDERS)) {
+    if (config.connectionProvider === provider) return config.key
+  }
+  return null
+}
+
 export function isOAuthProviderKey(value: string): value is OAuthProviderKey {
   return value === "meta" || value === "tiktok" || value === "google" || value === "microsoft"
 }

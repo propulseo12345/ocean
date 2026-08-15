@@ -4,6 +4,23 @@ import type { settingsFr } from "./settings.fr"
 type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
 export const settingsEn: Widen<typeof settingsFr> = {
   settings: {
+    // P8-1 — explicit sub-account attachment
+    attach: {
+      title: "Choose the accounts to attach",
+      description:
+        'Connection "{account}". Only tick the accounts that belong to the selected client.',
+      chooseClient: "Available accounts",
+      clientLabel: "Target client",
+      clientHint:
+        "An account attached to the wrong client becomes publishable from their space — choose carefully.",
+      selected:
+        "{count, plural, =0 {No account selected} one {# account selected} other {# accounts selected}}",
+      submit: "Attach",
+      done: "{count, plural, one {# account attached} other {# accounts attached}}",
+      error: "Could not attach. Reload the page and try again.",
+      empty:
+        "This account grants access to no Page or publishable account. Check the permissions granted on the provider side.",
+    },
     tabs: {
       social: "Social accounts",
       calendars: "Calendars",

@@ -1806,6 +1806,18 @@ export type Database = {
       }
     }
     Functions: {
+      // ⚠ AJOUTÉES À LA MAIN — la migration 035 n'est PAS encore appliquée en
+      // ligne, donc `scripts/gen-types.py` (qui lit le schéma distant) ne peut
+      // pas encore les produire. À retirer de ce commentaire, sans les toucher,
+      // dès que 035 sera appliquée et les types régénérés.
+      read_integration_secret: {
+        Args: { _secret_id: string }
+        Returns: string | null
+      }
+      revoke_integration_secret: {
+        Args: { _secret_id: string }
+        Returns: boolean
+      }
       mark_notification_read: {
         Args: { _notification: string }
         Returns: boolean
