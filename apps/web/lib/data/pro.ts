@@ -1,3 +1,4 @@
+import { log } from "@/lib/log"
 import "server-only"
 
 import { cache } from "react"
@@ -270,9 +271,17 @@ export const getLibraryAssets = cache(
     const originalPaths = rows.map((r) => r.storage_path).filter((p): p is string => p !== null)
     const signed = new Map<string, string>()
     if (originalPaths.length > 0) {
-      const { data: urls } = await supabase.storage
+      const { data: urls, error: urlsError } = await supabase.storage
         .from(ORIGINALS_BUCKET)
         .createSignedUrls(originalPaths, SIGNED_URL_TTL)
+      // Meme silence que dans content-media (P5-10) : on trace au lieu de
+      // laisser la mediatheque afficher des vignettes sans raison connue.
+      if (urlsError) {
+        log.warn("media.signed_urls_failed", {
+          count: originalPaths.length,
+          code: urlsError.name,
+        })
+      }
       for (const u of urls ?? []) {
         if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl)
       }
