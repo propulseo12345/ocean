@@ -138,12 +138,36 @@ export function WizardShell() {
       return
     }
 
-    toast.success(
-      t("onboarding.shell.clientCreated", { name }),
-      draft.reviewerEmail.trim()
-        ? { description: t("onboarding.shell.clientCreatedWithReviewer") }
-        : undefined
-    )
+    // P7-10 : on annonçait « Invitation du relecteur enregistrée » dès qu'une
+    // adresse avait été saisie, sans jamais regarder si c'était vrai — et on
+    // jetait le jeton, seule copie en clair du lien d'acceptation (la base n'en
+    // garde que le hash). Une invitation ratée devenait alors définitive : la
+    // ré-invitation échoue en `already_invited` tant que la ligne existe.
+    const { invite } = res.data
+    if (invite.status === "created") {
+      const lien = `${window.location.origin}${routes.acceptInvite(invite.token)}`
+      toast.success(t("onboarding.shell.clientCreated", { name }), {
+        description: t("onboarding.shell.clientCreatedWithReviewer"),
+        duration: 30_000,
+        action: {
+          label: t("onboarding.shell.copyInviteLink"),
+          onClick: () => {
+            navigator.clipboard.writeText(lien)
+            toast.success(t("onboarding.shell.inviteLinkCopied"))
+          },
+        },
+      })
+    } else if (invite.status === "failed") {
+      toast.success(t("onboarding.shell.clientCreated", { name }))
+      toast.warning(
+        invite.error === "already_invited"
+          ? t("onboarding.shell.reviewerAlreadyInvited")
+          : t("onboarding.shell.reviewerInviteFailed")
+      )
+    } else {
+      toast.success(t("onboarding.shell.clientCreated", { name }))
+    }
+
     router.push(routes.clientGrid(res.data.id))
   }
 
