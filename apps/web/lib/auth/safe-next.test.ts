@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { DEFAULT_NEXT, safeNext } from "./safe-next"
+import { DEFAULT_NEXT, safeNext, safeNextFromRedirectTo } from "./safe-next"
 
 // Ticket P7-8 — open redirect sur `next`.
 //
@@ -247,4 +247,59 @@ test("le fallback est respecte — le portail pour un reviewer", () => {
   assert.equal(safeNext("/..//evil.tld", "/portal"), "/portal")
   assert.equal(safeNext(null, "/portal"), "/portal")
   assert.equal(safeNext("/clients", "/portal"), "/clients")
+})
+
+// --- safeNextFromRedirectTo (V-2) -------------------------------------------
+//
+// Le gabarit d'e-mail Supabase transmet `next={{ .RedirectTo }}`, qui est une
+// URL ABSOLUE. `safeNext` la refusait et retombait sur le fallback : le jeton
+// d'invitation etait perdu a ce hop precis, ce qui est l'une des deux impasses
+// du flux d'invitation.
+
+const NOTRE_ORIGINE = "https://socean.54-36-180-115.sslip.io"
+
+test("une absolue sur NOTRE origine est reduite a son chemin", () => {
+  assert.equal(
+    safeNextFromRedirectTo(`${NOTRE_ORIGINE}/invitations?token=abc.def`, NOTRE_ORIGINE),
+    "/invitations?token=abc.def"
+  )
+  assert.equal(safeNextFromRedirectTo(`${NOTRE_ORIGINE}/portal`, NOTRE_ORIGINE), "/portal")
+  // Un chemin relatif reste traite exactement comme avant.
+  assert.equal(safeNextFromRedirectTo("/dashboard", NOTRE_ORIGINE), "/dashboard")
+})
+
+test("une absolue sur une AUTRE origine est refusee (hote, schema, port)", () => {
+  for (const hostile of [
+    "https://evil.tld/x",
+    "http://socean.54-36-180-115.sslip.io/x", // schema different
+    "https://socean.54-36-180-115.sslip.io:8443/x", // port different
+    "https://socean.54-36-180-115.sslip.io.evil.tld/x", // suffixe : le piege du startsWith
+    "https://user:pass@evil.tld/x",
+    "javascript:alert(1)",
+    "//evil.tld",
+  ]) {
+    assert.equal(safeNextFromRedirectTo(hostile, NOTRE_ORIGINE), DEFAULT_NEXT, hostile)
+  }
+})
+
+test("PROPRIETE : safeNextFromRedirectTo ne quitte pas davantage l origine", () => {
+  // Le meme corpus hostile, plus sa variante prefixee de notre origine : la
+  // tolerance ajoutee ne doit ouvrir aucune sortie que safeNext fermait.
+  for (const entree of CORPUS) {
+    for (const variante of [entree, `${NOTRE_ORIGINE}${entree}`]) {
+      const sortie = safeNextFromRedirectTo(variante, NOTRE_ORIGINE)
+      assert.ok(sortie.startsWith("/"), `${JSON.stringify(variante)} -> ${JSON.stringify(sortie)}`)
+      assert.ok(
+        !/^[/\\]{2,}/.test(sortie),
+        `autorite fabriquee : ${JSON.stringify(variante)} -> ${JSON.stringify(sortie)}`
+      )
+      for (const origine of ORIGINES) {
+        assert.equal(
+          new URL(sortie, origine).origin,
+          origine,
+          `fuite hors origine : ${JSON.stringify(variante)} -> ${JSON.stringify(sortie)}`
+        )
+      }
+    }
+  }
 })

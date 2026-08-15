@@ -79,20 +79,47 @@ export async function GET(request: NextRequest) {
      * l'appelant. C'est la preuve de possession de l'adresse, et c'est ce qui
      * remplace le `generateLink` renvoyé au navigateur.
      *
-     * `redirectTo` repasse par cette même route : une fois la session ouverte,
-     * l'invité revient ici avec son jeton et l'adhésion est créée.
+     * COMMENT LA SESSION S'OUVRE RÉELLEMENT (V-2)
+     * -------------------------------------------
+     * Les deux branches étaient des culs-de-sac. `redirectTo` n'est PAS l'URL du
+     * lien cliqué : c'est la destination FINALE, transmise au gabarit d'e-mail
+     * par `{{ .RedirectTo }}`. C'est le gabarit qui décide comment la session
+     * s'ouvre, et il doit pointer sur notre callback avec un `token_hash` :
+     *
+     *   {{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}
+     *                               &type=invite&next={{ .RedirectTo }}
+     *
+     * `/auth/callback` fait alors `verifyOtp` — côté serveur, sur les cookies de
+     * CE navigateur — puis redirige vers `next`. Sans ce gabarit, GoTrue
+     * redirige lui-même vers `redirectTo` en déposant les jetons dans le
+     * FRAGMENT (flux implicite : une invitation admin n'ouvre aucun `flow_state`
+     * PKCE) ; or aucun client navigateur n'est monté dans cette app
+     * (`lib/supabase/client.ts` n'a aucun importeur), donc `detectSessionInUrl`
+     * ne tourne jamais et le fragment n'est lu par personne. Aucune session
+     * n'était posée, la route reconcluait `proof_required` et renvoyait un
+     * e-mail : boucle infinie.
+     *
+     * ⚠️ Le réglage des gabarits est du tableau de bord Supabase, pas du code.
+     * Voir `deploy/GABARITS-EMAIL-supabase.md`.
      */
     async sendProofOfPossession(email) {
-      const redirectTo = `${origin}${routes.acceptInvite(token ?? "")}`
+      // Destination finale commune : la page de confirmation, où l'invité voit
+      // ce qu'il rejoint et le confirme explicitement.
+      const destination = `${origin}${routes.acceptInvite(token ?? "")}`
 
-      const invited = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+      const invited = await admin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: destination,
+      })
       if (!invited.error) return true
 
       // Compte déjà existant : Supabase refuse l'invitation. On envoie alors un
-      // lien de définition de mot de passe — même canal, même preuve.
+      // lien de définition de mot de passe — même canal, même preuve. Le
+      // passage par /auth/callback n'est plus encodé ici : c'est le gabarit
+      // `recovery` qui s'en charge, exactement comme pour l'invitation. On
+      // encode donc `next` UNE SEULE FOIS.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
-          `/reset-password?next=${routes.acceptInvite(token ?? "")}`
+        redirectTo: `${origin}/reset-password?next=${encodeURIComponent(
+          routes.acceptInvite(token ?? "")
         )}`,
       })
       return !error

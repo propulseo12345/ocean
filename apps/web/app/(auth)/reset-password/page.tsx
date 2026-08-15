@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 
 import { ResetPasswordForm } from "@/components/auth/reset-password-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { safeNext } from "@/lib/auth/safe-next"
 import { getT } from "@/lib/i18n/server"
 import { createClient } from "@/lib/supabase/server"
 
@@ -11,7 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("auth.reset.metaTitle") }
 }
 
-export default async function ResetPasswordPage() {
+export default async function ResetPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
   // La session de récupération doit exister (posée par /auth/callback). Sans
   // elle, on renvoie vers la demande de lien plutôt que d'afficher un formulaire
   // qui échouerait à l'envoi.
@@ -21,6 +26,16 @@ export default async function ResetPasswordPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/forgot-password")
 
+  // `next` doit SURVIVRE à la définition du mot de passe (V-2). Cette page ne
+  // lisait aucun `searchParams` et le formulaire n'émettait aucun champ `next` :
+  // `updatePassword` recevait donc `null` et renvoyait tout le monde sur
+  // `/auth/landing`. Un invité arrivant par la branche « compte existant »
+  // atterrissait sur `/onboarding`, sans org ni client — jeton perdu, invitation
+  // restée `pending`. On valide ici plutôt que de faire confiance à l'URL : le
+  // champ caché est réémis par le navigateur, donc il est aussi hostile qu'un
+  // paramètre de requête. `updatePassword` le repasse de toute façon à `safeNext`.
+  const next = safeNext((await searchParams).next, "/auth/landing")
+
   const t = await getT()
   return (
     <Card>
@@ -29,7 +44,7 @@ export default async function ResetPasswordPage() {
         <CardDescription>{t("auth.reset.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResetPasswordForm />
+        <ResetPasswordForm next={next} />
       </CardContent>
     </Card>
   )

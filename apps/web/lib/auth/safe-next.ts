@@ -99,3 +99,43 @@ export function safeNext(candidate: unknown, fallback: string = DEFAULT_NEXT): s
 
   return sortie
 }
+
+/**
+ * Même contrat que `safeNext`, mais tolère en plus une URL ABSOLUE dont
+ * l'origine est exactement `origine` — qu'elle réduit alors à son chemin.
+ *
+ * POURQUOI CETTE VARIANTE EXISTE
+ * ------------------------------
+ * Les gabarits d'e-mail Supabase transmettent la destination via
+ * `next={{ .RedirectTo }}`, et `.RedirectTo` est l'URL ABSOLUE passée à
+ * `inviteUserByEmail` / `resetPasswordForEmail` (GoTrue exige une URL absolue,
+ * qu'il valide contre sa liste d'URL de redirection autorisées). `safeNext`
+ * refuse une absolue — à raison — et retombait sur le fallback : le jeton
+ * d'invitation était silencieusement perdu à ce hop précis.
+ *
+ * On ne relâche donc rien sur la propriété de sécurité : une absolue n'est
+ * acceptée que si son origine est OCTET POUR OCTET celle de l'app, et le
+ * résultat repasse par `safeNext`, qui reste seul juge du chemin. Tout le reste
+ * (autre hôte, autre schéma, port différent) tombe sur le fallback.
+ */
+export function safeNextFromRedirectTo(
+  candidate: unknown,
+  origine: string,
+  fallback: string = DEFAULT_NEXT
+): string {
+  if (typeof candidate !== "string") return fallback
+
+  const raw = candidate.trim()
+  if (raw.startsWith("/")) return safeNext(raw, fallback)
+
+  // Pas un chemin : la seule autre forme tolérée est une absolue chez nous.
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return fallback
+  }
+  if (url.origin !== origine) return fallback
+
+  return safeNext(`${url.pathname}${url.search}${url.hash}`, fallback)
+}

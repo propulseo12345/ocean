@@ -1,7 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 
-import { safeNext } from "@/lib/auth/safe-next"
+import { safeNextFromRedirectTo } from "@/lib/auth/safe-next"
 import { createClient } from "@/lib/supabase/server"
 
 // Callback d'authentification email (récupération de mot de passe, confirmation).
@@ -16,7 +16,13 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   // On n'accepte qu'un chemin relatif interne. `startsWith("/")` ne suffisait
   // pas : `//evil.tld` le satisfait et pointe vers un autre hôte (P7-8).
-  const next = safeNext(searchParams.get("next"))
+  //
+  // Les gabarits d'e-mail passent `next={{ .RedirectTo }}`, qui est l'URL
+  // ABSOLUE remise à GoTrue. `safeNext` la refusait et retombait sur
+  // `/dashboard` : le jeton d'invitation mourait exactement ici (V-2). La
+  // variante tolère l'absolue à condition que son origine soit octet pour octet
+  // la nôtre, puis délègue le chemin à `safeNext`, seul juge.
+  const next = safeNextFromRedirectTo(searchParams.get("next"), origin)
 
   const supabase = await createClient()
 
