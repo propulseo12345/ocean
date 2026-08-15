@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-import { exchangeCode, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
+import {
+  exchangeCode,
+  exchangeForLongLivedToken,
+  isOAuthProviderKey,
+  OAUTH_PROVIDERS,
+} from "@/lib/oauth"
 import { decideCallback } from "@/lib/oauth/callback-rule"
 import { resolveIdentity } from "@/lib/oauth/identity"
 import { requireStateSecret } from "@/lib/oauth/state"
@@ -78,12 +83,19 @@ export async function GET(
   const redirectUri = `${origin}/api/oauth/${provider}/callback`
 
   try {
-    const tokens = await exchangeCode(config, {
+    const court = await exchangeCode(config, {
       code: decision.code,
       redirectUri,
       // Le vérifieur vient du COOKIE, jamais du state (P8-5).
       codeVerifier: decision.codeVerifier,
     })
+
+    // P8-3 — L'ÉCHANGE LONG-LIVED PRÉCÈDE LA RÉSOLUTION D'IDENTITÉ, ET C'EST
+    // TOUT LE TICKET. Les tokens de PAGE héritent de la durée de vie du token
+    // utilisateur qui les demande : résoudre l'identité avec le token court
+    // donnerait des tokens de page courts — ceux-là mêmes qui publient. La
+    // connexion afficherait 60 jours et mourrait dans l'heure.
+    const tokens = await exchangeForLongLivedToken(config, court)
 
     // Identité de compte réelle (titulaire du token + comptes publiables).
     const resolved = await resolveIdentity(config, tokens)

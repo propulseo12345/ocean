@@ -32,6 +32,12 @@ export interface OAuthProviderConfig {
   isCalendar: boolean
   /** PKCE (TikTok, Microsoft, Google le supportent ; Meta non). */
   usePkce: boolean
+  /**
+   * Meta : le token issu du code ne vit qu'une heure ou deux. Il faut l'échanger
+   * contre un long-lived (60 j) via `grant_type=fb_exchange_token`. Les autres
+   * fournisseurs émettent un refresh token et n'ont pas besoin de cet échange.
+   */
+  needsLongLivedExchange: boolean
   clientIdEnv: string
   clientSecretEnv: string
 }
@@ -57,6 +63,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "facebook",
     isCalendar: false,
     usePkce: false,
+    needsLongLivedExchange: true,
     clientIdEnv: "OAUTH_META_CLIENT_ID",
     clientSecretEnv: "OAUTH_META_CLIENT_SECRET",
   },
@@ -70,6 +77,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "tiktok",
     isCalendar: false,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_TIKTOK_CLIENT_KEY",
     clientSecretEnv: "OAUTH_TIKTOK_CLIENT_SECRET",
   },
@@ -82,6 +90,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "google",
     isCalendar: true,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_GOOGLE_CLIENT_ID",
     clientSecretEnv: "OAUTH_GOOGLE_CLIENT_SECRET",
   },
@@ -94,6 +103,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "microsoft",
     isCalendar: true,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_MICROSOFT_CLIENT_ID",
     clientSecretEnv: "OAUTH_MICROSOFT_CLIENT_SECRET",
   },

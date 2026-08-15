@@ -1,12 +1,26 @@
 import "server-only"
 
 import { type OAuthProviderConfig, providerCredentials } from "./config"
+import { looksLongLived } from "./token-life"
 
 // Échanges OAuth (autorisation, code→token, refresh). Une seule implémentation
 // pour tous les providers ; les particularités vivent dans les configs.
 
 export type { OAuthProviderKey } from "./config"
 export { isOAuthProviderKey, OAUTH_PROVIDERS } from "./config"
+
+declare const marqueLongLived: unique symbol
+
+/**
+ * Tokens dont la durée de vie a été RÉGLÉE pour ce fournisseur.
+ *
+ * Ce n'est pas une décoration : `resolveIdentity` n'accepte que ce type, donc
+ * appeler la résolution d'identité avec le résultat brut de `exchangeCode` est
+ * une **erreur de compilation**, pas une convention à respecter. C'est la seule
+ * façon de rendre l'ordre des opérations impossible à inverser — un commentaire
+ * ne survit pas à un refactor, une signature si.
+ */
+export type ReadyTokens = OAuthTokens & { readonly [marqueLongLived]: true }
 
 export interface OAuthTokens {
   accessToken: string
@@ -84,6 +98,52 @@ export async function exchangeCode(
   })
   if (!res.ok) throw new Error(`OAuth token ${config.key}: ${res.status}`)
   return toTokens((await res.json()) as Record<string, unknown>)
+}
+
+/**
+ * Meta : échange le token court (1–2 h) contre un long-lived (60 j).
+ *
+ * ⚠ L'ORDRE EST LE PIÈGE DE CE TICKET
+ * ------------------------------------
+ * Cet échange doit précéder `GET /me/accounts`. Les tokens de PAGE héritent de
+ * la durée de vie du token UTILISATEUR qui les a demandés : les récupérer avec
+ * le token court donne des tokens de page courts, et ce sont eux qui publient.
+ * On aurait alors une connexion « valide 60 jours » dont les tokens de
+ * publication meurent dans l'heure — et l'échec n'arriverait qu'à la première
+ * publication programmée, chez un vrai client.
+ *
+ * Sans cet échange, `fb_exchange_token` n'apparaissait nulle part dans le dépôt :
+ * toute connexion Meta mourait au bout d'une heure.
+ */
+export async function exchangeForLongLivedToken(
+  config: OAuthProviderConfig,
+  tokens: OAuthTokens
+): Promise<ReadyTokens> {
+  if (!config.needsLongLivedExchange) return tokens as ReadyTokens
+  const { clientId, clientSecret } = providerCredentials(config)
+
+  const url = new URL(config.tokenUrl)
+  url.searchParams.set("grant_type", "fb_exchange_token")
+  url.searchParams.set("client_id", clientId)
+  url.searchParams.set("client_secret", clientSecret)
+  url.searchParams.set("fb_exchange_token", tokens.accessToken)
+
+  const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
+  if (!res.ok) throw new Error(`OAuth long-lived ${config.key}: ${res.status}`)
+  const échangé = toTokens((await res.json()) as Record<string, unknown>)
+
+  // Garde-fou : si Meta rend une durée courte, l'échange n'a pas produit ce
+  // qu'on croit. Publier là-dessus donnerait des tokens de page morts dans
+  // l'heure, et l'échec n'apparaîtrait qu'à la première publication programmée.
+  if (!looksLongLived(échangé.expiresIn)) {
+    throw new Error(
+      `OAuth long-lived ${config.key}: durée courte (${échangé.expiresIn ?? "absente"})`
+    )
+  }
+
+  // Meta ne renvoie pas de refresh token : on conserve celui d'origine s'il
+  // existait, plutôt que de l'effacer par un `undefined`.
+  return { ...échangé, refreshToken: échangé.refreshToken ?? tokens.refreshToken } as ReadyTokens
 }
 
 /**

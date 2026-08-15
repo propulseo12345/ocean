@@ -1,7 +1,7 @@
 import "server-only"
 
 import type { OAuthProviderConfig } from "./config"
-import type { OAuthTokens } from "./index"
+import type { OAuthTokens, ReadyTokens } from "./index"
 import { grantedFromMetaPermissions, parseScopeString } from "./scopes"
 
 // Résolution de l'identité de compte après échange OAuth (« me / pages… »).
@@ -187,7 +187,11 @@ async function resolveMicrosoft(tokens: OAuthTokens): Promise<ResolvedIdentity> 
 /** Résout l'identité selon le provider. Lève si l'API échoue (callback → error). */
 export async function resolveIdentity(
   config: OAuthProviderConfig,
-  tokens: OAuthTokens
+  // ⚠ `ReadyTokens`, pas `OAuthTokens` : le typage interdit d'appeler cette
+  // fonction avec le résultat brut de `exchangeCode`. Les tokens de PAGE
+  // héritent de la durée de vie du token utilisateur qui les demande — les
+  // résoudre trop tôt donnerait des tokens de publication courts (P8-3).
+  tokens: ReadyTokens
 ): Promise<ResolvedIdentity> {
   switch (config.key) {
     case "meta":
