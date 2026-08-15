@@ -39,7 +39,7 @@ export function LibraryWorkspace({
   contentRefs: ContentRefMap
 }) {
   const t = useT()
-  const lib = useLibraryAssets(initialAssets)
+  const lib = useLibraryAssets(initialAssets, client.id)
   const select = useMultiSelect()
   const [filters, setFilters] = useState<LibraryFilters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<SortKey>("recent")
@@ -92,11 +92,14 @@ export function LibraryWorkspace({
     setSelectMode(!selectMode)
   }
 
+  // P5-8 : plus de toast de succes ICI. `removeAssets` ecrit desormais vraiment
+  // en base et rend compte de ce qui s'est passe — annoncer le succes avant
+  // l'appel etait le second mensonge de cet ecran (le premier etant que rien
+  // n'etait persiste du tout).
   function doDelete(asset: LibraryAsset) {
     lib.removeAssets([asset.id])
     setDeleteTarget(null)
     if (sheetId === asset.id) setSheetId(null)
-    toast.success(t("library.toast.deleted"))
   }
 
   function requestDelete(asset: LibraryAsset) {
@@ -115,10 +118,12 @@ export function LibraryWorkspace({
       })
       return
     }
+    // Le pre-filtrage local (usedInContentIds) evite d'envoyer des suppressions
+    // vouees au refus ; `deleteAsset` reste l'arbitre et le hook rapporte.
+    if (keptCount > 0) {
+      toast.warning(t("library.toast.batchKept", { count: keptCount }))
+    }
     lib.removeAssets(removable.map((a) => a.id))
-    toast.success(t("library.toast.batchDeleted", { count: removable.length }), {
-      description: keptCount > 0 ? t("library.toast.batchKept", { count: keptCount }) : undefined,
-    })
   }
 
   return (

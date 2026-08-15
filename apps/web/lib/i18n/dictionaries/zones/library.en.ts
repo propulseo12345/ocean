@@ -157,7 +157,11 @@ export const libraryEn: Widen<typeof libraryFr> = {
     },
     // Toasts (workspace)
     toast: {
-      deleted: "Media deleted (preview)",
+      deleted: "{count, plural, one {# media deleted} other {# media deleted}}",
+      altError: "Could not save. Try again.",
+      deleteError: "Could not delete. Try again.",
+      deleteInUse:
+        "{count, plural, one {# media kept: it is used in content.} other {# media kept: they are used in content.}}",
       noneDeletedTitle: "No media deleted",
       noneDeletedDesc: "All selected media are used in content.",
       batchDeleted:

@@ -153,7 +153,11 @@ export const libraryFr = {
     },
     // Toasts (workspace)
     toast: {
-      deleted: "Média supprimé (aperçu)",
+      deleted: "{count, plural, one {# média supprimé} other {# médias supprimés}}",
+      altError: "Enregistrement impossible. Réessaie.",
+      deleteError: "Suppression impossible. Réessaie.",
+      deleteInUse:
+        "{count, plural, one {# média conservé : il est utilisé dans un contenu.} other {# médias conservés : ils sont utilisés dans des contenus.}}",
       noneDeletedTitle: "Aucun média supprimé",
       noneDeletedDesc: "Tous les médias sélectionnés sont utilisés dans des contenus.",
       batchDeleted:
