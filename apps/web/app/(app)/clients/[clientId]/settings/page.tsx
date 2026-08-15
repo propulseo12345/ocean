@@ -5,6 +5,7 @@ import { getActiveOrg } from "@/lib/auth/org-context"
 import {
   getBrandKit,
   getClient,
+  getClientAccess,
   getClientSettings,
   getPillars,
   getRecurringSlots,
@@ -36,6 +37,7 @@ export default async function ClientSettingsPage({
       accounts={await getSocialAccounts(ctx.org.id, clientId)}
       brandKit={await getBrandKit(ctx.org.id, clientId)}
       reviewer={reviewer ?? undefined}
+      access={await getClientAccess(ctx.org.id, clientId)}
       slots={await getRecurringSlots(ctx.org.id, clientId)}
       pillars={await getPillars(ctx.org.id, clientId)}
       trashed={await getTrashedContent(ctx.org.id, clientId)}

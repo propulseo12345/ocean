@@ -261,5 +261,22 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
         '"{title}" will be removed from the trash with no way to restore it. The attached media will be purged.',
       purgeConfirm: "Delete permanently",
     },
+    // Client access: members + pending invitations (P7-7).
+    access: {
+      title: "Portal access",
+      description: "Who can review this client's content.",
+      invitationPending: "Invitation pending - expires {when}",
+      invitationExpired: "Invitation expired {when} - resend it",
+      reinvite: "Resend",
+      revoke: "Cancel",
+      remove: "Remove",
+      revoked: "Invitation cancelled.",
+      removed: "Access removed. Effective immediately.",
+      reinvited: "New invitation created. The old link no longer works.",
+      copyLink: "Copy link",
+      linkCopied: "Link copied.",
+      alreadyMember: "This address already has access to this client.",
+      actionError: "Action failed. Try again.",
+    },
   },
 }

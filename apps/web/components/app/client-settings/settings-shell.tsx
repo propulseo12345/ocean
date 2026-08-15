@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import type { ClientSettings } from "@/lib/data"
+import type { ClientMemberRow, PendingInvitation } from "@/lib/data/pro"
 import type {
   BrandKit,
   Client,
@@ -52,6 +53,7 @@ export function SettingsShell({
   accounts,
   brandKit,
   reviewer,
+  access,
   slots,
   pillars,
   trashed,
@@ -61,6 +63,7 @@ export function SettingsShell({
   accounts: SocialAccount[]
   brandKit: BrandKit | undefined
   reviewer: Reviewer | undefined
+  access: { members: ClientMemberRow[]; invitations: PendingInvitation[] }
   slots: RecurringSlot[]
   pillars: ContentPillar[]
   trashed: ContentItem[]
@@ -83,6 +86,7 @@ export function SettingsShell({
           <SectionApproval
             client={client}
             reviewer={reviewer}
+            access={access}
             reminderDays={settings.reviewReminderDays}
           />
         </Anchor>

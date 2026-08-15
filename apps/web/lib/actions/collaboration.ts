@@ -344,18 +344,21 @@ export async function inviteReviewer(input: unknown): Promise<ActionResult<{ tok
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
 
   try {
-    const { orgId, userId, supabase } = await requireClientInOrg(clientId)
-    const { error } = await supabase.from("client_invitations").insert({
-      org_id: orgId,
-      client_id: clientId,
-      email: normalizedEmail,
-      role: "reviewer",
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-      invited_by: userId,
+    const { supabase } = await requireClientInOrg(clientId)
+    // P7-7 : passage par la RPC 032. L'INSERT nu échouait en 23505 dès qu'une
+    // invitation PÉRIMÉE traînait pour la même adresse — l'index unique partiel
+    // ignore `expires_at`, et `revoked_at` n'était écrit nulle part. Résultat :
+    // une adresse mal saisie était bannie à vie de ce client. La RPC retire
+    // l'ancienne ligne puis insère, dans la même transaction.
+    const { error } = await supabase.rpc("invite_client_reviewer", {
+      _client: clientId,
+      _email: normalizedEmail,
+      _token_hash: tokenHash,
+      _expires_at: expiresAt,
     })
-    // 23505 = invitation en cours déjà existante pour cet email + client.
-    if (error) return { ok: false, error: error.code === "23505" ? "already_invited" : "db_error" }
+    // 23505 ne signifie plus « déjà invité » mais « déjà MEMBRE » : la RPC
+    // supersède les invitations et ne lève que dans ce cas.
+    if (error) return { ok: false, error: error.code === "23505" ? "already_member" : "db_error" }
   } catch {
     return { ok: false, error: "forbidden" }
   }
@@ -377,4 +380,72 @@ export async function inviteReviewer(input: unknown): Promise<ActionResult<{ tok
 
   revalidatePath(`/clients/${clientId}/settings`)
   return { ok: true, data: { token } }
+}
+
+const revokeSchema = z.object({
+  clientId: z.string().uuid(),
+  invitationId: z.string().uuid(),
+})
+
+/**
+ * Révoque une invitation non acceptée (P7-7).
+ *
+ * Sans elle, `revoked_at` n'était écrit nulle part dans le dépôt : la seule
+ * sortie de l'index unique partiel était l'acceptation, c'est-à-dire le cas où
+ * tout se passe bien. Une adresse mal saisie restait bloquée à vie.
+ */
+export async function revokeInvitation(input: unknown): Promise<ActionResult> {
+  const parsed = revokeSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { clientId, invitationId } = parsed.data
+
+  try {
+    const { supabase } = await requireClientInOrg(clientId)
+    const { error } = await supabase.rpc("revoke_client_invitation", {
+      _invitation: invitationId,
+    })
+    if (error) return { ok: false, error: "db_error" }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+
+  revalidatePath(`/clients/${clientId}/settings`)
+  return { ok: true }
+}
+
+const removeMemberSchema = z.object({
+  clientId: z.string().uuid(),
+  userId: z.string().uuid(),
+})
+
+/**
+ * Retire un reviewer d'un client (P7-7).
+ *
+ * C'est la révocation de la **règle 4** : elle doit être effective
+ * immédiatement, ce qui est précisément la raison pour laquelle ce projet
+ * refuse les claims JWT d'autorisation et lit deux tables d'appartenance à
+ * chaque requête. Cette promesse tenait sans qu'aucun bouton ne permette de la
+ * prononcer. La RPC révoque au passage toute invitation encore vivante pour la
+ * même adresse — sinon on retire d'un côté ce qu'un jeton non consommé permet
+ * de reprendre de l'autre.
+ */
+export async function removeClientMember(input: unknown): Promise<ActionResult> {
+  const parsed = removeMemberSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const { clientId, userId } = parsed.data
+
+  try {
+    const { supabase } = await requireClientInOrg(clientId)
+    const { error } = await supabase.rpc("remove_client_member", {
+      _client: clientId,
+      _user: userId,
+    })
+    if (error) return { ok: false, error: "db_error" }
+  } catch {
+    return { ok: false, error: "forbidden" }
+  }
+
+  revalidatePath(`/clients/${clientId}/settings`)
+  revalidatePath("/portal")
+  return { ok: true }
 }

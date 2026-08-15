@@ -266,5 +266,22 @@ export const clientSettingsFr = {
         "« {title} » sera retiré de la corbeille sans possibilité de restauration. Les médias associés seront purgés.",
       purgeConfirm: "Supprimer définitivement",
     },
+    // Acces du client : membres + invitations en attente (P7-7).
+    access: {
+      title: "Accès au portail",
+      description: "Qui peut valider les contenus de ce client.",
+      invitationPending: "Invitation en attente — expire {when}",
+      invitationExpired: "Invitation expirée {when} — à renvoyer",
+      reinvite: "Renvoyer",
+      revoke: "Annuler",
+      remove: "Retirer",
+      revoked: "Invitation annulée.",
+      removed: "Accès retiré. L'effet est immédiat.",
+      reinvited: "Nouvelle invitation créée. L'ancien lien ne fonctionne plus.",
+      copyLink: "Copier le lien",
+      linkCopied: "Lien copié.",
+      alreadyMember: "Cette adresse a déjà accès à ce client.",
+      actionError: "Action impossible. Réessaie.",
+    },
   },
 } as const

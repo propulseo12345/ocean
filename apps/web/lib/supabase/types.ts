@@ -1843,6 +1843,24 @@ export type Database = {
         Args: { _client: string }
         Returns: undefined
       }
+      // Migration 032 — cycle de vie d'une invitation reviewer (P7-7).
+      invite_client_reviewer: {
+        Args: {
+          _client: string
+          _email: string
+          _token_hash: string
+          _expires_at: string
+        }
+        Returns: string
+      }
+      revoke_client_invitation: {
+        Args: { _invitation: string }
+        Returns: boolean
+      }
+      remove_client_member: {
+        Args: { _client: string; _user: string }
+        Returns: boolean
+      }
       // Migration 018 — partage public de rapport (snapshot).
       get_report_share: {
         Args: { _token_hash: string }
