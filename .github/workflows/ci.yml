@@ -18,7 +18,7 @@ jobs:
     env:
       # Port DB local du CLI Supabase (supabase/config.toml -> [db] port).
       # Connexion directe, pas de pooler : le port 6543 est interdit (regle 17).
-      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54422/postgres
     steps:
       - uses: actions/checkout@v4
 
