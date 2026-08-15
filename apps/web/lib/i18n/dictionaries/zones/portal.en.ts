@@ -10,6 +10,9 @@ export const portalEn: Widen<typeof portalFr> = {
       connectedAs: "Signed in as {name} · Ocean — secure space",
     },
     home: {
+      noClientTitle: "No review space",
+      noClientDescription:
+        "Your account isn't linked to any client. If you received an invitation, open it from the email; otherwise ask your agency to invite you again.",
       metaTitle: "Review space",
       greeting: "Hello{name},",
       toValidateHeading: "You have {count, plural, one {# post} other {# posts}} to review",

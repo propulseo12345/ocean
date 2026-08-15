@@ -9,6 +9,9 @@ export const portalFr = {
     },
     // Page d'accueil du portail (liste à valider + historique).
     home: {
+      noClientTitle: "Aucun espace de validation",
+      noClientDescription:
+        "Ton compte n'est rattaché à aucun client. Si tu as reçu une invitation, ouvre-la depuis l'e-mail ; sinon, demande à ton agence de te réinviter.",
       metaTitle: "Espace de validation",
       greeting: "Bonjour{name},",
       toValidateHeading:
