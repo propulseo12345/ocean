@@ -77,6 +77,10 @@ export function isOverdue(item: ContentItem): boolean {
 /** Rang « À traiter d'abord » : échecs, retours, brouillons en retard… */
 function priorityRank(item: ContentItem): number {
   switch (item.status) {
+    // 024 : avant tout le reste. Un contenu peut-être publié deux fois est la
+    // seule chose plus urgente qu'un échec.
+    case "needs_verification":
+      return -1
     case "failed":
       return 0
     case "changes_requested":
@@ -164,7 +168,12 @@ export function cardReviewMeta(
 
 const REVIEWABLE: ContentStatus[] = ["draft", "changes_requested"]
 const SCHEDULABLE: ContentStatus[] = ["idea", "draft", "approved"]
-const LOCKED: ContentStatus[] = ["publishing", "published", "partially_published"]
+const LOCKED: ContentStatus[] = [
+  "publishing",
+  "published",
+  "partially_published",
+  "needs_verification",
+]
 
 export const canSendReview = (item: ContentItem) => REVIEWABLE.includes(item.status)
 export const canSchedule = (item: ContentItem) => SCHEDULABLE.includes(item.status)

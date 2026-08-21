@@ -1,6 +1,9 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import {
+  effectiveAnchor,
+  isOutcomeUnknown,
+  LeaseLostError,
   NeedsReauthError,
   PermanentPublishError,
   type PublishJob,
@@ -35,6 +38,8 @@ function makeJob(over: Partial<PublishJob> = {}): PublishJob {
     leaseExpiresAt: new Date(NOW.getTime() + 120000),
     publishStartedAt: null,
     externalContainerId: null,
+    targetPublishStartedAt: null,
+    targetExternalContainerId: null,
     externalPostId: null,
     permalink: null,
     nextAttemptAt: null,
@@ -49,14 +54,19 @@ class FakeStore implements JobStore {
     return null
   }
   async reapExpired() {
-    return 0
+    return { requeued: 0, terminalized: 0 }
   }
-  async extendLease() {}
-  async patchProgress(_id: string, patch: { externalContainerId?: string }) {
+  async extendLease() {
+    return true
+  }
+  async patchProgress(_job: PublishJob, patch: { externalContainerId?: string }) {
     this.events.push(`patchProgress:${patch.externalContainerId ?? ""}`)
   }
-  async markPublishStarted() {
-    this.events.push("markPublishStarted")
+  async markPublishStarted(_job: PublishJob, containerId: string) {
+    this.events.push(`markPublishStarted:${containerId}`)
+  }
+  async clearContainer() {
+    this.events.push("clearContainer")
   }
   async markAwaitingMedia() {
     this.events.push("markAwaitingMedia")
@@ -73,8 +83,8 @@ class FakeStore implements JobStore {
   async deadLetter(_job: PublishJob, reason: string) {
     this.events.push(`deadLetter:${reason}`)
   }
-  async deferForQuota() {
-    this.events.push("deferForQuota")
+  async deferForQuota(_job: PublishJob, retryDelayMs: number, reason: string) {
+    this.events.push(`deferForQuota:${retryDelayMs}:${reason}`)
   }
 }
 
@@ -82,9 +92,12 @@ class FakePublisher implements Publisher {
   publishCalls = 0
   resolveCalls = 0
   createCalls = 0
+  statusCalls = 0
+  // Défaut `ready` = FINISHED chez Meta : c'est l'état d'un conteneur qui vient
+  // d'être créé. Les tests de REPRISE passent explicitement « published ».
   constructor(
     readonly events: string[],
-    readonly containerStatus: ContainerStatus = "published"
+    readonly containerStatus: ContainerStatus = "ready"
   ) {}
   async createContainer(job: PublishJob) {
     this.createCalls++
@@ -96,6 +109,7 @@ class FakePublisher implements Publisher {
     return { externalPostId: `p-${job.contentTargetId}`, targetStatus: "published" }
   }
   async getContainerStatus(): Promise<ContainerStatus> {
+    this.statusCalls++
     return this.containerStatus
   }
   async resolvePublished(job: PublishJob): Promise<PublishResult> {
@@ -108,9 +122,15 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
   return {
     store,
     resolvePublisher: () => pub,
-    prepare: async (): Promise<PublishContext> => ({ accessToken: "t" }),
-    checkQuota: async () => true,
-    config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000 },
+    prepare: async (): Promise<PublishContext> => ({
+      accessToken: "t",
+      providerAccountId: "ig-1",
+      media: [],
+      caption: "",
+      format: "post",
+    }),
+    checkQuota: async () => ({ ok: true }) as const,
+    config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 60000 },
     now: NOW,
     random: () => 0,
     ...over,
@@ -120,12 +140,12 @@ function deps(store: JobStore, pub: Publisher, over: Partial<EngineDeps> = {}): 
 test("job frais : publish_started_at posé AVANT publish, succès, publish 1 fois", async () => {
   const events: string[] = []
   const store = new FakeStore(events)
-  const pub = new FakePublisher(events, "published")
+  const pub = new FakePublisher(events, "ready")
   await processJob(makeJob(), deps(store, pub))
 
   assert.equal(pub.publishCalls, 1, "publish appelé exactement une fois")
   assert.equal(pub.createCalls, 1, "conteneur créé une fois")
-  const iStart = events.indexOf("markPublishStarted")
+  const iStart = events.findIndex((e) => e.startsWith("markPublishStarted:"))
   const iPub = events.indexOf("publish")
   assert.ok(iStart >= 0 && iPub >= 0, "les deux étapes ont eu lieu")
   assert.ok(iStart < iPub, "RÈGLE 15 : publish_started_at AVANT publish")
@@ -195,6 +215,130 @@ test("fenêtre de grâce dépassée (>2h de retard) => dead_letter, aucune publi
   assert.ok(events.some((e) => e.startsWith("deadLetter:")))
 })
 
+// ── CHEMIN DE DOUBLE PUBLICATION n°2 ────────────────────────────────────────
+// Le job précédent est terminal (ou supprimé) : `enqueue_publish_jobs` en
+// fabrique un neuf, `publish_started_at` à NULL sur la ligne. Avant la migration
+// 023, ce job repartait en `publishFresh` et republiait un post déjà en ligne.
+// L'ancre de la CIBLE est ce qui l'en empêche.
+test("RÈGLE 15 : job NEUF (ancre de job nulle) sur cible ANCRÉE => jamais republier", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  const job = makeJob({
+    // La ligne de job est vierge : c'est bien un job fraîchement enfilé.
+    publishStartedAt: null,
+    externalContainerId: null,
+    // Mais la cible porte la marque d'une publication partie.
+    targetPublishStartedAt: new Date(NOW.getTime() - 3 * 60 * 1000),
+    targetExternalContainerId: "c-target-1",
+    status: "claimed",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.createCalls, 0, "aucun conteneur recréé")
+  assert.equal(pub.publishCalls, 0, "AUCUNE republication")
+  assert.equal(pub.statusCalls, 1, "le conteneur de la cible est interrogé")
+  assert.equal(pub.resolveCalls, 1, "le post existant est résolu")
+})
+
+test("conteneur porté par la cible seule (crash avant la marque) => réutilisé, pas recréé", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "ready")
+  const job = makeJob({
+    publishStartedAt: null,
+    externalContainerId: null,
+    // Conteneur créé par une tentative précédente, marque JAMAIS posée : rien
+    // n'est parti, mais le conteneur est réutilisable.
+    targetPublishStartedAt: null,
+    targetExternalContainerId: "c-recycle",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.createCalls, 0, "conteneur existant réutilisé")
+  assert.equal(pub.publishCalls, 1, "publication normale : rien n'était parti")
+  assert.ok(
+    events.includes("markPublishStarted:c-recycle"),
+    "l'ancre est posée avec le conteneur réutilisé"
+  )
+})
+
+// ── CHEMIN DE DOUBLE PUBLICATION n°1 ────────────────────────────────────────
+// Worker tué pendant media_publish, VPS down 3 h. Au retour, le job est en
+// retard de plus que la fenêtre de grâce. Avant P3-1 il partait en dead_letter
+// sans qu'on demande jamais à Meta si le post existait : cible « failed » sur un
+// post en ligne, l'admin reprogramme, doublon.
+test("grâce dépassée MAIS job démarré => on interroge le conteneur d'abord (jamais dead_letter à l'aveugle)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  const job = makeJob({
+    runAt: new Date(NOW.getTime() - 5 * 60 * 60 * 1000),
+    publishStartedAt: new Date(NOW.getTime() - 4 * 60 * 60 * 1000),
+    externalContainerId: "c-target-1",
+    status: "publishing",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.statusCalls, 1, "le conteneur EST interrogé malgré le retard")
+  assert.equal(pub.publishCalls, 0, "aucune republication")
+  assert.ok(
+    !events.some((e) => e.startsWith("deadLetter:")),
+    "PAS de dead_letter : le post est en ligne"
+  )
+  assert.ok(
+    events.some((e) => e.startsWith("succeed:")),
+    "la cible reflète la réalité : publiée"
+  )
+})
+
+test("grâce dépassée + job démarré + conteneur en erreur => dead_letter APRÈS vérification", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  const job = makeJob({
+    runAt: new Date(NOW.getTime() - 5 * 60 * 60 * 1000),
+    publishStartedAt: new Date(NOW.getTime() - 4 * 60 * 60 * 1000),
+    externalContainerId: "c-target-1",
+    status: "publishing",
+  })
+  await processJob(job, deps(store, pub))
+
+  assert.equal(pub.statusCalls, 1, "vérification faite")
+  assert.equal(pub.publishCalls, 0, "on ne publie pas un contenu daté avec 5 h de retard")
+  assert.ok(
+    events.some((e) => e.startsWith("deadLetter:")),
+    "abandon légitime : la plateforme confirme que rien n'est parti"
+  )
+})
+
+test("job démarré : le quota n'est jamais consulté (interroger un conteneur ne publie rien)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  let quotaCalls = 0
+  await processJob(
+    makeJob({
+      publishStartedAt: new Date(NOW.getTime() - 5000),
+      externalContainerId: "c-target-1",
+      status: "publishing",
+    }),
+    deps(store, pub, {
+      checkQuota: async () => {
+        quotaCalls++
+        return { ok: false as const, retryAfterMs: 1000, reason: "test" }
+      },
+    })
+  )
+
+  assert.equal(quotaCalls, 0, "quota non consulté sur un job démarré")
+  assert.ok(
+    !events.some((e) => e.startsWith("deferForQuota")),
+    "un job démarré n'est jamais reporté"
+  )
+  assert.ok(events.some((e) => e.startsWith("succeed:")))
+})
+
 test("token perdu (NeedsReauth) => failed permanent, aucune publication", async () => {
   const events: string[] = []
   const store = new FakeStore(events)
@@ -223,4 +367,205 @@ test("erreur permanente (média invalide) au publish => failed, pas de retry", a
 
   assert.ok(events.includes("failPermanent:false"))
   assert.ok(!events.some((e) => e === "retryOrFail"), "pas de retry sur erreur permanente")
+})
+
+// ── L'ANCRE ET LA DÉCISION QU'ELLE PORTE ────────────────────────────────────
+// `effectiveAnchor` et `isOutcomeUnknown` sont les deux fonctions dont dépend
+// tout le reste : la première décide si on republie, la seconde si on écrit
+// « échec » ou « on ne sait pas ». Elles se testent sans base ni réseau.
+
+test("effectiveAnchor : la CIBLE fait foi, le job n'est qu'un repli", () => {
+  const targetWins = makeJob({
+    publishStartedAt: new Date("2026-07-22T10:00:00.000Z"),
+    externalContainerId: "c-job",
+    targetPublishStartedAt: new Date("2026-07-22T09:00:00.000Z"),
+    targetExternalContainerId: "c-target",
+  })
+  assert.equal(effectiveAnchor(targetWins).containerId, "c-target")
+  assert.equal(
+    effectiveAnchor(targetWins).startedAt?.toISOString(),
+    "2026-07-22T09:00:00.000Z",
+    "l'ancre la plus ancienne, celle de la cible, est celle qui compte"
+  )
+
+  // Le cas qui justifie la migration 023 : job neuf, cible ancrée.
+  const freshJob = makeJob({ targetPublishStartedAt: new Date(NOW) })
+  assert.notEqual(effectiveAnchor(freshJob).startedAt, null, "un job neuf HÉRITE de l'ancre")
+
+  // Et le cas historique, sans cible ancrée (base pas encore migrée).
+  const legacy = makeJob({ publishStartedAt: new Date(NOW), externalContainerId: "c-job" })
+  assert.equal(effectiveAnchor(legacy).containerId, "c-job", "repli sur l'ancre du job")
+})
+
+test("isOutcomeUnknown : décide entre « échec » et « on ne sait pas » (024)", () => {
+  assert.equal(isOutcomeUnknown(makeJob()), false, "rien n'est parti => failed, relançable")
+  assert.equal(
+    isOutcomeUnknown(makeJob({ publishStartedAt: new Date(NOW) })),
+    true,
+    "ancre du job posée => issue inconnue"
+  )
+  assert.equal(
+    isOutcomeUnknown(makeJob({ targetPublishStartedAt: new Date(NOW) })),
+    true,
+    "ancre de la CIBLE seule => issue inconnue AUSSI (c'est tout l'objet de 023)"
+  )
+  assert.equal(
+    isOutcomeUnknown(makeJob({ targetExternalContainerId: "c-1" })),
+    false,
+    "un conteneur SANS marque n'a rien publié : failed reste la vérité"
+  )
+})
+
+// ── CHEMIN DE DOUBLE PUBLICATION n°4 ────────────────────────────────────────
+// Worker A est dans createContainer/upload (ancre encore nulle) ; une coupure DB
+// de plus de 120 s fait expirer son lease pendant que le HTTP continue. Le reaper
+// rend le job à la file, worker B le claim et publie. A revient et enchaînait
+// jusqu'à publier lui aussi — deux publications réelles, dont une invisible.
+// Le fencing arrête A à `markPublishStarted`, la dernière écriture avant l'appel.
+test("lease perdu avant publish => AUCUNE publication, et aucun statut écrasé", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "ready")
+  // Le store refuse la marque : le job appartient à un autre worker.
+  store.markPublishStarted = async () => {
+    throw new LeaseLostError("markPublishStarted")
+  }
+
+  await assert.rejects(
+    () => processJob(makeJob(), deps(store, pub)),
+    (err: unknown) => err instanceof LeaseLostError,
+    "le lease perdu REMONTE (la boucle le journalise, elle ne le traite pas)"
+  )
+
+  assert.equal(pub.publishCalls, 0, "publisher.publish() n'est JAMAIS appelé")
+  assert.ok(
+    !events.some((e) => e.startsWith("failPermanent") || e === "retryOrFail"),
+    "aucun statut d'échec posé sur le travail d'un autre worker"
+  )
+  assert.ok(!events.some((e) => e.startsWith("deadLetter")), "et aucun abandon écrit non plus")
+})
+
+// ── TIMEOUTS PLATEFORME ─────────────────────────────────────────────────────
+// Le traitement est strictement séquentiel : un seul appel pendu gèle la file
+// entière. Le heartbeat prolongeait le lease sans borne, donc le reaper — seul
+// filet — ne voyait jamais d'expiration. Ces tests utilisent un timeout très
+// court pour rester instantanés.
+
+test("appel plateforme pendu => timeout, on rend la main (la file ne gèle pas)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events)
+  // Un conteneur qui ne répond jamais — ni succès, ni erreur, ni coupure.
+  pub.createContainer = () => new Promise(() => {})
+
+  await processJob(
+    makeJob(),
+    deps(store, pub, {
+      config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 20 },
+    })
+  )
+
+  assert.ok(events.includes("retryOrFail"), "traité comme transitoire : retry avec backoff")
+  assert.equal(pub.publishCalls, 0, "rien n'a été publié")
+})
+
+test("timeout sur un publish DÉJÀ démarré => pas d'échec sec, l'ancre protège", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  // Le conteneur n'avait pas publié, on republie… et l'appel reste pendu.
+  pub.publish = () => new Promise(() => {})
+
+  await processJob(
+    makeJob({
+      publishStartedAt: new Date(NOW.getTime() - 5000),
+      externalContainerId: "c-target-1",
+      status: "publishing",
+    }),
+    deps(store, pub, {
+      config: { graceWindowMs: 2 * 60 * 60 * 1000, awaitMediaDelayMs: 60000, httpTimeoutMs: 20 },
+    })
+  )
+
+  // Transitoire : la reprise repassera par recoverStartedJob, qui interrogera le
+  // conteneur avant toute republication (règle 15). Un timeout ne dit PAS que
+  // rien n'est parti — c'est précisément pourquoi on ne conclut pas.
+  assert.ok(events.includes("retryOrFail"), "retry, et surtout pas une conclusion hâtive")
+})
+
+test("quota atteint => report au créneau annoncé, aucune publication, aucun échec", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events)
+
+  await processJob(
+    makeJob(),
+    deps(store, pub, {
+      checkQuota: async () => ({
+        ok: false as const,
+        retryAfterMs: 6 * 3_600_000,
+        reason: "quota ig_publish atteint (100/100)",
+      }),
+    })
+  )
+
+  assert.equal(pub.createCalls, 0, "pas même de conteneur créé")
+  assert.equal(pub.publishCalls, 0)
+  assert.ok(
+    events.some((e) => e.startsWith("deferForQuota:21600000:")),
+    "le délai annoncé par le quota est celui appliqué (6 h, pas 60 s)"
+  )
+  assert.ok(
+    !events.some((e) => e.startsWith("failPermanent") || e.startsWith("deadLetter")),
+    "un quota atteint n'est PAS un échec"
+  )
+})
+
+// ── LA PORTE DE PRÉPARATION DU CONTENEUR (phase 6) ──────────────────────────
+// Un Reel n'est pas publiable à l'instant où son conteneur est créé : Meta
+// télécharge puis transcode. Le contrôle a lieu AVANT `markPublishStarted`,
+// donc avant l'ancre — à cet instant rien n'est parti, tout est réversible.
+
+test("job frais, conteneur encore IN_PROGRESS (reel) => awaiting_media, AUCUNE ancre", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "in_progress")
+  await processJob(makeJob(), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0, "on ne publie pas un conteneur en transcodage")
+  assert.ok(events.includes("markAwaitingMedia"))
+  assert.ok(
+    !events.some((e) => e.startsWith("markPublishStarted:")),
+    "l'ancre n'est PAS posée : rien n'est parti, la reprise reste libre"
+  )
+  // L'attente passe par la machine à états, jamais par un sleep dans le
+  // publisher : la file est séquentielle, une pause y gèlerait tous les jobs.
+})
+
+test("job frais, conteneur en ERROR => on l'OUBLIE, sinon il serait rejoué a vie", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "error")
+  // Conteneur déjà persisté sur la cible : sans `clearContainer`, chaque
+  // tentative le réutiliserait et échouerait sur la même cause jusqu'à
+  // épuisement des 5 tentatives.
+  await processJob(makeJob({ targetExternalContainerId: "c-mort" }), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0)
+  assert.ok(events.includes("clearContainer"), "le conteneur mort est effacé")
+  assert.ok(events.includes("retryOrFail"), "et le job repart en retry")
+})
+
+test("job frais dont le conteneur est DÉJÀ PUBLISHED => jamais republier (ancre perdue)", async () => {
+  const events: string[] = []
+  const store = new FakeStore(events)
+  const pub = new FakePublisher(events, "published")
+  // Cas limite de la règle 15 : le conteneur existe et il a publié, mais AUCUNE
+  // ancre n'a survécu (ni sur le job, ni sur la cible). Republier aveuglément
+  // serait le doublon.
+  await processJob(makeJob({ targetExternalContainerId: "c-deja-publie" }), deps(store, pub))
+
+  assert.equal(pub.publishCalls, 0, "AUCUNE republication")
+  assert.equal(pub.resolveCalls, 1, "on résout le post existant")
+  assert.ok(events.some((e) => e.startsWith("succeed:")))
 })

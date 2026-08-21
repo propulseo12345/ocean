@@ -5,7 +5,7 @@ import { z } from "zod"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { createClient } from "@/lib/supabase/server"
-import { type ActionResult } from "./_helpers"
+import type { ActionResult } from "./_helpers"
 
 // Notifications : marquage lu. Les RPC sont SECURITY DEFINER scopées sur
 // auth.uid() (migration 009) — le destinataire est déduit de la session, jamais

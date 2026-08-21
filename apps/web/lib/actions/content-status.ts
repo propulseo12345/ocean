@@ -7,6 +7,7 @@ import { pathFor, type StatusIntent } from "@/lib/domain/content-status"
 import { routes } from "@/lib/routes"
 import type { ActionResult } from "./_helpers"
 import { requireClientInOrg } from "./_helpers"
+import { syncPublishQueue } from "./publish-queue"
 
 // Transitions de statut (Phase 6). Chaque action traduit une INTENTION d'UI en
 // une suite d'updates légaux au regard de la garde 008/016, appliqués un par un.
@@ -69,6 +70,40 @@ export async function applyStatusIntent(
     if (client?.approval_mode !== "auto") return { ok: false, error: "APPROVAL_REQUIRED" }
   }
 
+  // Même garde, côté programmation. La source de vérité est la garde SQL 030 —
+  // c'est elle qui rend `approval_mode` opposable, et elle seule protège des
+  // écritures qui ne passent pas par ici. Ce pré-contrôle n'existe que pour
+  // rendre le refus LISIBLE : sans lui, l'utilisateur reçoit un message Postgres
+  // brut là où il attend « ce client doit valider d'abord ».
+  if (intent === "schedule") {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("approval_mode")
+      .eq("org_id", orgId)
+      .eq("id", clientId)
+      .maybeSingle()
+    if (client?.approval_mode === "required") {
+      const { data: approval } = await supabase
+        .from("approvals")
+        .select("id")
+        .eq("content_item_id", contentId)
+        .eq("decision", "approved")
+        // Le rôle est le cœur du contrôle : une auto-approbation de l'agence ne
+        // vaut pas validation client.
+        .eq("decided_by_role", "reviewer")
+        .limit(1)
+        .maybeSingle()
+      if (!approval) return { ok: false, error: "CLIENT_APPROVAL_REQUIRED" }
+      // Une approbation portant sur un texte modifié depuis n'en est plus une.
+      const { data: freshness } = await supabase
+        .from("content_items")
+        .select("approval_stale")
+        .eq("id", contentId)
+        .maybeSingle()
+      if (freshness?.approval_stale) return { ok: false, error: "CLIENT_APPROVAL_STALE" }
+    }
+  }
+
   const path = pathFor(intent, item.status as never)
   if (path === null) return { ok: false, error: "TRANSITION_NOT_ALLOWED" }
   if (path.length === 0) return { ok: true, data: { status: item.status } }
@@ -87,19 +122,27 @@ export async function applyStatusIntent(
   }
 
   const finalStatus = path[path.length - 1]
-  // File de publication (règle 15/16) : un contenu qui ATTEINT « scheduled » enfile
-  // un job par cible API ; toute sortie de « scheduled » annule les jobs non
-  // démarrés. Les RPC sont idempotentes et no-op hors de ces cas — sûr à appeler
-  // sur toute transition. Un échec d'enfilement ne doit pas casser la transition
-  // (déjà persistée) : on ignore l'erreur RPC (le watchdog worker rattrapera).
-  if (finalStatus === "scheduled") {
-    await supabase.rpc("enqueue_publish_jobs", { _content_item: contentId })
-  } else {
-    await supabase.rpc("cancel_publish_jobs", { _content_item: contentId })
-  }
+  // File de publication (règles 15/16). L'appelant ne CHOISIT plus entre enfiler
+  // et annuler : le helper relit l'état réel du contenu et en déduit ce que la
+  // file doit contenir. Le if/else d'avant était correct ici, mais c'est sa forme
+  // qui posait problème — chaque nouvelle surface d'édition devait le recopier.
+  const queue = await syncPublishQueue(supabase, orgId, clientId, contentId)
 
   revalidatePath(routes.content(clientId, contentId))
   revalidatePath(routes.clientContent(clientId))
+
+  // P4-4 : le résultat de l'enfilement était jeté. Un contenu pouvait afficher
+  // « Programmé » sans qu'aucun job existe — donc ne jamais partir, sans le
+  // moindre signal.
+  //
+  // La transition, elle, EST persistée : on ne la défait pas (elle est légale, et
+  // la défaire créerait un second problème). Mais on refuse de l'annoncer comme
+  // un succès complet. `finalStatus` reste dans la réponse pour que l'UI puisse
+  // se rafraîchir sur le vrai statut tout en montrant l'erreur.
+  if (!queue.ok) {
+    return { ok: false, error: `QUEUE_${queue.error}` }
+  }
+
   return { ok: true, data: { status: finalStatus } }
 }
 

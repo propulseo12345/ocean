@@ -25,6 +25,12 @@ export interface Approval {
 }
 
 export interface Annotation {
+  /**
+   * Ancre réelle en base : la LIAISON content_media. C'est elle qui fait foi
+   * pour savoir sur quel visuel poser le repère (mediaAssetId/slideIndex en
+   * sont dérivés à la lecture, et dérivent si un média devient illisible).
+   */
+  contentMediaId: string
   mediaAssetId: string
   slideIndex: number
   x: number

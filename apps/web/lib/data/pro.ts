@@ -1,3 +1,4 @@
+import { log } from "@/lib/log"
 import "server-only"
 
 import { cache } from "react"
@@ -270,9 +271,17 @@ export const getLibraryAssets = cache(
     const originalPaths = rows.map((r) => r.storage_path).filter((p): p is string => p !== null)
     const signed = new Map<string, string>()
     if (originalPaths.length > 0) {
-      const { data: urls } = await supabase.storage
+      const { data: urls, error: urlsError } = await supabase.storage
         .from(ORIGINALS_BUCKET)
         .createSignedUrls(originalPaths, SIGNED_URL_TTL)
+      // Meme silence que dans content-media (P5-10) : on trace au lieu de
+      // laisser la mediatheque afficher des vignettes sans raison connue.
+      if (urlsError) {
+        log.warn("media.signed_urls_failed", {
+          count: originalPaths.length,
+          code: urlsError.name,
+        })
+      }
       for (const u of urls ?? []) {
         if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl)
       }
@@ -383,6 +392,7 @@ export const getComments = cache(
         annotation:
           anchor && row.annotation_x !== null && row.annotation_y !== null
             ? {
+                contentMediaId: row.annotation_content_media_id as string,
                 mediaAssetId: anchor.mediaAssetId,
                 slideIndex: anchor.slideIndex,
                 x: row.annotation_x,
@@ -873,5 +883,89 @@ export const getClientSettings = cache(
         collision: alerts.collision ?? false,
       },
     }
+  }
+)
+
+/** Une invitation reviewer en attente, telle que l'écran d'accès la montre. */
+export type PendingInvitation = {
+  id: string
+  email: string
+  expiresAt: string
+  createdAt: string
+  expired: boolean
+}
+
+/** Un membre effectif d'un client (reviewer ou editor). */
+export type ClientMemberRow = {
+  userId: string
+  email: string
+  name: string
+  initials: string
+  role: string
+  lastActiveAt: string | null
+}
+
+/**
+ * Accès d'un client : membres effectifs + invitations en attente (P7-7).
+ *
+ * `getReviewer` ne rend que le PREMIER reviewer et ignore complètement les
+ * invitations — l'écran ne pouvait donc ni montrer une invitation en cours, ni
+ * offrir de la révoquer. `token_hash` n'est jamais sélectionné : le grant
+ * colonne de 013 l'interdit à `authenticated`, et c'est voulu.
+ */
+export const getClientAccess = cache(
+  async (
+    orgId: string,
+    clientId: string
+  ): Promise<{ members: ClientMemberRow[]; invitations: PendingInvitation[] }> => {
+    if (!orgId) return { members: [], invitations: [] }
+    const supabase = await createClient()
+
+    const [membersRes, invitesRes] = await Promise.all([
+      supabase
+        .from("client_members")
+        .select("user_id, role, last_active_at, profiles(email, full_name, initials)")
+        .eq("org_id", orgId)
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("client_invitations")
+        .select("id, email, expires_at, created_at")
+        .eq("org_id", orgId)
+        .eq("client_id", clientId)
+        .is("accepted_at", null)
+        .is("revoked_at", null)
+        .order("created_at", { ascending: false }),
+    ])
+
+    const now = Date.now()
+    const members = (membersRes.data ?? []).map((m) => {
+      const profile = m.profiles as unknown as {
+        email: string | null
+        full_name: string | null
+        initials: string | null
+      } | null
+      const email = profile?.email ?? ""
+      return {
+        userId: m.user_id,
+        email,
+        name: profile?.full_name ?? email,
+        initials: profile?.initials ?? email.slice(0, 2).toUpperCase(),
+        role: m.role,
+        lastActiveAt: m.last_active_at,
+      }
+    })
+
+    const invitations = (invitesRes.data ?? []).map((i) => ({
+      id: i.id,
+      email: i.email,
+      expiresAt: i.expires_at,
+      createdAt: i.created_at,
+      // Une invitation périmée reste en base sans que rien ne la balaie : on le
+      // DIT, au lieu de l'afficher comme si elle était encore valable.
+      expired: new Date(i.expires_at).getTime() < now,
+    }))
+
+    return { members, invitations }
   }
 )

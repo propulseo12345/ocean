@@ -1,102 +1,40 @@
-import { createHash } from "node:crypto"
 import { type NextRequest, NextResponse } from "next/server"
 
-import { createAdminClient } from "@/lib/supabase/admin"
+import { routes } from "@/lib/routes"
+import { siteOrigin } from "@/lib/site-url"
 
-// Acceptation d'une invitation reviewer (D8/D9). Route PUBLIQUE (préfixe
-// /api/invitations du proxy) : le reviewer n'a pas encore de session. Le TOKEN
-// (256 bits, usage unique, hashé en base) fait autorité.
+// Ancien point d'acceptation d'invitation — désormais SANS AUCUN EFFET DE BORD.
 //
-// Flux (service_role, jamais côté client) :
-//   1. valider client_invitations par token_hash (non acceptée, non révoquée, non expirée)
-//   2. trouver/créer l'utilisateur auth par email (le trigger handle_new_user crée profiles)
-//   3. adhésion client_members (idempotent) + marquer l'invitation acceptée
-//   4. connexion sans mot de passe : admin.generateLink(magiclink) → redirection
-//      directe vers le lien d'action Supabase (aucun email requis) → /portal
+// CE QUE CETTE ROUTE FAISAIT, ET POURQUOI ELLE NE LE FAIT PLUS
+// ------------------------------------------------------------
+// C'était un GET qui écrivait : il créait l'adhésion `client_members` en
+// service_role (donc hors RLS) et envoyait des e-mails. Deux failles en
+// découlaient directement (ticket V-3) :
 //
-// SCAFFOLDING Tier D : fonctionnel dès que SUPABASE_SERVICE_ROLE_KEY est présent
-// (déjà en runtime). Sans lui, createAdminClient échoue et on renvoie vers /login.
-
-function fail(origin: string): NextResponse {
-  return NextResponse.redirect(`${origin}/login?error=invite`)
-}
+//   * CSRF. Aucun contrôle `Origin` / `Sec-Fetch-Site` / `Referer`, aucun jeton
+//     anti-CSRF, sur des cookies `SameSite=Lax` (défaut de `@supabase/ssr`,
+//     jamais surchargé). Une navigation top-level depuis un site tiers emportait
+//     donc la session de la VICTIME : l'attaquant créait une org, un client,
+//     invitait `victime@x` — `inviteReviewer` lui rend le jeton EN CLAIR — et
+//     faisait ouvrir le lien. `sameAddress` passait, puisque l'invitation visait
+//     justement l'adresse de la victime. Gain réel :
+//     `private.shares_scope_with` devenait vraie, donc `profiles_select_shared`
+//     ouvrait à l'attaquant la ligne `profiles` de la victime.
+//   * Émetteur d'e-mails non authentifié et non plafonné. Sans session, la route
+//     appelait `sendProofOfPossession` AVANT toute authentification, et le jeton
+//     étant délibérément rejouable (P7-2), chaque rejeu déclenchait un envoi
+//     vers une adresse choisie par l'attaquant.
+//
+// Elle ne subsiste que pour ne pas casser les liens DÉJÀ PARTIS par e-mail : on
+// redirige vers la page de confirmation, qui décrit l'invitation et exige un
+// POST explicite. Le jeton n'est ni lu, ni consommé, ni validé ici.
+//
+// ⚠️ Ne jamais y remettre d'écriture. Si ce fichier redevient un jour un point
+// d'acceptation, les deux failles ci-dessus rouvrent le même jour.
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const token = searchParams.get("token")
-  if (!token) return fail(origin)
+  const token = new URL(request.url).searchParams.get("token")
+  const origin = await siteOrigin()
 
-  const tokenHash = createHash("sha256").update(token).digest("hex")
-
-  let admin: ReturnType<typeof createAdminClient>
-  try {
-    admin = createAdminClient()
-  } catch {
-    return fail(origin)
-  }
-
-  // 1. Invitation valide ?
-  const { data: invite } = await admin
-    .from("client_invitations")
-    .select("id, org_id, client_id, email, role, accepted_at, revoked_at, expires_at")
-    .eq("token_hash", tokenHash)
-    .maybeSingle()
-  if (
-    !invite ||
-    invite.accepted_at ||
-    invite.revoked_at ||
-    new Date(invite.expires_at).getTime() < Date.now()
-  ) {
-    return fail(origin)
-  }
-
-  // 2. Utilisateur reviewer (créer si absent ; le trigger amorce profiles).
-  let userId: string | null = null
-  const created = await admin.auth.admin.createUser({
-    email: invite.email,
-    email_confirm: true,
-  })
-  if (created.data.user) {
-    userId = created.data.user.id
-  } else {
-    // Existe déjà : le retrouver (pas de filtre email direct dans l'API admin).
-    const { data: list } = await admin.auth.admin.listUsers()
-    userId =
-      list?.users.find((u) => u.email?.toLowerCase() === invite.email.toLowerCase())?.id ?? null
-  }
-  if (!userId) return fail(origin)
-
-  // 3. Adhésion (idempotent) + invitation marquée acceptée.
-  const { error: memberError } = await admin.from("client_members").upsert(
-    {
-      org_id: invite.org_id,
-      client_id: invite.client_id,
-      user_id: userId,
-      role: invite.role,
-    },
-    { onConflict: "client_id,user_id" }
-  )
-  if (memberError) return fail(origin)
-
-  await admin
-    .from("client_invitations")
-    .update({
-      status: "accepted",
-      accepted_at: new Date().toISOString(),
-      accepted_user_id: userId,
-    })
-    .eq("id", invite.id)
-
-  // 4. Connexion sans mot de passe : lien d'action magiclink (non envoyé par
-  //    email — on redirige directement dessus), retour vers le portail.
-  const { data: link } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: invite.email,
-    options: { redirectTo: `${origin}/portal` },
-  })
-  const actionLink = link?.properties?.action_link
-  if (actionLink) return NextResponse.redirect(actionLink)
-
-  // Repli : pas de lien (SMTP/redirect non configuré) → login manuel vers portail.
-  return NextResponse.redirect(`${origin}/login?next=/portal`)
+  return NextResponse.redirect(`${origin}${routes.acceptInvite(token ?? "")}`)
 }

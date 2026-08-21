@@ -3,7 +3,6 @@
 import { Crop, Info } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,8 +18,9 @@ import { ratioLabel } from "@/lib/specs"
 import { cn } from "@/lib/utils"
 import type { ComposerMedia, CropPreset } from "./composer-types"
 
-// Recadrage guidé (mock) : presets 1:1 / 4:5 / 9:16 prévisualisés en CSS
-// (object-fit + aspect-ratio). Aucun traitement d'image réel en preview.
+// Recadrage guidé : presets 1:1 / 4:5 / 9:16, prévisualisés en CSS
+// (object-fit + aspect-ratio). Le traitement RÉEL est déclenché par l'appelant
+// (P5-9) : ce dialogue choisit un preset, il n'applique rien lui-même.
 
 const PRESETS: Array<{ value: CropPreset; label: string; hintKey: MessageKey }> = [
   { value: "1:1", label: "1:1", hintKey: "composer.crop.square" },
@@ -48,12 +48,13 @@ export function MediaCropDialog({
   const { locale } = useLocale()
   const [preset, setPreset] = useState<CropPreset>("4:5")
 
+  // AUCUN toast de succès ici. Le recadrage relit l'original, le décode, le
+  // rogne, le réencode et le retéléverse : ça dure plusieurs secondes et ça peut
+  // échouer. Annoncer le succès au clic était le mensonge exact que P5-8 a
+  // retiré de la médiathèque — la file de téléversement rend compte, elle.
   function apply() {
     onApply(preset)
     onOpenChange(false)
-    toast.success(t("composer.crop.toastApplied", { preset }), {
-      description: t("composer.crop.toastDesc"),
-    })
   }
 
   return (

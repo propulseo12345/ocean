@@ -41,7 +41,8 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
   platform_connections/content_labels. pgTAP 010 = 9/9.
 - VÉRIFIÉ Playwright/vrai Supabase : login linda@socean.com → /dashboard rend ;
   fail-closed OK ; plus de boucle. Données affichées encore mockées (normal).
-- `deploy/03_migration_010.sql` prêt. `scripts/gen-types.py` (régénère types.ts).
+- `deploy/03_migration_010.sql` prêt. ~~`scripts/gen-types.py` (régénère types.ts).~~
+  ⚠ 15/08/2026 : faux. Le script n'écrivait aucun fichier et a été retiré ; `types.ts` est manuel.
 
 ## FAIT (Phase 1) ✅ — commit f2cb402 + migration 011
 - Migration `011_editorial_config.sql` : content_pillars → recurring_slots →
@@ -105,7 +106,8 @@ sans s'arrêter entre phases (sauf blocage réel ou décision non tranchée).
 ## POINT D'ÉTAPE (fin Phase 3) — pour Étienne
 - **Migrations à appliquer EN LIGNE, dans l'ordre** (SQL Editor, projet
   hgdeopkmkwyoumsfggrm) : deploy/03 (010, régénéré), deploy/04 (011), deploy/05
-  (012 + **reconfirmer D2/D3**), deploy/06 (013). Puis `python scripts/gen-types.py`.
+  (012 + **reconfirmer D2/D3**), deploy/06 (013). ~~Puis `python scripts/gen-types.py`.~~
+  ⚠ 15/08/2026 : ce script n'écrivait rien et a été retiré — `types.ts` se met à jour à la main.
 - **Rien n'est vérifié au RUNTIME** (010+ pas en ligne) : vérif = pgTAP local
   (33+27+28 verts) + typecheck 0. Le runtime Playwright suivra l'application.
 - **D2/D3** (Phase 2) tranchés par recommandation, à confirmer avant deploy/05.

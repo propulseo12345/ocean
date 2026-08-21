@@ -2,7 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
 import { buildAuthorizeUrl, isOAuthProviderKey, OAUTH_PROVIDERS } from "@/lib/oauth"
-import { codeChallengeOf, createCodeVerifier, signState } from "@/lib/oauth/state"
+import { codeChallengeOf, createCodeVerifier, createNonce, signState } from "@/lib/oauth/state"
+import { openTransaction } from "@/lib/oauth/transaction"
+import { requireSiteOrigin } from "@/lib/site-url"
 
 // Démarrage OAuth custom (CLAUDE.md règle 13). Route PUBLIQUE au niveau du proxy
 // (préfixe /api/oauth) MAIS protégée ici : getActiveOrg exige une session owner
@@ -19,7 +21,19 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   const { provider } = await params
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+
+  // ⚠️ JAMAIS `new URL(request.url).origin` ici. En conteneur derrière le proxy
+  // Coolify, cette origine est celle vue par le process (http, host interne), pas
+  // l'URL publique : le redirect_uri ne correspondrait à aucune des URIs déclarées
+  // chez le fournisseur, et AUCUNE connexion sociale ne pourrait aboutir. Elle est
+  // en plus dérivée d'un en-tête que le client contrôle.
+  let origin: string
+  try {
+    origin = requireSiteOrigin()
+  } catch {
+    return NextResponse.redirect(new URL(`${SETTINGS}?error=site_url_unconfigured`, request.url))
+  }
 
   if (!isOAuthProviderKey(provider)) {
     return NextResponse.redirect(`${origin}${SETTINGS}?error=provider`)
@@ -34,13 +48,14 @@ export async function GET(
 
   try {
     const codeVerifier = config.usePkce ? createCodeVerifier() : undefined
-    const state = signState({
-      provider,
-      orgId: ctx.org.id,
-      userId: ctx.user.id,
-      clientId,
-      codeVerifier,
-    })
+    const nonce = createNonce()
+
+    // Le state porte l'identité du flux (signée, publique) ; le cookie porte ce
+    // qui doit rester secret ou prouver le navigateur (nonce, vérifieur PKCE).
+    // Séparés délibérément : le state voyage dans l'URL, à côté du code.
+    const state = signState({ provider, orgId: ctx.org.id, userId: ctx.user.id, clientId }, nonce)
+    await openTransaction({ nonce, codeVerifier }, origin.startsWith("https://"))
+
     const authorizeUrl = buildAuthorizeUrl(config, {
       state,
       redirectUri,

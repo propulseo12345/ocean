@@ -24,7 +24,7 @@ export function ForgotPasswordForm() {
       if (result?.error) return { sent: false, error: result.error }
       return { sent: true }
     },
-    { sent: false },
+    { sent: false }
   )
 
   if (state.sent) {

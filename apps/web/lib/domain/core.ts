@@ -24,6 +24,13 @@ export type ContentStatus =
   | "published"
   | "partially_published"
   | "failed"
+  /**
+   * Migration 024 — issue INCONNUE : une publication est peut-être partie et le
+   * worker n'a pas pu conclure. Distinct de `failed`, qui affirme que rien
+   * n'est parti. Aucune transition n'en sort côté app : la sortie est la
+   * résolution humaine de chaque cible.
+   */
+  | "needs_verification"
   | "canceled"
 
 // Statut par cible (ContentTarget)
@@ -35,10 +42,29 @@ export type TargetStatus =
   | "published"
   | "pushed_to_platform"
   | "failed"
+  /** Migration 024 — cf. ContentStatus. C'est LE statut porteur du fait. */
+  | "needs_verification"
   | "skipped"
   | "canceled"
 
-export type AccountStatus = "connected" | "needs_reauth" | "expired"
+/**
+ * ⚠ `expired` EXISTE bien dans l'enum SQL — ajouté par la migration 010
+ * (`010_cablage_foundations.sql:51`), et présent dans le schéma en ligne
+ * (vérifié le 15/08/2026 : `{connected, needs_reauth, expired, disconnected}`).
+ * Le vrai défaut est ailleurs : **rien n'écrit jamais cette valeur**, donc le
+ * code qui la teste est mort. Constaté au ticket P8-2, laissé en place — le
+ * retirer touche 4 écrans et sort du périmètre.
+ *
+ * Rectificatif du 15/08/2026 : ce commentaire affirmait auparavant que la
+ * valeur « n'existe PAS dans l'enum SQL (002:47) ». C'était faux — 002 crée
+ * l'enum, 010 l'élargit. Diagnostic différent, correctif différent : il ne
+ * s'agit pas d'aligner le type sur le schéma, mais de décider si quelque chose
+ * doit produire `expired`, ou de le retirer des deux côtés.
+ *
+ * `disconnected` (migration 036, appliquée le 15/08/2026) est, lui, écrit par
+ * le détachement de compte (P8-2).
+ */
+export type AccountStatus = "connected" | "needs_reauth" | "expired" | "disconnected"
 
 export type CalendarProvider = "google" | "microsoft"
 
@@ -84,7 +110,17 @@ export interface SocialAccount {
   platform: Platform
   username: string
   displayName: string
+  /**
+   * Santé EFFECTIVE, connexion parente comprise (P8-7). Un compte n'a pas
+   * d'autorisation propre : il hérite de celle de `platform_connections`.
+   */
   status: AccountStatus
+  /**
+   * Scopes de publication manquants. Non vide = le compte est « connecté » mais
+   * tout POST sera refusé — un état qu'aucun statut ne sait dire, et que Meta
+   * ne répare que par une reconnexion (il ne rétro-accorde jamais un scope).
+   */
+  missingScopes: string[]
   followers: number
 }
 
@@ -112,6 +148,12 @@ export interface ImportedPost {
 export interface MediaAsset {
   id: string
   type: MediaType
+  /**
+   * Id de la LIAISON content_media (pas de l'asset) — ancre des annotations
+   * (règle : le pin suit la ligne de liaison, donc survit au réordonnancement).
+   * Absent quand le média n'est rattaché à aucun contenu (bibliothèque).
+   */
+  contentMediaId?: string
   thumbUrl: string
   fullUrl: string
   width: number

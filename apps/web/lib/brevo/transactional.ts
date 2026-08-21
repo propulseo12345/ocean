@@ -13,6 +13,7 @@ import "server-only"
 export type BrevoTemplate =
   | "reviewer-invitation"
   | "review-requested"
+  | "review-comment"
   | "changes-requested"
   | "content-approved"
   | "publish-failed"
@@ -24,6 +25,7 @@ export type BrevoTemplate =
 const TEMPLATE_ENV: Record<BrevoTemplate, string> = {
   "reviewer-invitation": "BREVO_TEMPLATE_REVIEWER_INVITATION",
   "review-requested": "BREVO_TEMPLATE_REVIEW_REQUESTED",
+  "review-comment": "BREVO_TEMPLATE_REVIEW_COMMENT",
   "changes-requested": "BREVO_TEMPLATE_CHANGES_REQUESTED",
   "content-approved": "BREVO_TEMPLATE_CONTENT_APPROVED",
   "publish-failed": "BREVO_TEMPLATE_PUBLISH_FAILED",

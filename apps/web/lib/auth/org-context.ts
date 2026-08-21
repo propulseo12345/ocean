@@ -140,8 +140,18 @@ export const getReviewerContext = cache(async () => {
 
   const email = profile?.email ?? user.email ?? ""
 
+  // Un Reviewer peut travailler avec DEUX agences : c'est le profil normal
+  // d'un client qui a deux prestataires, pas un cas limite. `orgId` ci-dessous
+  // ne vaut alors que pour l'une des deux, et la requête n'a pas d'`.order()` :
+  // laquelle n'est même pas stable entre deux appels. Toute page qui résout un
+  // contenu doit donc partir du CLIENT de ce contenu, jamais de `orgId`.
+  const orgParClient = new Map(memberships.map((m) => [m.client_id, m.org_id]))
+
   return {
+    /** @deprecated Faux dès qu'un Reviewer appartient à deux orgs. Utiliser `orgFor`. */
     orgId: memberships[0]?.org_id ?? "",
+    /** Org RÉELLE d'un client donné, ou `null` si l'appelant n'y a pas accès. */
+    orgFor: (clientId: string) => orgParClient.get(clientId) ?? null,
     reviewer: memberships.length
       ? {
           id: user.id,

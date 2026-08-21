@@ -220,11 +220,9 @@ export const gridEn: Widen<typeof gridFr> = {
       shelfScheduledDesc: "It stays a draft, with a target date on the grid.",
       shelfError: "Scheduling the draft failed. Please try again.",
       permuteApplied: "Dates rescheduled",
-      permuteAppliedDesc:
-        "{count, plural, one {# post rescheduled} other {# posts rescheduled}}.",
+      permuteAppliedDesc: "{count, plural, one {# post rescheduled} other {# posts rescheduled}}.",
       permuteError: "Rescheduling failed. Please try again.",
-      batchShiftWeek:
-        "{count, plural, one {# post moved} other {# posts moved}} by one week",
+      batchShiftWeek: "{count, plural, one {# post moved} other {# posts moved}} by one week",
       shiftWeekError: "The shift failed. Please try again.",
       batchReview: "Approval requested for {count, plural, one {# item} other {# items}}",
       batchReviewDesc: "The client will find them in their approval portal.",

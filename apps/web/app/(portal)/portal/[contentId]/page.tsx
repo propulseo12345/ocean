@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getApprovals, getClient, getComments, getPortalContentItem } from "@/lib/data"
-import type { Approval, Client } from "@/lib/domain"
+import type { Approval } from "@/lib/domain"
 import type { Format } from "@/lib/i18n"
 import { getFormat, getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
@@ -36,10 +36,24 @@ export default async function PortalContentPage({
 
   const t = await getT()
   const f = await getFormat()
-  const client = (await getClient(reviewerCtx.orgId, content.clientId)) as Client
+
+  // C'est exactement le défaut P7-9 corrigé dans `portal/page.tsx` et laissé
+  // intact dans ce fichier voisin. `reviewerCtx.orgId` vaut `memberships[0]`,
+  // sur une requête SANS `.order()` : pour un Reviewer invité par DEUX agences —
+  // le profil normal d'un client à deux prestataires — c'est l'org de l'autre
+  // client, choisie de façon instable. `getClient` renvoyait alors `null`, le
+  // `as Client` masquait ce `null` au typage, et `client.timezone` levait un
+  // TypeError : 500 sur la page. Les deux lignes suivantes recevaient le même
+  // `orgId` erroné et rendaient un fil de discussion vide, sans le dire.
+  //
+  // On résout donc l'org depuis le CLIENT du contenu, jamais depuis un index.
+  const orgId = reviewerCtx.orgFor(content.clientId)
+  const client = orgId ? await getClient(orgId, content.clientId) : null
+  if (!orgId || !client) notFound()
+
   const tz = client.timezone
-  const comments = await getComments(reviewerCtx.orgId, content.clientId, contentId)
-  const approvals = await getApprovals(reviewerCtx.orgId, content.clientId, contentId)
+  const comments = await getComments(orgId, content.clientId, contentId)
+  const approvals = await getApprovals(orgId, content.clientId, contentId)
   const status = clientFacingStatus(content.status)
   const isToReview = content.status === "in_review" || content.status === "changes_requested"
   const title = content.title
@@ -56,7 +70,12 @@ export default async function PortalContentPage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="space-y-5">
-          <AnnotationViewer media={content.media} comments={comments} alt={title} />
+          <AnnotationViewer
+            media={content.media}
+            comments={comments}
+            alt={title}
+            contentId={contentId}
+          />
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20">

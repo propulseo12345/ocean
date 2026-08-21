@@ -44,6 +44,13 @@ import { ScheduleDialog } from "./schedule-dialog"
 
 export interface ComposerData {
   client: Client
+  /**
+   * Org active, résolue côté SERVEUR. Sert à bâtir le chemin Storage
+   * `{org}/{client}/…` d'un fichier déposé dans le composer. Cf. la note de
+   * `LibraryWorkspace` : une valeur falsifiée est refusée deux fois (policy
+   * `can_write_client_media`, puis `pathBelongsTo` dans `recordUploadedAsset`).
+   */
+  orgId: string
   accounts: SocialAccount[]
   pillars: ContentPillar[]
   hashtagGroups: HashtagGroup[]
@@ -138,9 +145,11 @@ export function ComposerScreen({
     if (saving) return
     setSaving(true)
 
-    // Seuls les médias adossés à un asset de médiathèque sont persistables :
-    // un fichier fraîchement déposé dans le composer n'existe pas encore en base
-    // (upload TUS non câblé). On les écarte et on prévient si au moins un l'est.
+    // Tout média du brouillon porte désormais un `libraryAssetId` : le picker
+    // en pose un, et un fichier déposé dans le composer est téléversé PUIS
+    // enregistré avant d'entrer dans le brouillon (P5-7/P5-8b). Le filtre reste
+    // — un média sans asset serait un bug, et le perdre en silence est
+    // exactement ce que P5-2 a corrigé — mais il ne devrait plus rien écarter.
     const mediaPayload = draft.media.flatMap((m) =>
       m.libraryAssetId
         ? [{ libraryAssetId: m.libraryAssetId, altText: m.altText, crop: m.crop }]
@@ -227,6 +236,8 @@ export function ComposerScreen({
             draft={draft}
             platforms={platforms}
             libraryAssets={data.libraryAssets}
+            orgId={data.orgId}
+            clientId={data.client.id}
             onPatch={patch}
           />
           <ComposerTargets

@@ -69,13 +69,25 @@ function normalizeHandle(value: string): string | null {
 }
 
 /**
+ * Sort de l invitation reviewer proposee par le wizard de creation (P7-10).
+ *
+ * `token` est la SEULE copie en clair : la base n en garde que le hash
+ * (client_invitations.token_hash). Si l appelant ne s en sert pas, le lien
+ * d acceptation est perdu pour de bon.
+ */
+export type CreateClientInvite =
+  | { status: "none" }
+  | { status: "created"; email: string; token: string }
+  | { status: "failed"; email: string; error: string }
+
+/**
  * Crée un client dans l'org active et renvoie son id réel.
  * Nommée `createClientAction` pour ne pas masquer la factory `createClient`
  * de lib/supabase/server importée ci-dessus.
  */
 export async function createClientAction(
   input: unknown
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; invite: CreateClientInvite }>> {
   const parsed = draftSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: "invalid_input" }
   const d = parsed.data
@@ -163,13 +175,28 @@ export async function createClientAction(
   // client_invitations via inviteReviewer. L'ENVOI de l'email est différé
   // (Brevo, Tier D) ; ici on enregistre l'invitation (token hashé). Un email
   // invalide ou une invitation en double n'annule pas la création du client.
+  // P7-10 : le retour d'`inviteReviewer` était JETÉ. Il porte pourtant la seule
+  // copie en clair du jeton — la base n'en garde que le hash. Le wizard
+  // affichait donc un succès, l'invitation existait, et plus personne au monde
+  // ne pouvait produire son lien d'acceptation. Pire : la ré-invitation depuis
+  // la fiche client échouait ensuite en `already_invited` (index unique partiel
+  // sur (client_id, email) tant que ni accepted_at ni revoked_at ne sont posés),
+  // ce qui rendait la situation définitive.
+  let invite: CreateClientInvite
   if (d.reviewerEmail.trim()) {
-    await inviteReviewer({ clientId, email: d.reviewerEmail.trim() })
+    const email = d.reviewerEmail.trim()
+    const result = await inviteReviewer({ clientId, email })
+    invite =
+      result.ok && result.data
+        ? { status: "created", email, token: result.data.token }
+        : { status: "failed", email, error: result.ok ? "no_token" : result.error }
+  } else {
+    invite = { status: "none" }
   }
 
   revalidatePath("/clients", "layout")
   revalidatePath("/dashboard")
-  return { ok: true, data: { id: clientId } }
+  return { ok: true, data: { id: clientId, invite } }
 }
 
 const updateSchema = z.object({

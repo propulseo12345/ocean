@@ -39,7 +39,14 @@ export function ContentDetailMedia({
   const [coverOpen, setCoverOpen] = useState(false)
 
   const pinned = comments.filter((c) => c.annotation)
-  const slidePins = pinned.filter((c) => (c.annotation?.slideIndex ?? 0) === slideIndex)
+  // Appariement par ANCRE (content_media) et non par index de tableau — même
+  // règle que le portail : un média masqué ne doit pas décaler les repères.
+  const anchorId = media[slideIndex]?.contentMediaId
+  const slidePins = pinned.filter((c) =>
+    anchorId
+      ? c.annotation?.contentMediaId === anchorId
+      : (c.annotation?.slideIndex ?? 0) === slideIndex
+  )
   const active = pinned.find((c) => c.id === activeId) ?? null
   const video = media.find((m) => m.type === "video") ?? null
   const isReel = format === "reel" && video !== null

@@ -229,8 +229,7 @@ export const gridFr = {
       batchReview: "Validation demandée pour {count, plural, one {# contenu} other {# contenus}}",
       batchReviewDesc: "Le client les retrouve dans son portail de validation.",
       reviewError: "L'envoi en validation a échoué. Réessayez.",
-      batchCancel:
-        "Planification annulée pour {count, plural, one {# contenu} other {# contenus}}",
+      batchCancel: "Planification annulée pour {count, plural, one {# contenu} other {# contenus}}",
       cancelError: "L'annulation a échoué. Réessayez.",
       excludeRemoved: "« {title} » retiré de la grille principale",
       excludeRemovedDesc: "Le Reel reste visible dans l'onglet Reels et au calendrier.",

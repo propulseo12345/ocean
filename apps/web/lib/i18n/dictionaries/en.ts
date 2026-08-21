@@ -45,6 +45,7 @@ export const en: Dictionary = {
       published: "Published",
       partially_published: "Partially published",
       failed: "Failed",
+      needs_verification: "Check on the platform",
       canceled: "Canceled",
     },
     target: {
@@ -55,6 +56,7 @@ export const en: Dictionary = {
       published: "Published",
       pushed_to_platform: "Draft pushed",
       failed: "Failed",
+      needs_verification: "Check on the platform",
       skipped: "Skipped",
       canceled: "Canceled",
     },
@@ -62,6 +64,7 @@ export const en: Dictionary = {
       connected: "Connected",
       needs_reauth: "Reconnection required",
       expired: "Expired",
+      disconnected: "Detached",
     },
     review: {
       pending: "Pending",

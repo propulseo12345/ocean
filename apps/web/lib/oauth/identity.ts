@@ -1,7 +1,8 @@
 import "server-only"
 
 import type { OAuthProviderConfig } from "./config"
-import type { OAuthTokens } from "./index"
+import type { OAuthTokens, ReadyTokens } from "./index"
+import { grantedFromMetaPermissions, parseScopeString } from "./scopes"
 
 // Résolution de l'identité de compte après échange OAuth (« me / pages… »).
 // Deux niveaux :
@@ -31,6 +32,14 @@ export interface ResolvedIdentity {
   /** Requis pour les comptes d'agenda (calendar_accounts.email NOT NULL). */
   email?: string
   subAccounts: SocialSubAccount[]
+  /**
+   * Scopes réellement ACCORDÉS par l'utilisateur — jamais ceux demandés.
+   *
+   * Vide quand le fournisseur ne les annonce pas : c'est un aveu d'ignorance,
+   * pas un défaut. Le repli inverse (« on suppose que tout est accordé »)
+   * afficherait une connexion capable de publier sans rien en savoir.
+   */
+  grantedScopes: string[]
 }
 
 async function fetchJson(url: string, bearer?: string): Promise<Record<string, unknown>> {
@@ -64,6 +73,11 @@ type MetaPage = {
 
 async function resolveMeta(token: string): Promise<ResolvedIdentity> {
   const me = await fetchJson(`${GRAPH}/me?fields=id,name&access_token=${encodeURIComponent(token)}`)
+  // Meta ne renvoie PAS de champ `scope` dans sa réponse de token : les
+  // permissions réellement accordées ne s'obtiennent que par cet appel.
+  const permissions = await fetchJson(
+    `${GRAPH}/me/permissions?access_token=${encodeURIComponent(token)}`
+  )
   const fields =
     "id,name,username,followers_count,access_token,instagram_business_account{id,username,name,followers_count,profile_picture_url}"
   const accounts = await fetchJson(
@@ -101,6 +115,7 @@ async function resolveMeta(token: string): Promise<ResolvedIdentity> {
     providerAccountId: (me.id as string) ?? "",
     providerAccountName: me.name as string | undefined,
     subAccounts,
+    grantedScopes: grantedFromMetaPermissions(permissions),
   }
 }
 
@@ -124,6 +139,7 @@ async function resolveTikTok(tokens: OAuthTokens): Promise<ResolvedIdentity> {
   return {
     providerAccountId: openId,
     providerAccountName: user.display_name,
+    grantedScopes: parseScopeString(tokens.scope),
     subAccounts: [
       {
         platform: "tiktok",
@@ -141,32 +157,41 @@ async function resolveTikTok(tokens: OAuthTokens): Promise<ResolvedIdentity> {
 
 // --- Google / Microsoft (agenda, lecture seule) ----------------------------
 
-async function resolveGoogle(token: string): Promise<ResolvedIdentity> {
-  const info = await fetchJson("https://openidconnect.googleapis.com/v1/userinfo", token)
+async function resolveGoogle(tokens: OAuthTokens): Promise<ResolvedIdentity> {
+  const info = await fetchJson(
+    "https://openidconnect.googleapis.com/v1/userinfo",
+    tokens.accessToken
+  )
   const email = info.email as string | undefined
   return {
     providerAccountId: (info.sub as string) ?? "",
     providerAccountName: (info.name as string | undefined) ?? email,
     email,
     subAccounts: [],
+    grantedScopes: parseScopeString(tokens.scope),
   }
 }
 
-async function resolveMicrosoft(token: string): Promise<ResolvedIdentity> {
-  const me = await fetchJson("https://graph.microsoft.com/v1.0/me", token)
+async function resolveMicrosoft(tokens: OAuthTokens): Promise<ResolvedIdentity> {
+  const me = await fetchJson("https://graph.microsoft.com/v1.0/me", tokens.accessToken)
   const email = (me.mail as string | undefined) ?? (me.userPrincipalName as string | undefined)
   return {
     providerAccountId: (me.id as string) ?? "",
     providerAccountName: (me.displayName as string | undefined) ?? email,
     email,
     subAccounts: [],
+    grantedScopes: parseScopeString(tokens.scope),
   }
 }
 
 /** Résout l'identité selon le provider. Lève si l'API échoue (callback → error). */
 export async function resolveIdentity(
   config: OAuthProviderConfig,
-  tokens: OAuthTokens
+  // ⚠ `ReadyTokens`, pas `OAuthTokens` : le typage interdit d'appeler cette
+  // fonction avec le résultat brut de `exchangeCode`. Les tokens de PAGE
+  // héritent de la durée de vie du token utilisateur qui les demande — les
+  // résoudre trop tôt donnerait des tokens de publication courts (P8-3).
+  tokens: ReadyTokens
 ): Promise<ResolvedIdentity> {
   switch (config.key) {
     case "meta":
@@ -174,8 +199,8 @@ export async function resolveIdentity(
     case "tiktok":
       return resolveTikTok(tokens)
     case "google":
-      return resolveGoogle(tokens.accessToken)
+      return resolveGoogle(tokens)
     case "microsoft":
-      return resolveMicrosoft(tokens.accessToken)
+      return resolveMicrosoft(tokens)
   }
 }

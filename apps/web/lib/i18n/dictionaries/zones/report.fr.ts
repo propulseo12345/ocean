@@ -11,7 +11,8 @@ export const reportFr = {
       copyLink: "Copier le lien",
       exportPdf: "Exporter en PDF",
       copiedTitle: "Lien de partage copié",
-      copiedDescription: "Instantané figé du rapport, consultable sans compte. Le lien reste privé tant que tu ne le partages pas.",
+      copiedDescription:
+        "Instantané figé du rapport, consultable sans compte. Le lien reste privé tant que tu ne le partages pas.",
       readyTitle: "Lien de partage prêt",
       shareError: "Le lien n'a pas pu être généré. Réessayez.",
       printTitle: "Ouverture de l'impression…",

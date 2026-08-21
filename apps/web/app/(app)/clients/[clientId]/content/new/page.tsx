@@ -72,6 +72,7 @@ export default async function NewContentPage({
 
   const data: ComposerData = {
     client,
+    orgId: ctx.org.id,
     accounts,
     pillars: await getPillars(ctx.org.id, clientId),
     hashtagGroups: await getHashtagGroups(ctx.org.id, clientId),

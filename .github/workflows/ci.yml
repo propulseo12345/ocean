@@ -18,13 +18,29 @@ jobs:
     env:
       # Port DB local du CLI Supabase (supabase/config.toml -> [db] port).
       # Connexion directe, pas de pooler : le port 6543 est interdit (regle 17).
-      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54422/postgres
     steps:
       - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      # Le CLI derive la version des chiffres de tete du nom de fichier et l'insere
+      # en cle primaire de supabase_migrations.schema_migrations. Deux fichiers qui
+      # partagent ce prefixe tuent `supabase start` sur un duplicate key -- c'est ce
+      # qui a bloque ce job pendant 7 runs (012_media.sql + 012_media_storage.sql).
+      # Verifie AVANT de demarrer : le message est explicite, pas un SQLSTATE.
+      - name: Assert unique migration versions
+        run: |
+          DUPES=$(ls supabase/migrations/*.sql | xargs -n1 basename \
+            | sed -E 's/^([0-9]+)_.*/\1/' | sort | uniq -d)
+          if [ -n "$DUPES" ]; then
+            echo "::error::versions de migration en double : $(echo "$DUPES" | tr '\n' ' ')"
+            for v in $DUPES; do ls supabase/migrations/${v}_*.sql; done
+            exit 1
+          fi
+          echo "OK : $(ls supabase/migrations/*.sql | wc -l) migrations, versions toutes uniques"
 
       - name: Start Supabase (local, jamais db push ni link)
         run: supabase start
@@ -114,24 +130,99 @@ jobs:
         with:
           version: 11.1.2
 
+      # Node 22, aligne sur le Dockerfile (node:22-alpine). En Node 20, pnpm
+      # 11.1.2 refuse de demarrer (« requires at least Node.js v22.13 ») puis
+      # casse sur ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite -- le step setup-node
+      # echouait, donc install, Biome, typecheck et build etaient tous skippes.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      # TODO(lot-0) : passer en bloquant une fois le Pre-0 commite.
-      # `pnpm check` echoue aujourd'hui sur 2 points hors perimetre backend
-      # (.planning/i18n/lot3-workflow.js, provider.tsx document.cookie).
-      # Une CI rouge en permanence est une CI qu'on ignore.
+      # Bloquants depuis P0-5. Ils ne l'etaient pas parce que `pnpm check`
+      # echouait sur des artefacts hors code source (.planning, docs/superpowers,
+      # _research -- desormais exclus de biome.json) et sur 24 fichiers non
+      # formates. Le typecheck, lui, renvoyait deja 0 erreur.
+      # Rappel : biome.json impose lineEnding lf. Sous Windows (core.autocrlf
+      # true) `biome check` remonte des erreurs de format sur des fichiers non
+      # modifies -- c'est un artefact local, la CI Linux checkout en LF.
       - name: Biome
         run: pnpm check
-        continue-on-error: true
 
       - name: Typecheck
         run: pnpm --filter web exec tsc --noEmit
-        continue-on-error: true
+
+      # `apps/web` n'avait AUCUN test — ni vitest, ni jest, ni un seul fichier.
+      # Les correctifs de securite de la phase 7 (prise de controle de compte sur
+      # /api/invitations/accept) n'etaient donc prouves par rien. Meme idiome que
+      # le worker : `node --test` natif + tsx, aucune dependance de framework.
+      # A garder BLOQUANT.
+      - name: Tests
+        run: pnpm --filter web test
 
       - name: Build
         run: pnpm build
+
+  # Le sous-systeme le plus dangereux du produit (ecriture irreversible chez un
+  # tiers) etait le seul sans filet automatise : `apps/worker` n'apparaissait dans
+  # aucun job. Les 7 tests qui prouvent la regle 15 (jamais de double publication)
+  # existaient dans le depot et n'etaient executes par aucun pipeline.
+  # A garder BLOQUANT quand les publishers passeront en mode live.
+  worker:
+    name: Worker (typecheck + tests idempotence)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      # Node 22 obligatoire ici aussi : `node --test` n'accepte un glob de
+      # fichiers qu'a partir de Node 22 (cf. script `test` de apps/worker).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Le worker tourne sous tsx en production : son TypeScript n'est compile
+      # nulle part. Sans ce step, une erreur de type n'est jamais vue.
+      - name: Typecheck
+        run: pnpm --filter worker exec tsc --noEmit
+
+      - name: Tests
+        run: pnpm --filter worker test
+
+  # Les deux images n'etaient construites nulle part avant le deploiement : une
+  # regression (chemin standalone, majeure Node, manifeste manquant dans le stage
+  # deps) ne se voyait qu'au boot en production. Les deux contextes de build sont
+  # la RACINE du depot -- le lockfile declare 3 importers.
+  docker:
+    name: Images Docker (web + worker)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            dockerfile: Dockerfile
+          - name: worker
+            dockerfile: apps/worker/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: false
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max

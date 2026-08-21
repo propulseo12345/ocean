@@ -34,6 +34,7 @@ export {
   getBrandKit,
   getCalendarAccounts,
   getCalendarEvents,
+  getClientAccess,
   getClientEvents,
   getClientSettings,
   getComments,

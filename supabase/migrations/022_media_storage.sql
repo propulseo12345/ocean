@@ -1,8 +1,26 @@
--- Migration 012 (partie Storage) — buckets + policies storage.objects.
+-- Migration 022 (partie Storage de 012) — buckets + policies storage.objects.
 --
--- ⚠️ APPLIQUÉE EN LIGNE UNIQUEMENT. Le conteneur pgTAP local a un schéma
--- storage ancien (storage.buckets sans les colonnes public/file_size_limit/
--- allowed_mime_types) ; le runner run-pgtap.sh saute les fichiers *_storage.sql.
+-- ⚠️ RENUMÉROTÉE 012 -> 022 (ticket P0-2). Deux fichiers partageaient le préfixe
+-- `012` : le CLI Supabase dérive la version des chiffres de tête et l'insère en
+-- clé primaire de supabase_migrations.schema_migrations, donc `supabase start`
+-- mourait sur `duplicate key ... Key (version)=(012)`. Le job `db` de la CI n'a
+-- jamais tourné une seule fois à cause de ça (7 runs, 7 échecs).
+--
+-- ⚠️ CONSÉQUENCE DE LA RENUMÉROTATION : ce fichier s'applique désormais APRÈS la
+-- migration 017, qui supprime volontairement la policy `media_thumbs_select_public`
+-- (advisor 0025 public_bucket_allows_listing : elle permettait de LISTER toutes les
+-- vignettes, contenu client non publié inclus). La recréer ici annulerait ce
+-- durcissement à chaque rejeu depuis zéro — elle a donc été retirée de ce fichier
+-- (section 2, ex-`media_thumbs_select_public`). L'état final d'un `db reset` est
+-- identique à l'état réellement appliqué en ligne. La lecture publique des
+-- vignettes ne passe PAS par une policy SELECT : le bucket est public et l'app
+-- utilise getPublicUrl (aucun `.list()`).
+--
+-- ⚠️ Le conteneur pgTAP local a un schéma storage ancien (storage.buckets sans les
+-- colonnes public/file_size_limit/allowed_mime_types) ; le runner run-pgtap.sh
+-- saute les fichiers *_storage.sql (le suffixe est préservé par le renommage).
+-- Le stack local du CLI Supabase, lui, l'applique : c'est le job `db` de la CI qui
+-- est le seul endroit où ces policies peuvent être testées.
 --
 -- ⚠️ DÉCISIONS À RECONFIRMER PAR ÉTIENNE avant application :
 --   D2 — chemin Storage SANS segment content_item_id (contredit la règle 21 du
@@ -84,11 +102,14 @@ with check (
         (storage.foldername(name))[2]::uuid))
 );
 
--- ---- media-thumbs (public) : lecture publique (bucket public), écriture org
---      members (vignettes générées côté client et uploadées).
-create policy media_thumbs_select_public on storage.objects
-for select to anon, authenticated
-using (bucket_id = 'media-thumbs');
+-- ---- media-thumbs (public) : lecture publique par URL (getPublicUrl, sans policy
+--      SELECT — cf. en-tête et migration 017), écriture org members (vignettes
+--      générées côté client et uploadées).
+--
+--      PAS de policy SELECT ici : `media_thumbs_select_public` a été créée par la
+--      version 012 de ce fichier puis supprimée par la migration 017 (advisor 0025).
+--      Ce fichier s'appliquant maintenant après 017, la recréer ferait resurgir la
+--      fuite de listing à chaque `db reset`. Ne pas la rajouter.
 
 create policy media_thumbs_insert on storage.objects
 for insert to authenticated

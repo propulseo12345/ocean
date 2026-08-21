@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
+import { pathBelongsTo } from "@/lib/media/paths"
 import { type ActionResult, requireClientInOrg } from "./_helpers"
 
 // Server Actions médiathèque (migration 012). Le fichier binaire transite par le
@@ -46,6 +47,28 @@ export async function recordUploadedAsset(input: unknown): Promise<ActionResult<
 
   try {
     const { orgId, userId, supabase } = await requireClientInOrg(d.clientId)
+
+    // Le CHEMIN vient du navigateur, et rien ne l'opposait au tenant :
+    // `requireClientInOrg` valide le CLIENT, jamais le chemin, et
+    // `storagePath` était inséré tel quel. Or aucune contrainte, aucun trigger
+    // ne relie `storage_path` à `org_id`/`client_id` en base : une ligne
+    // `media_assets` pouvait donc désigner le préfixe d'un AUTRE tenant.
+    // C'est ce que la voie reviewer de la 033 résout par `storage_path` — sans
+    // reconfronter le chemin à la ligne, la seule barrière restante est l'index
+    // unique global, qui n'a jamais été conçu comme une frontière de tenant.
+    //
+    // La fonction faite pour ce recoupement existait, était testée, et n'était
+    // importée par AUCUN fichier de production. Défense en profondeur écrite
+    // puis jamais branchée — elle l'est ici.
+    if (!pathBelongsTo(d.storagePath, orgId, d.clientId)) {
+      return { ok: false, error: "invalid_path" }
+    }
+    // Même exigence sur la vignette : elle vit dans un bucket PUBLIC, donc un
+    // chemin mal rangé y est lisible par tout le monde, sans URL signée.
+    if (d.thumbPath && !pathBelongsTo(d.thumbPath, orgId, d.clientId)) {
+      return { ok: false, error: "invalid_path" }
+    }
+
     const { data, error } = await supabase
       .from("media_assets")
       .insert({

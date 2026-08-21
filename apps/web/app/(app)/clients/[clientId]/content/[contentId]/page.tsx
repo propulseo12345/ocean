@@ -37,7 +37,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.metaContentDetail") }
 }
 
-const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
+const READ_ONLY: ContentStatus[] = [
+  "publishing",
+  "published",
+  "partially_published",
+  "needs_verification",
+]
 
 function isManualTarget(target: ContentTarget, content: ContentItem): boolean {
   if (target.status === "pushed_to_platform" || target.status === "awaiting_manual") return true

@@ -1,0 +1,32 @@
+-- Migration 036 a appliquer sur hgdeopkmkwyoumsfggrm (SQL Editor). Prerequis : 002 + 005 + 006.
+-- Genere depuis supabase/migrations/036_account_status_disconnected.sql.
+--
+-- ✅ APPLIQUEE EN LIGNE le 15/08/2026 (session de pilotage, MCP `execute_sql`),
+-- seule dans sa transaction, apres la 035. Ledger passe de 35 a 36 lignes
+-- (`036` / `account_status_disconnected`).
+--
+-- ⚠ A EXECUTER SEUL, DANS SA PROPRE TRANSACTION. `alter type ... add value` est
+-- autorise dans une transaction depuis PG12 mais la valeur ne peut PAS etre
+-- UTILISEE dans la meme transaction. Ne pas coller ce fichier a la suite d'un
+-- autre, ni suivre d'un `update ... set status = 'disconnected'` : la migration
+-- 024 avait deja du etre livree en deux etapes pour cette raison exacte.
+--
+-- OBJET : il n'existait aucun etat pour un compte DETACHE.
+--   · le supprimer est impossible — `content_targets.social_account_id` porte
+--     `on delete restrict` (006:43), et c'est voulu : la ligne porte le lien
+--     vers les posts reellement publies (external_post_id, permalien) ;
+--   · reutiliser `needs_reauth` aurait menti — cet etat veut dire
+--     « reconnecte-moi », il declenche le bandeau de sante et invite a refaire
+--     ce que l'utilisateur vient deliberement de defaire.
+--
+-- VERIFICATION APRES APPLICATION :
+--   select enum_range(null::public.account_status);
+--   -- attendu : {connected,needs_reauth,expired,disconnected}
+--   -- ⚠ `expired` EST dans l'enum, ajoute par la migration 010
+--   -- (010_cablage_foundations.sql:51). Une version anterieure de ce
+--   -- commentaire l'omettait et affirmait que l'enum ne l'avait « jamais eu » :
+--   -- c'est faux. Le constat qui tient est que RIEN ne produit `expired` — le
+--   -- code TypeScript qui le teste est mort. Rendu reel le 15/08/2026 :
+--   -- {connected,needs_reauth,expired,disconnected}.
+
+alter type public.account_status add value if not exists 'disconnected';

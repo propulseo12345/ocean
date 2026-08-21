@@ -40,5 +40,12 @@ export default async function ClientLibraryPage({
       ])
   )
 
-  return <LibraryWorkspace client={client} initialAssets={assets} contentRefs={contentRefs} />
+  return (
+    <LibraryWorkspace
+      client={client}
+      orgId={ctx.org.id}
+      initialAssets={assets}
+      contentRefs={contentRefs}
+    />
+  )
 }

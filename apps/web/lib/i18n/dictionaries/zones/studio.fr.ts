@@ -136,7 +136,8 @@ export const studioFr = {
       nothingToCancelDesc: "Les contenus déjà publiés ou en cours de publication sont verrouillés.",
       canceled: "{count, plural, one {# contenu annulé} other {# contenus annulés}}{ignored}",
       cancelError: "L'annulation a échoué. Réessayez.",
-      scheduled: "{count, plural, one {# contenu programmé} other {# contenus programmés}}{ignored}",
+      scheduled:
+        "{count, plural, one {# contenu programmé} other {# contenus programmés}}{ignored}",
       scheduleError: "La programmation a échoué. Réessayez.",
       tagDialogTitle: "Étiqueter la sélection",
       tagDialogDesc:
@@ -270,7 +271,8 @@ export const studioFr = {
       destinationAria: "Client de destination",
       thisClient: " (ce client)",
       adaptHashtags: "Adapter les hashtags au client cible",
-      adaptHashtagsDesc: "Retire les hashtags du client source — à re-choisir pour le client cible.",
+      adaptHashtagsDesc:
+        "Retire les hashtags du client source — à re-choisir pour le client cible.",
       crossClientWarning:
         "Les médias ne traversent jamais d'un client à l'autre : re-sélectionne les visuels dans la médiathèque de {name}.",
       confirm: "Dupliquer",

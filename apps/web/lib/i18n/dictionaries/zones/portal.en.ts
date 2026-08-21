@@ -10,6 +10,9 @@ export const portalEn: Widen<typeof portalFr> = {
       connectedAs: "Signed in as {name} · Ocean — secure space",
     },
     home: {
+      noClientTitle: "No review space",
+      noClientDescription:
+        "Your account isn't linked to any client. If you received an invitation, open it from the email; otherwise ask your agency to invite you again.",
       metaTitle: "Review space",
       greeting: "Hello{name},",
       toValidateHeading: "You have {count, plural, one {# post} other {# posts}} to review",
@@ -20,6 +23,16 @@ export const portalEn: Widen<typeof portalFr> = {
       sectionHistory: "History",
       emptyValidatedTitle: "Everything is approved",
       emptyValidatedDescription: "No post is awaiting your review right now.",
+    },
+    leave: {
+      trigger: "Leave this workspace",
+      confirmQuestion: "Leave {client}?",
+      confirmDetail:
+        "You will lose access to this client's posts. Your agency will have to invite you again.",
+      confirm: "Yes, leave",
+      cancel: "Cancel",
+      done: "You have left this workspace.",
+      error: "Could not leave this workspace. Try again in a moment.",
     },
     detail: {
       metaTitle: "Review",
@@ -38,9 +51,24 @@ export const portalEn: Widen<typeof portalFr> = {
     annotation: {
       pinHint: "Tap a marker on the visual to see the related comment.",
       pinLabel: "Marker {label}",
+      draftPinLabel: "Marker being placed",
       noThread: "No conversation yet.",
       client: "Client",
       yourAgency: "Your agency",
+      composerTitle: "Your comment",
+      composerHint:
+        "Write your feedback. To point at a specific detail, drop a marker on the visual.",
+      composerPlaceholder: "E.g. the logo sits too close to the edge, could you move it?",
+      composerAriaLabel: "Your comment on this post",
+      pinAction: "Drop a marker",
+      pickingCancel: "Cancel marker",
+      pickingHint: "Tap the visual exactly where you want to point.",
+      pinnedOnSlide: "Marker on visual {index}",
+      removePin: "Remove marker",
+      send: "Send comment",
+      posted: "Comment sent",
+      postedDetail: "Your agency will find it in their workspace.",
+      postError: "Your comment could not be sent. Please try again.",
     },
     carousel: {
       altSlide: "{alt} — visual {index}",
@@ -48,6 +76,7 @@ export const portalEn: Widen<typeof portalFr> = {
       previous: "Previous visual",
       next: "Next visual",
       viewSlide: "View visual {index}",
+      pickPoint: "Choose where to place the marker on the visual",
     },
     review: {
       decisionRecorded: "Decision recorded",

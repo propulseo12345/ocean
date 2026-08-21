@@ -11,6 +11,12 @@ export type JobStatus =
   | "failed"
   | "dead_letter"
   | "canceled"
+  /**
+   * Terminal, migration 024 : l'issue est INCONNUE — l'ancre de la règle 15
+   * était posée et on n'a pas pu conclure. Distinct de `failed`, qui affirme
+   * que rien n'est parti. Aucune relance automatique ne le reprend.
+   */
+  | "needs_verification"
 
 export type JobStep = "refresh_token" | "check_quota" | "create_container" | "publish" | "verify"
 
@@ -32,13 +38,55 @@ export interface PublishJob {
   workerId: string | null
   claimedAt: Date | null
   leaseExpiresAt: Date | null
-  /** Règle 15 : posé AVANT media_publish. Non nul => jamais de retry aveugle. */
+  /**
+   * Règle 15, trace d'EXÉCUTION : quand CE job a rendu la publication
+   * irréversible. Jetable avec la ligne — ne jamais décider sur cette seule
+   * valeur, lire `effectiveAnchor`.
+   */
   publishStartedAt: Date | null
   externalContainerId: string | null
+  /**
+   * Règle 15, ancre de DÉCISION : `content_targets.publish_started_at`
+   * (migration 023). Elle survit à la ligne de job, donc aux quatre chemins qui
+   * fabriquent un job neuf pour une cible déjà partie chez la plateforme.
+   */
+  targetPublishStartedAt: Date | null
+  targetExternalContainerId: string | null
   externalPostId: string | null
   permalink: string | null
   nextAttemptAt: Date | null
   lastError: unknown
+}
+
+/**
+ * Ancre d'idempotence EFFECTIVE d'un job (RÈGLE 15). La cible fait foi : son
+ * ancre est durable, celle du job ne l'est pas. `coalesce` et pas `&&` — un job
+ * neuf sur une cible déjà ancrée doit hériter de l'ancre, c'est tout l'objet de
+ * la migration 023.
+ *
+ * `containerId` sans `startedAt` est un cas normal : un conteneur créé puis un
+ * crash avant la marque. Rien n'est parti, mais le conteneur est réutilisable.
+ */
+export function effectiveAnchor(job: PublishJob): {
+  startedAt: Date | null
+  containerId: string | null
+} {
+  return {
+    startedAt: job.targetPublishStartedAt ?? job.publishStartedAt,
+    containerId: job.targetExternalContainerId ?? job.externalContainerId,
+  }
+}
+
+/**
+ * RÈGLE 15 : l'issue de ce job est-elle INCONNUE ?
+ *
+ * Vrai dès que l'ancre effective est posée — la cible a peut-être reçu un POST
+ * et on n'a pas pu conclure. C'est LE booléen qui décide entre `failed` (« rien
+ * n'est parti », donc relançable) et `needs_verification` (« on ne sait pas »,
+ * donc un humain doit regarder avant toute relance, migration 024).
+ */
+export function isOutcomeUnknown(job: PublishJob): boolean {
+  return effectiveAnchor(job).startedAt !== null
 }
 
 /** Statut métier terminal posé sur content_targets selon la plateforme. */
@@ -49,6 +97,23 @@ export interface PublishResult {
   externalPostId: string
   permalink?: string
   targetStatus: TerminalTargetStatus
+}
+
+/**
+ * Le job ne nous appartient plus (jeton de clôture / fencing token).
+ *
+ * Levée quand une écriture d'état touche 0 ligne : soit le lease a expiré et le
+ * reaper a rendu le job à la file (un autre worker l'a repris), soit le job a
+ * été annulé pendant qu'on le traitait. Dans les deux cas la SEULE conduite
+ * sûre est d'arrêter immédiatement sans publier et sans écrire : le propriétaire
+ * courant décidera. Ce n'est ni un échec du contenu ni une erreur à retenter —
+ * aucun statut ne doit être posé (on n'en a plus le droit).
+ */
+export class LeaseLostError extends Error {
+  constructor(readonly operation: string) {
+    super(`lease perdu sur ${operation} : le job appartient a un autre worker`)
+    this.name = "LeaseLostError"
+  }
 }
 
 /** Erreur permanente (token révoqué, média invalide) : failed direct, aucun retry (règle 18). */

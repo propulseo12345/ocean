@@ -43,11 +43,7 @@ export function ReportWorkspace({
   return (
     <div className="space-y-4">
       {readOnly ? null : (
-        <ReportActions
-          clientId={data.client.id}
-          sections={sections}
-          onToggleSection={toggle}
-        />
+        <ReportActions clientId={data.client.id} sections={sections} onToggleSection={toggle} />
       )}
 
       <article

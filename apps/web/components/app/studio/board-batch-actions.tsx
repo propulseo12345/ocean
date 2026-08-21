@@ -98,9 +98,7 @@ export function BoardBatchActions({
       toast.error(t("studio.batch.cancelError"))
       return
     }
-    toast.success(
-      t("studio.batch.canceled", { count: res.ok, ignored: ignoredSuffix(t, ignored) })
-    )
+    toast.success(t("studio.batch.canceled", { count: res.ok, ignored: ignoredSuffix(t, ignored) }))
   }
 
   return (

@@ -134,8 +134,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
         "A late approval never triggers automatic publishing: past the deadline, the content comes back to you for rescheduling.",
       savedToast: "Approval level saved",
       inviteDialogTitle: "Invite a reviewer",
-      inviteDialogDescription:
-        "They'll get read-only access to this client's approval portal.",
+      inviteDialogDescription: "They'll get read-only access to this client's approval portal.",
       inviteEmailLabel: "Reviewer email",
       inviteEmailPlaceholder: "name@example.com",
       inviteSubmit: "Create invitation",
@@ -147,7 +146,7 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       inviteCopy: "Copy link",
       inviteCopied: "Link copied",
       inviteDone: "Done",
-      inviteAlreadyInvited: "An invitation is already pending for this email.",
+      inviteAlreadyMember: "This address is already a member of this client.",
       inviteInvalid: "Invalid email address.",
       inviteError: "The invitation could not be created.",
     },
@@ -261,6 +260,23 @@ export const clientSettingsEn: Widen<typeof clientSettingsFr> = {
       purgeDialogDescription:
         '"{title}" will be removed from the trash with no way to restore it. The attached media will be purged.',
       purgeConfirm: "Delete permanently",
+    },
+    // Client access: members + pending invitations (P7-7).
+    access: {
+      title: "Portal access",
+      description: "Who can review this client's content.",
+      invitationPending: "Invitation pending - expires {when}",
+      invitationExpired: "Invitation expired {when} - resend it",
+      reinvite: "Resend",
+      revoke: "Cancel",
+      remove: "Remove",
+      revoked: "Invitation cancelled.",
+      removed: "Access removed. Effective immediately.",
+      reinvited: "New invitation created. The old link no longer works.",
+      copyLink: "Copy link",
+      linkCopied: "Link copied.",
+      alreadyMember: "This address already has access to this client.",
+      actionError: "Action failed. Try again.",
     },
   },
 }

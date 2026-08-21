@@ -4,6 +4,7 @@ import { cache } from "react"
 
 import { getActiveOrg } from "@/lib/auth/org-context"
 import type { AccountStatus, Client, Platform, SocialAccount, User } from "@/lib/domain"
+import { accountHealth } from "@/lib/oauth/account-health"
 import { createClient } from "@/lib/supabase/server"
 
 // Câblage Supabase des lectures CŒUR « identité » : clients, comptes sociaux,
@@ -111,22 +112,47 @@ export const getSocialAccounts = cache(
     if (!orgId) return []
     const supabase = await createClient()
 
+    // P8-7 — la CONNEXION est jointe, et ce n'est pas un confort.
+    // `needs_reauth` est écrit par le worker sur `platform_connections` ; sans
+    // cette jointure, l'écran affichait « Connecté » en vert sur un compte
+    // incapable de publier, et l'utilisateur le découvrait à l'échec d'un
+    // contenu programmé.
     let query = supabase
       .from("social_accounts")
-      .select("id, client_id, platform, username, display_name, status, followers_count")
+      .select(
+        "id, client_id, platform, username, display_name, status, followers_count, platform_connections(status, needs_reauth_at, scopes)"
+      )
       .eq("org_id", orgId)
     if (clientId) query = query.eq("client_id", clientId)
     const { data } = await query.order("created_at", { ascending: true })
 
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      clientId: row.client_id,
-      platform: row.platform as Platform,
-      username: row.username ?? "",
-      displayName: row.display_name ?? row.username ?? "",
-      status: row.status as AccountStatus,
-      followers: row.followers_count ?? 0,
-    }))
+    return (data ?? []).map((row) => {
+      // PostgREST rend l'embed en objet ou en tableau selon la cardinalité
+      // détectée : on normalise plutôt que de parier sur l'une des deux formes.
+      const brut = (row as { platform_connections?: unknown }).platform_connections
+      const connexion = (Array.isArray(brut) ? brut[0] : brut) as
+        | { status?: string; needs_reauth_at?: string | null; scopes?: string[] | null }
+        | undefined
+
+      const santé = accountHealth({
+        platform: row.platform as Platform,
+        accountStatus: row.status as AccountStatus,
+        connectionStatus: (connexion?.status as AccountStatus | undefined) ?? null,
+        connectionNeedsReauthAt: connexion?.needs_reauth_at ?? null,
+        grantedScopes: connexion?.scopes ?? [],
+      })
+
+      return {
+        id: row.id,
+        clientId: row.client_id,
+        platform: row.platform as Platform,
+        username: row.username ?? "",
+        displayName: row.display_name ?? row.username ?? "",
+        status: santé.status,
+        missingScopes: santé.missing,
+        followers: row.followers_count ?? 0,
+      }
+    })
   }
 )
 

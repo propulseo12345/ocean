@@ -26,7 +26,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("clients.metaContentEdit") }
 }
 
-const READ_ONLY: ContentStatus[] = ["publishing", "published", "partially_published"]
+const READ_ONLY: ContentStatus[] = [
+  "publishing",
+  "published",
+  "partially_published",
+  "needs_verification",
+]
 
 export default async function EditContentPage({
   params,
@@ -70,6 +75,7 @@ export default async function EditContentPage({
 
   const data: ComposerData = {
     client,
+    orgId: ctx.org.id,
     accounts,
     pillars: await getPillars(ctx.org.id, clientId),
     hashtagGroups: await getHashtagGroups(ctx.org.id, clientId),

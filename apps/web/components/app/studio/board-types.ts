@@ -50,6 +50,7 @@ export const STATUS_ORDER: ContentStatus[] = [
   "published",
   "partially_published",
   "failed",
+  "needs_verification",
   "canceled",
 ]
 
@@ -124,6 +125,10 @@ export function kanbanColumnOf(status: ContentStatus): KanbanColumnId | null {
     case "scheduled":
     case "publishing":
     case "failed":
+    // 024 : issue inconnue — colonne « Programmé », là où l'œil cherche ce qui
+    // demande une action. Surtout PAS « Publié » : c'est justement ce qu'on
+    // ignore. `KANBAN_LOCKED` empêche de la faire glisser.
+    case "needs_verification":
       return "scheduled"
     case "published":
     case "partially_published":
@@ -133,5 +138,16 @@ export function kanbanColumnOf(status: ContentStatus): KanbanColumnId | null {
   }
 }
 
-/** Statuts verrouillés : la publication a commencé, plus de drag possible. */
-export const KANBAN_LOCKED: ContentStatus[] = ["publishing", "published", "partially_published"]
+/**
+ * Statuts verrouillés : la publication a commencé, plus de drag possible.
+ * `needs_verification` (024) en fait partie — un glisser-déposer vers
+ * « Programmé » sur un contenu peut-être déjà en ligne est précisément le geste
+ * qui produit un doublon. La garde 024 le refuserait de toute façon en base ;
+ * ici on évite de le proposer.
+ */
+export const KANBAN_LOCKED: ContentStatus[] = [
+  "publishing",
+  "published",
+  "partially_published",
+  "needs_verification",
+]

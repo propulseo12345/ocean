@@ -1,10 +1,11 @@
 import { CheckCircle2, ClipboardCheck, History } from "lucide-react"
 import type { Metadata } from "next"
+import { LeaveClientButton } from "@/components/portal/leave-client-button"
 import { PortalCard } from "@/components/portal/portal-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { getReviewerContext } from "@/lib/auth/org-context"
 import { getPortalContent } from "@/lib/data"
-import type { Client, ContentStatus } from "@/lib/domain"
+import type { ContentStatus } from "@/lib/domain"
 import { getT } from "@/lib/i18n/server"
 import type { Translator } from "@/lib/i18n/translator"
 
@@ -18,7 +19,26 @@ const TO_REVIEW: ContentStatus[] = ["in_review", "changes_requested"]
 export default async function PortalPage() {
   const t = await getT()
   const ctx = await getReviewerContext()
-  const client = ctx.clients[0] as Client
+
+  // P7-9 : `ctx.clients[0] as Client` puis `client.timezone` levait un
+  // TypeError dès que la liste était vide. Le `as Client` masquait le trou au
+  // typage — c'est le cast qui rendait le bug invisible, pas l'oubli.
+  //
+  // Le cas est atteignable en deux clics : la landing publique porte un lien
+  // « Voir le portail client », et tout compte authentifié SANS ligne
+  // `client_members` (n'importe quel patron d'agence, par exemple) tombe
+  // dessus. Il ne s'agit donc pas d'un état théorique.
+  const client = ctx.clients[0]
+  if (!client) {
+    return (
+      <EmptyState
+        icon={ClipboardCheck}
+        title={t("portal.home.noClientTitle")}
+        description={t("portal.home.noClientDescription")}
+      />
+    )
+  }
+
   const reviewer = ctx.reviewer
   const tz = client.timezone
   const firstName = reviewer?.name.split(" ")[0] ?? ""
@@ -68,6 +88,13 @@ export default async function PortalPage() {
           </div>
         </section>
       ) : null}
+
+      {/* Sortie de secours (V-3). Discrète, mais présente : jusqu'ici, seule
+          l'agence pouvait retirer quelqu'un — un membre ajouté à son insu
+          dépendait donc de celui qui l'avait ajouté pour en sortir. */}
+      <div className="border-t pt-4">
+        <LeaveClientButton clientId={client.id} clientNom={client.name} />
+      </div>
     </div>
   )
 }

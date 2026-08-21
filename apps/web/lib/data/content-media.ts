@@ -1,3 +1,4 @@
+import { log } from "@/lib/log"
 import "server-only"
 
 import type { MediaAsset, MediaType } from "@/lib/domain"
@@ -38,9 +39,18 @@ export async function makeMediaUrlResolver(paths: (string | null)[]) {
 
   const signed = new Map<string, string>()
   if (originals.length > 0) {
-    const { data } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from(ORIGINALS_BUCKET)
       .createSignedUrls(originals, SIGNED_URL_TTL)
+    // P5-10 : l'erreur etait DESTRUCTUREE AU LOIN (`const { data } =`), donc
+    // invisible. Un Reviewer ne passait pas la policy SELECT de
+    // media-originals, ne recevait aucune URL, et `fullUrl` retombait en
+    // silence sur la vignette : il validait sur 400 px sans que personne ne
+    // le sache. Le repli reste (un original purge a J+7 est un cas normal),
+    // mais il laisse desormais une trace.
+    if (error) {
+      log.warn("media.signed_urls_failed", { count: originals.length, code: error.name })
+    }
     for (const entry of data ?? []) {
       if (entry.path && entry.signedUrl) signed.set(entry.path, entry.signedUrl)
     }
@@ -86,7 +96,7 @@ export async function loadContentMedia(
 
   const { data: links } = await supabase
     .from("content_media")
-    .select("content_item_id, media_asset_id, position, alt_text_override")
+    .select("id, content_item_id, media_asset_id, position, alt_text_override")
     .in("client_id", clientIds)
     .in("content_item_id", itemIds)
     .order("position", { ascending: true })
@@ -116,6 +126,10 @@ export async function loadContentMedia(
       // L'id exposé est celui de l'ASSET : c'est la clé sur laquelle les
       // annotations du portail sont résolues (cf. getComments).
       id: row.id,
+      // …mais l'ANCRE d'écriture d'une annotation est la liaison content_media
+      // (colonne annotation_content_media_id + FK composite). Sans elle, le
+      // portail peut afficher les repères mais pas en créer.
+      contentMediaId: link.id,
       type: row.type as MediaType,
       thumbUrl: urls.thumbUrl(row.thumb_path),
       fullUrl: urls.fullUrl(row.storage_path, row.thumb_path),

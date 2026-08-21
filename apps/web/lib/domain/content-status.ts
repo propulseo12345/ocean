@@ -23,6 +23,9 @@ export const WORKER_ONLY_STATUSES: ContentStatus[] = [
   "published",
   "partially_published",
   "failed",
+  // 024 : une issue inconnue est un CONSTAT du worker, jamais une déclaration
+  // de l'app.
+  "needs_verification",
 ]
 
 /** Transitions légales, par statut source. Miroir de 008 + 016. */
@@ -38,6 +41,11 @@ export const STATUS_TRANSITIONS: Record<ContentStatus, ContentStatus[]> = {
   published: [],
   partially_published: ["scheduled", "canceled"],
   failed: ["scheduled", "draft", "canceled"],
+  // 024 : AUCUNE sortie. `scheduled` republierait un post peut-être déjà en
+  // ligne, `draft` y ramène en deux clics. La sortie est la résolution HUMAINE
+  // de chaque cible (`mark_target_published_manually`), après quoi l'agrégat est
+  // recalculé par le chemin worker. Miroir exact de la garde 024.
+  needs_verification: [],
   canceled: ["draft"],
 }
 

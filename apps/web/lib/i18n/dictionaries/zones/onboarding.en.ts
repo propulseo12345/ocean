@@ -26,6 +26,12 @@ export const onboardingEn: Widen<typeof onboardingFr> = {
       review: "Check everything before creating the client.",
     },
     shell: {
+      copyInviteLink: "Copy invitation link",
+      inviteLinkCopied: "Invitation link copied.",
+      reviewerAlreadyMember:
+        "This address is already a member of this client. Open the client page to find it.",
+      reviewerInviteFailed:
+        "The client was created, but inviting the reviewer failed. Retry from the client page.",
       progressLabel: "Progress",
       skip: "Skip",
       createClient: "Create client",

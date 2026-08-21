@@ -25,6 +25,12 @@ export const onboardingFr = {
     },
     // Coquille du wizard
     shell: {
+      copyInviteLink: "Copier le lien d'invitation",
+      inviteLinkCopied: "Lien d'invitation copié.",
+      reviewerAlreadyMember:
+        "Cette adresse est déjà membre de ce client. Ouvre la fiche du client pour la retrouver.",
+      reviewerInviteFailed:
+        "Le client est créé, mais l'invitation du valideur a échoué. Relance-la depuis la fiche du client.",
       progressLabel: "Progression",
       skip: "Passer",
       createClient: "Créer le client",

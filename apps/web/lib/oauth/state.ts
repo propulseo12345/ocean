@@ -1,62 +1,48 @@
 import "server-only"
 
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 
-// State OAuth signé (anti-CSRF, CLAUDE.md §9 : callbacks protégés par state signé).
-// Le state porte l'org active + le client cible + un nonce, signé HMAC avec
-// OAUTH_STATE_SECRET. Le callback le vérifie AVANT tout échange de code : un
-// callback non sollicité (state absent/altéré) est rejeté.
+import {
+  createNonce,
+  type OAuthStatePayload,
+  type StateVerdict,
+  signStateWith,
+  verifyStateWith,
+} from "./state-rule"
 
-export interface OAuthState {
-  provider: string
-  orgId: string
-  /** Utilisateur initiateur (calendar_accounts.user_id, connected_by). */
-  userId: string
-  /** Client cible (comptes sociaux) — absent pour un agenda org-level. */
-  clientId?: string
-  /** Vérifieur PKCE (renvoyé au callback pour l'échange). */
-  codeVerifier?: string
-  nonce: string
-}
+// Enveloppe serveur des règles de `state-rule.ts` : elle n'ajoute que la lecture
+// du secret et l'horloge. Toute la logique testable vit dans le module voisin,
+// parce que `server-only` rend celui-ci inexécutable sous `node --test`.
 
-function secret(): string {
+export { createNonce, STATE_TTL_MS } from "./state-rule"
+export type { OAuthStatePayload, StateVerdict }
+
+/** Secret HMAC du state. Lève si absent (scaffold OAuth inerte). */
+export function requireStateSecret(): string {
   const value = process.env.OAUTH_STATE_SECRET
   if (!value) throw new Error("OAUTH_STATE_SECRET manquant (scaffold OAuth inerte)")
   return value
 }
 
-function b64url(input: Buffer | string): string {
-  return Buffer.from(input).toString("base64url")
+const secret = requireStateSecret
+
+/** Signe le state. Le nonce vient de l'appelant : il le pose aussi dans le cookie. */
+export function signState(
+  payload: Omit<OAuthStatePayload, "nonce" | "exp">,
+  nonce: string
+): string {
+  return signStateWith(payload, secret(), { nonce, nowMs: Date.now() })
 }
 
-/** Sérialise + signe le state. Retourne `<payload>.<hmac>`. */
-export function signState(state: Omit<OAuthState, "nonce">): string {
-  const full: OAuthState = { ...state, nonce: randomBytes(16).toString("hex") }
-  const payload = b64url(JSON.stringify(full))
-  const mac = createHmac("sha256", secret()).update(payload).digest("base64url")
-  return `${payload}.${mac}`
-}
-
-/** Vérifie la signature et renvoie le state, ou null si invalide. */
-export function verifyState(token: string): OAuthState | null {
-  const dot = token.lastIndexOf(".")
-  if (dot < 0) return null
-  const payload = token.slice(0, dot)
-  const mac = token.slice(dot + 1)
-  const expected = createHmac("sha256", secret()).update(payload).digest("base64url")
-
-  const a = Buffer.from(mac)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-
-  try {
-    return JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as OAuthState
-  } catch {
-    return null
-  }
+/** Vérifie signature, forme, fraîcheur et provider. */
+export function verifyState(token: string, provider: string): StateVerdict {
+  return verifyStateWith(token, secret(), { nowMs: Date.now(), provider })
 }
 
 // --- PKCE ------------------------------------------------------------------
+//
+// ⚠ Le vérifieur ne doit JAMAIS entrer dans le state : il vit dans le cookie de
+// transaction (`transaction.ts`). Le state voyage dans l'URL, à côté du code.
 
 export function createCodeVerifier(): string {
   return randomBytes(32).toString("base64url")

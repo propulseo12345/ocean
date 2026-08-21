@@ -289,9 +289,10 @@ risque, contrairement aux suivants.
 `deploy/04` à `08` sont encapsulés dans `begin/commit` : si l'un est déjà passé,
 il échoue proprement et annule tout (aucun état partiel).
 
-Après application : régénérer les types. NB `scripts/gen-types.py` **n'écrit pas
-encore le fichier** (il ne fait qu'afficher) ; `apps/web/lib/supabase/types.ts`
-est maintenu À LA MAIN en attendant — soit finir le script, soit continuer à la main.
+Après application : mettre `apps/web/lib/supabase/types.ts` à jour **à la main**.
+⚠ Rectificatif du 15/08/2026 : `scripts/gen-types.py` n'a jamais écrit le fichier
+(il ne faisait qu'afficher) et il a été **retiré**. La tenue manuelle est assumée,
+l'en-tête de `types.ts` le dit.
 
 ## ✅ VÉRIFIÉ AU RUNTIME (2026-07-21, Étienne a appliqué 03→08 + 10 + le seed 09)
 Migrations 010→016 EN LIGNE + `deploy/09_seed_demo.sql` appliqué. Playwright sur

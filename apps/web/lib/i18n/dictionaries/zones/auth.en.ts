@@ -30,6 +30,10 @@ export const authEn: Widen<typeof authFr> = {
       cardDescription: "Enter your email address and password.",
     },
     login: {
+      noAccount: "No account yet?",
+      signUpLink: "Create one",
+      authFailed: "The link expired or was already used. Please sign in again.",
+      signupPending: "Account created. Confirm your email address, then sign in.",
       emailLabel: "Email address",
       emailPlaceholder: "you@studio.com",
       passwordLabel: "Password",
@@ -67,6 +71,73 @@ export const authEn: Widen<typeof authFr> = {
       errorTitle: "Update failed",
       weakPasswordDetail: "The password must be at least 8 characters.",
       genericDetail: "The link may have expired. Request a new reset email.",
+    },
+    // Organization bootstrap (P7-3) - landing page for any account without an org.
+    onboarding: {
+      metaTitle: "Create your organization",
+      cardTitle: "Create your organization",
+      cardDescription:
+        "Your account isn't linked to any organization yet. Give it a name to get started.",
+      nameLabel: "Organization name",
+      namePlaceholder: "Studio Marea",
+      nameHelp: "This is the name your clients will see. You can change it later.",
+      submit: "Create organization",
+      submitting: "Creating…",
+      errorTitle: "Could not create",
+      invalidNameDetail: "The name must be between 1 and 120 characters.",
+      genericDetail: "Try again in a moment. If the problem persists, contact support.",
+      signOut: "Not my account - sign out",
+    },
+    // Sign-up (P7-4) - the /signup route did not exist.
+    signup: {
+      metaTitle: "Create an account",
+      cardTitle: "Create an account",
+      cardDescription: "A few seconds, and your workspace is ready.",
+      nameLabel: "Your name",
+      namePlaceholder: "Etienne Guimbard",
+      nameHelp: "It also names your organization - you can change it later.",
+      emailLabel: "Email address",
+      emailPlaceholder: "you@example.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "••••••••",
+      passwordHelp: "At least 8 characters.",
+      submit: "Create my account",
+      submitting: "Creating…",
+      errorTitle: "Sign-up failed",
+      invalidFormatDetail:
+        "Check your name, email address and a password of at least 8 characters.",
+      genericDetail: "This address may already be in use. Try signing in.",
+      haveAccount: "Already have an account?",
+      signInLink: "Sign in",
+    },
+    invitation: {
+      metaTitle: "Invitation",
+      joinTitle: "Join {client}?",
+      joinDescription:
+        "You have been invited to review content for {client}. Nobody is added until you confirm.",
+      joinSubmit: "Join {client}",
+      joinSubmitting: "Joining…",
+      notMe: "This is not what I want",
+      proofTitle: "Confirm your address",
+      proofDescription:
+        "To join this workspace, sign in with the address that received the invitation. We will email you the link.",
+      proofSubmit: "Email me the sign-in link",
+      proofSubmitting: "Sending…",
+      proofSentTitle: "Check your inbox",
+      proofSentDescription:
+        "If this invitation is valid, a sign-in link has just been sent to the invited address. Remember to check your spam folder.",
+      wrongAccountTitle: "Wrong account",
+      wrongAccountDescription:
+        "You are signed in as {courant}, but this invitation targets a different address. Sign out, then reopen the link.",
+      signOut: "Sign out",
+      invalidTitle: "Link no longer usable",
+      invalidDescription:
+        "This invitation link is no longer valid. It may have expired, been revoked, or already been used. Ask for a new invitation.",
+      backToLogin: "Back to sign-in",
+      errorTitle: "Could not join",
+      crossSiteDetail:
+        "This request did not come from Ocean. It has been refused for your safety. Reopen the link from your email.",
+      genericDetail: "Try again in a moment. If the problem persists, contact your agency.",
     },
   },
 }

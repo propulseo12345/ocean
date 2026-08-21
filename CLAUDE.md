@@ -3,7 +3,10 @@
 > **Tu es Claude Code sur Ocean, un SaaS multi-tenant de gestion de contenu social pour freelances marketing.**
 > Lis ce fichier INTÉGRALEMENT avant chaque action. Puis docs/PRD.md et docs/ANALYSE-LANCEMENT.md.
 > **Sécurité multi-tenant, tokens OAuth et idempotence du worker de publication sont CRITIQUES — un bug ici = catastrophe RGPD ou double publication chez un client.**
-> **⚠️ PHASE EN COURS : preview front UI-only avec données mockées — voir « Phase actuelle » (§0). Les règles backend (RLS, worker, tokens) s'appliquent à partir du Lot 0 réel, pas pendant la preview.**
+> **⚠️ AVANT DE CODER, lis aussi `.planning/ACTION-PLAN.md` (phase en cours + tickets) et
+> `.planning/BRIEF-REPRISE-2026-08.md` (vision, séquence, chemin critique Meta). En cas de
+> contradiction sur l'ÉTAT du projet, c'est `ACTION-PLAN.md` qui fait foi, pas ce fichier ;
+> sur une décision TECHNIQUE, c'est `docs/ANALYSE-LANCEMENT.md`.**
 
 ---
 
@@ -13,17 +16,30 @@
 - **Type** : SaaS B2B — publication Instagram/Facebook (Standard Access Meta), TikTok en brouillon, grille de preview du feed IG, calendrier éditorial par client, portail de validation client, agenda unifié Google+Outlook, PWA mobile (priorité iOS)
 - **Client** : Propul'SEO (projet interne)
 - **Owner** : Étienne (Propul'SEO)
-- **Phase actuelle** : ⚠️ **PREVIEW FRONT — UI seule, données mockées** (décision du 11/06/2026). On construit et valide d'abord le front (dashboard, studio, grille feed, calendrier éditorial, portail client) **SANS backend** : ne PAS câbler Supabase (auth/DB/RLS/storage), ni remote GitHub, ni Meta/TikTok/Brevo tant que le front n'est pas validé par Étienne. La couche données = mocks typés dans `packages/shared` (mêmes types/enums que la future DB du PRD §6, pour brancher Supabase ensuite sans réécrire l'UI). Après validation : phase solo complète (Étienne = premier utilisateur, accès développeur des plateformes), Lots 0–4 du PRD.
-- **Repo** : [à créer — voir docs/kickoff-day1.md]
-- **URL prod app** : `app.[domain]` (à acter avec le nom commercial)
-- **URL staging** : `staging.app.[domain]`
+- **Phase actuelle** : **PORTE A du plan d'action — fiabiliser l'outillage avant de déployer**
+  (`.planning/ACTION-PLAN.md`, phase 0). La preview mockée est **terminée depuis juin 2026** :
+  `lib/mocks` a été supprimé volontairement, **ne jamais réintroduire de données mockées**.
+  État réel au 14/08/2026 : Supabase câblé (auth password, migrations 001→021 appliquées **à la
+  main** via le SQL Editor du projet `hgdeopkmkwyoumsfggrm`), app web déployée sur Coolify, worker
+  de publication écrit et testé mais **jamais déployé**, publishers Meta/TikTok en **simulation**
+  (`PUBLISHERS_MODE`), aucun post réel jamais émis. Restent hors périmètre immédiat : Sentry,
+  PostHog, Serwist/Web Push, upload de médias, Stripe. Séquence : phases 0→2 (ne rien casser),
+  3→6 (ne jamais publier deux fois, jusqu'au premier post réel), 7→9 (ne pas mentir au client).
+- **Repo** : `https://github.com/propulseo12345/ocean` (branche `main`, push direct, pas de
+  branch protection à ce jour — la CI n'est donc pas un gate : voir `.planning/ACTION-PLAN.md`)
+- **URL prod app** : `https://socean.54-36-180-115.sslip.io` (Coolify, VPS 54.36.180.115).
+  ⚠️ Domaine dérivé de l'IP du VPS et **provisoire** : il sera gelé dans les redirect URIs OAuth
+  et dans les emails clients. Trancher le nom + le domaine avant la porte C (décision listée dans
+  le plan d'action). Ne coder aucune dépendance forte à ce host — passer par `NEXT_PUBLIC_SITE_URL`.
+- **URL staging** : **aucune** — il n'existe ni app Coolify ni projet Supabase de staging.
+  Toute migration part directement en production. À ouvrir avant les premiers clients payants.
 - **Monétisation** : hors périmètre MVP (phase solo). Stripe sera introduit à l'ouverture SaaS — ne rien câbler de spéculatif.
 
 ## 1. STACK & VERSIONS
 
 ```yaml
-node: 20 LTS
-pkg_manager: pnpm 9+ (monorepo workspaces)
+node: 22 LTS (>=22.13 — exigé par pnpm 11 ; Dockerfile et CI alignés)
+pkg_manager: pnpm 11.1.2 (monorepo workspaces)
 monorepo:
   apps/web: Next.js 16 App Router (Turbopack)
   apps/worker: worker Node de publication programmée (file Postgres FOR UPDATE SKIP LOCKED — PAS de Redis/BullMQ)
@@ -372,6 +388,7 @@ export const config = {
 ### Templates V1
 - `reviewer-invitation` : invitation au portail de validation (inviteUserByEmail)
 - `review-requested` : contenu(s) en attente de validation (lien direct portail)
+- `review-comment` : remarque libre ou annotée d'un client sur un contenu → notification admin
 - `changes-requested` : retour client → notification admin
 - `content-approved` : confirmation à l'admin
 - `publish-failed` : échec de publication — canal GARANTI du triple canal (push + Realtime in-app + email)
@@ -439,11 +456,14 @@ Track côté SERVEUR pour les events critiques (publication, approbation, connex
 |---|---|
 | `docs/PRD.md` | Référence fonctionnelle (v0.2 en réécriture — la lire en premier) |
 | `docs/ANALYSE-LANCEMENT.md` | Architecture détaillée et décisions ACTÉES (RLS, worker, storage, PWA, agendas, état réel des API juin 2026). **Fait foi en cas de doute technique.** |
-| `docs/kickoff-day1.md` | Plan de bootstrap Day 1 + prérequis externes |
+| `docs/kickoff-day1.md` | Plan de bootstrap Day 1 + prérequis externes (**historique** : le bootstrap est fait) |
+| `.planning/ACTION-PLAN.md` | **Phase en cours, tickets et critères de sortie. Fait foi sur l'ÉTAT du projet.** |
+| `.planning/BRIEF-REPRISE-2026-08.md` | Vision (le cercle, pas l'arc), séquence, chemin critique Meta |
+| `_research/audits/2026-08-12/` | Audit senior 11 dimensions — défauts vérifiés avec `fichier:ligne` |
 | `docs/prds/` | Templates PRD features génériques de la bibliothèque — à adapter à Ocean |
 | `docs/archive/` | Versions historiques — ne pas modifier |
 
 ---
 
-**Dernière mise à jour** : 2026-06-11
+**Dernière mise à jour** : 2026-08-14 (§0 remis à l'état réel — ticket P0-1 du plan d'action)
 **Version template** : v1.0 (templates/claude-md/02-saas-multitenant.md) — instancié pour Ocean

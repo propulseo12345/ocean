@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label"
 import { useT } from "@/lib/i18n"
 
 // Choix du nouveau mot de passe. La session de récupération a été établie par
-// /auth/callback. updatePassword redirige vers /dashboard en cas de succès.
+// /auth/callback. updatePassword délègue la destination au point unique de
+// résolution de rôle (/auth/landing), sauf si `next` désigne une destination
+// interne — typiquement le retour sur une invitation en cours (V-2).
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ next }: { next?: string }) {
   const t = useT()
 
   const [state, formAction, pending] = useActionState<AuthResult, FormData>(
@@ -29,11 +31,12 @@ export function ResetPasswordForm() {
       }
       return result
     },
-    undefined,
+    undefined
   )
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="space-y-1.5">
         <Label htmlFor="password">{t("auth.reset.passwordLabel")}</Label>
         <div className="relative">

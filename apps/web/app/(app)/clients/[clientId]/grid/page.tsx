@@ -165,8 +165,7 @@ export default async function ClientGridPage({
   const scheduled = items
     .filter(
       (c) =>
-        c.scheduledAt &&
-        (PLANNED_STATUSES.includes(c.status) || SHELF_STATUSES.includes(c.status))
+        c.scheduledAt && (PLANNED_STATUSES.includes(c.status) || SHELF_STATUSES.includes(c.status))
     )
     .map((c) => toContentTile(c, "scheduled", c.scheduledAt, tz, topId, metrics))
     .sort(byDateDesc)

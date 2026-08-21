@@ -141,19 +141,44 @@ export const libraryFr = {
     // Dialogue d'upload
     upload: {
       title: "Ajouter des médias",
-      description:
-        "L'upload de fichiers arrive avec le câblage TUS. Voici déjà les specs à respecter.",
+      description: "Dépose tes fichiers : ils sont convertis puis envoyés dans la médiathèque.",
       dropTitle: "Glisse tes photos et vidéos ici",
       dropHint: "ou clique pour parcourir",
-      pending: "L'upload de fichiers arrive bientôt (câblage TUS).",
+      browse: "Parcourir",
       specImage:
         "Images Instagram : JPEG ≤ {max} Mo, ratio 4:5 à 1.91:1 — conversion automatique des PNG.",
       specHeic: "HEIC iPhone : converti en JPEG à l'import, rien à faire de ton côté.",
       specReel: "Reels : MP4 ou MOV, 3 s à 15 min, ≤ {max} Mo.",
+      // Progression
+      phasePreparation: "Conversion…",
+      phaseTransfert: "Envoi {percent} %",
+      phaseVignette: "Vignette…",
+      phaseEnregistrement: "Enregistrement…",
+      stateDone: "Ajouté",
+      stateCanceled: "Annulé",
+      cancel: "Annuler",
+      dismiss: "Retirer de la liste",
+      queued: "En attente",
+      done: "{count, plural, one {# média ajouté} other {# médias ajoutés}}",
+      // Échecs — chaque cause a sa phrase : « échec » tout court oblige à
+      // deviner s'il faut réessayer, changer de fichier, ou se reconnecter.
+      errType: "Format non pris en charge. Utilise JPEG, PNG, HEIC, MP4 ou MOV.",
+      errImageTooBig: "Image trop lourde pour être traitée dans le navigateur.",
+      errVideoTooBig: "Vidéo trop lourde : {max} Mo maximum.",
+      errStillTooBig: "Image encore trop lourde après compression maximale.",
+      errDecode: "Fichier illisible — il est peut-être corrompu.",
+      errSession: "Session expirée. Reconnecte-toi puis réessaie.",
+      errThumb: "La vignette a été refusée par le stockage.",
+      errPath: "Chemin de stockage refusé — recharge la page et réessaie.",
+      errUpload: "Envoi interrompu. Réessaie.",
     },
     // Toasts (workspace)
     toast: {
-      deleted: "Média supprimé (aperçu)",
+      deleted: "{count, plural, one {# média supprimé} other {# médias supprimés}}",
+      altError: "Enregistrement impossible. Réessaie.",
+      deleteError: "Suppression impossible. Réessaie.",
+      deleteInUse:
+        "{count, plural, one {# média conservé : il est utilisé dans un contenu.} other {# médias conservés : ils sont utilisés dans des contenus.}}",
       noneDeletedTitle: "Aucun média supprimé",
       noneDeletedDesc: "Tous les médias sélectionnés sont utilisés dans des contenus.",
       batchDeleted:

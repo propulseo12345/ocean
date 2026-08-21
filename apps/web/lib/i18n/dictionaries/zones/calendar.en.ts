@@ -201,8 +201,7 @@ export const calendarEn: Widen<typeof calendarFr> = {
       unscheduledSkippedDesc:
         '{count, plural, one {# skipped} other {# skipped}} (locked status or already undated). The content moves back to "To schedule".',
       unscheduledDesc: 'The content moves back to "To schedule".',
-      sendToReview:
-        "Approval request sent for {count, plural, one {# item} other {# items}}",
+      sendToReview: "Approval request sent for {count, plural, one {# item} other {# items}}",
       sendToReviewNone: "None of the selected items can be sent for approval.",
       sendToReviewDesc: "The client will get a direct link to the approval portal.",
       retry: 'Retry scheduled for "{title}" (preview)',

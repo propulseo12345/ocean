@@ -57,10 +57,14 @@ export function ReviewerInviteDialog({
     const res = await inviteReviewer({ clientId, email: email.trim() })
     setSubmitting(false)
     if (!res.ok || !res.data) {
+      // `already_invited` n'était plus jamais renvoyé depuis le passage à la
+      // RPC 032 : elle supersède les invitations vivantes, et ne lève un 23505
+      // que si l'adresse est DÉJÀ MEMBRE. Cette branche était donc morte, et
+      // toute erreur retombait sur le message générique.
       const key =
-        res.ok === false && res.error === "already_invited"
-          ? "clientSettings.approval.inviteAlreadyInvited"
-          : res.ok === false && res.error === "invalid_input"
+        res.ok === false && res.error === "already_member"
+          ? "clientSettings.approval.inviteAlreadyMember"
+          : res.ok === false && (res.error === "invalid_input" || res.error === "invalid_email")
             ? "clientSettings.approval.inviteInvalid"
             : "clientSettings.approval.inviteError"
       toast.error(t(key))

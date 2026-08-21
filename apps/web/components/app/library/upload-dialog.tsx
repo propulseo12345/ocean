@@ -1,7 +1,10 @@
 "use client"
 
-import { CloudUpload, FileImage, Film, Smartphone } from "lucide-react"
-import { useState } from "react"
+import { FileImage, Film, Smartphone } from "lucide-react"
+
+import { MediaDropzone } from "@/components/app/media/media-dropzone"
+import { UploadQueue } from "@/components/app/media/upload-queue"
+import type { UploadItem } from "@/components/app/media/use-media-upload"
 import {
   Dialog,
   DialogContent,
@@ -11,29 +14,30 @@ import {
 } from "@/components/ui/dialog"
 import { useT } from "@/lib/i18n"
 import { IG_IMAGE_MAX_MB, REEL_MAX_MB } from "@/lib/specs"
-import { cn } from "@/lib/utils"
 
-// Upload simulé : la drop-zone n'envoie rien — un clic (ou un drop) ajoute
-// des assets fictifs en état local, avec rappel des specs plateformes.
+// P5-7 — ce dialogue ne simule plus rien.
+//
+// AVANT : un `<button>` dont `onDrop` appelait `simulate()` en JETANT
+// `e.dataTransfer`, et un `onSimulate` qui affichait un toast « l'upload arrive
+// bientôt ». Zéro `<input type="file">` dans le dépôt. La zone avait l'air de
+// marcher — c'est la pire forme de code non fait.
 
 export function UploadDialog({
   open,
   onOpenChange,
-  onSimulate,
+  onFiles,
+  items,
+  onCancel,
+  onDismiss,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Ajoute les assets fictifs (état local) et affiche le toast. */
-  onSimulate: () => void
+  onFiles: (files: File[]) => void
+  items: UploadItem[]
+  onCancel: (id: string) => void
+  onDismiss: (id: string) => void
 }) {
   const t = useT()
-  const [dragging, setDragging] = useState(false)
-
-  function simulate() {
-    setDragging(false)
-    onSimulate()
-    onOpenChange(false)
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,31 +47,9 @@ export function UploadDialog({
           <DialogDescription>{t("library.upload.description")}</DialogDescription>
         </DialogHeader>
 
-        <button
-          type="button"
-          onClick={simulate}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault()
-            simulate()
-          }}
-          className={cn(
-            "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            dragging
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 hover:bg-muted/40"
-          )}
-        >
-          <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <CloudUpload className="size-5" aria-hidden />
-          </span>
-          <span className="text-sm font-medium">{t("library.upload.dropTitle")}</span>
-          <span className="text-xs text-muted-foreground">{t("library.upload.dropHint")}</span>
-        </button>
+        <MediaDropzone onFiles={onFiles} />
+
+        <UploadQueue items={items} onCancel={onCancel} onDismiss={onDismiss} />
 
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li className="flex items-start gap-1.5">

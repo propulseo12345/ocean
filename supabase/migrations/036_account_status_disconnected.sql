@@ -1,0 +1,38 @@
+-- Migration 036 — `disconnected` : l'état qui manquait pour détacher un compte.
+--
+-- POURQUOI UN ÉTAT, ET PAS UNE SUPPRESSION
+-- -----------------------------------------
+-- `content_targets.social_account_id` porte `on delete restrict` (006:43). Un
+-- compte ayant déjà servi ne peut donc PAS être supprimé — et c'est voulu :
+-- supprimer la ligne effacerait le lien vers les posts réellement publiés
+-- (`external_post_id`, permalien), c'est-à-dire l'historique que le client a
+-- sous les yeux. Le détachement ne doit pas réécrire le passé.
+--
+-- POURQUOI PAS `needs_reauth`
+-- ----------------------------
+-- C'est l'état qu'on aurait pu réutiliser sans migration, et ç'aurait été un
+-- mensonge : `needs_reauth` veut dire « reconnecte-moi », il déclenche le
+-- bandeau de santé et invite l'utilisateur à refaire ce qu'il vient
+-- délibérément de défaire. Un compte détaché n'attend rien de personne.
+--
+-- L'ENUM EST LE SEUL CHANGEMENT DE CETTE MIGRATION
+-- -------------------------------------------------
+-- `alter type ... add value` est autorisé dans une transaction depuis PG12, à
+-- condition que la valeur ne soit pas UTILISÉE dans la même transaction. Cette
+-- migration n'ajoute donc que la valeur — aucune donnée n'est touchée. C'est la
+-- même précaution que la 024, qui avait dû être livrée en deux étapes pour
+-- cette raison exacte (`deploy/19_..._etape1_enums.sql` / `20_..._etape2.sql`).
+--
+-- ⚠ DIVERGENCE PRÉEXISTANTE, CONSTATÉE ET NON CORRIGÉE ICI : le type TypeScript
+-- `AccountStatus` (lib/domain/core.ts:50) annonce `expired`. Rien ne produit ce
+-- statut ; le code qui le teste est mort. Hors périmètre de ce ticket, mais à
+-- trancher — soit quelque chose l'écrit, soit on le retire du TypeScript.
+--
+-- ⚠ CORRECTION DU 15/08/2026 (pilotage, après application en ligne) : la version
+-- initiale de ce commentaire affirmait que `expired` était « une valeur que
+-- l'enum SQL n'a jamais eue ». C'est FAUX — `expired` a été ajouté à l'enum par
+-- la migration 010 (`010_cablage_foundations.sql:51`), et il est bien présent en
+-- ligne. L'enum réel après cette migration est donc
+-- {connected, needs_reauth, expired, disconnected}, pas un triplet.
+
+alter type public.account_status add value if not exists 'disconnected';

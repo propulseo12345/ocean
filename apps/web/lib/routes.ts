@@ -9,6 +9,7 @@ export const routes = {
   notifications: "/notifications",
   portal: "/portal",
   login: "/login",
+  signup: "/signup",
   client: (id: string) => `/clients/${id}`,
   clientGrid: (id: string) => `/clients/${id}/grid`,
   clientCalendar: (id: string) => `/clients/${id}/calendar`,
@@ -23,6 +24,13 @@ export const routes = {
   contentEdit: (clientId: string, contentId: string) =>
     `/clients/${clientId}/content/${contentId}/edit`,
   portalContent: (contentId: string) => `/portal/${contentId}`,
-  /** Lien d'acceptation d'invitation reviewer (Route Handler, token usage unique). */
-  acceptInvite: (token: string) => `/api/invitations/accept?token=${encodeURIComponent(token)}`,
+  /**
+   * Lien d'invitation reviewer — PAGE de confirmation, pas un Route Handler.
+   *
+   * Pointait sur `/api/invitations/accept`, un GET à effet de bord : l'ouvrir
+   * créait l'adhésion et envoyait des e-mails, donc une navigation top-level
+   * depuis un site tiers suffisait (cookies `SameSite=Lax`). L'ouverture ne fait
+   * plus rien ; rejoindre exige un POST depuis cette page (V-3).
+   */
+  acceptInvite: (token: string) => `/invitations?token=${encodeURIComponent(token)}`,
 } as const

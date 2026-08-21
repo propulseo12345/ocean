@@ -1,6 +1,23 @@
 // Namespace i18n « settings » (FR). Réglages globaux : comptes sociaux, agendas, profil.
 export const settingsFr = {
   settings: {
+    // P8-1 — rattachement explicite des sous-comptes
+    attach: {
+      title: "Choisir les comptes à rattacher",
+      description:
+        "Connexion « {account} ». Coche uniquement les comptes qui appartiennent au client choisi.",
+      chooseClient: "Comptes disponibles",
+      clientLabel: "Client destinataire",
+      clientHint:
+        "Un compte rattaché au mauvais client devient publiable depuis son espace — choisis avec attention.",
+      selected:
+        "{count, plural, =0 {Aucun compte sélectionné} one {# compte sélectionné} other {# comptes sélectionnés}}",
+      submit: "Rattacher",
+      done: "{count, plural, one {# compte rattaché} other {# comptes rattachés}}",
+      error: "Rattachement impossible. Recharge la page et réessaie.",
+      empty:
+        "Ce compte ne donne accès à aucune Page ni aucun compte publiable. Vérifie les autorisations accordées côté fournisseur.",
+    },
     tabs: {
       social: "Comptes sociaux",
       calendars: "Agendas",
@@ -18,6 +35,13 @@ export const settingsFr = {
       noAccountForClient: "Aucun compte connecté pour ce client.",
       connect: "Connecter un compte",
       connectPlatform: "Connecter {platform}",
+      missingScopes:
+        "Permission manquante ({scopes}) — reconnecte le compte, Meta ne l'accorde jamais après coup.",
+      detach: "Détacher",
+      detachConfirm:
+        "Le compte {platform} @{username} ne sera plus publiable, et son jeton d'accès sera définitivement détruit. Les publications déjà parues restent visibles dans l'historique. Pour le réutiliser, il faudra le reconnecter.",
+      detached: "Compte détaché, jeton détruit.",
+      detachError: "Détachement incomplet — le jeton est peut-être toujours actif. Réessaie.",
       reconnect: "Reconnecter",
       connectedToast: "Compte {provider} connecté",
       connectErrorTitle: "Connexion impossible",

@@ -32,6 +32,12 @@ export interface OAuthProviderConfig {
   isCalendar: boolean
   /** PKCE (TikTok, Microsoft, Google le supportent ; Meta non). */
   usePkce: boolean
+  /**
+   * Meta : le token issu du code ne vit qu'une heure ou deux. Il faut l'échanger
+   * contre un long-lived (60 j) via `grant_type=fb_exchange_token`. Les autres
+   * fournisseurs émettent un refresh token et n'ont pas besoin de cet échange.
+   */
+  needsLongLivedExchange: boolean
   clientIdEnv: string
   clientSecretEnv: string
 }
@@ -46,12 +52,18 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
       "instagram_content_publish",
       "pages_show_list",
       "pages_read_engagement",
+      // ⚠ Permission d'ÉCRITURE sur une Page. Sans elle, tout POST est refusé.
+      // Meta ne rétro-accorde JAMAIS un scope : l'ajouter plus tard ne donne
+      // rien aux connexions déjà établies, il faut les refaire une par une.
+      // Elle doit donc figurer ici avant la toute première connexion réelle.
+      "pages_manage_posts",
       "business_management",
     ],
     providers: ["instagram", "facebook"],
     connectionProvider: "facebook",
     isCalendar: false,
     usePkce: false,
+    needsLongLivedExchange: true,
     clientIdEnv: "OAUTH_META_CLIENT_ID",
     clientSecretEnv: "OAUTH_META_CLIENT_SECRET",
   },
@@ -65,6 +77,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "tiktok",
     isCalendar: false,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_TIKTOK_CLIENT_KEY",
     clientSecretEnv: "OAUTH_TIKTOK_CLIENT_SECRET",
   },
@@ -77,6 +90,7 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "google",
     isCalendar: true,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_GOOGLE_CLIENT_ID",
     clientSecretEnv: "OAUTH_GOOGLE_CLIENT_SECRET",
   },
@@ -89,9 +103,25 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderKey, OAuthProviderConfig> = {
     connectionProvider: "microsoft",
     isCalendar: true,
     usePkce: true,
+    needsLongLivedExchange: false,
     clientIdEnv: "OAUTH_MICROSOFT_CLIENT_ID",
     clientSecretEnv: "OAUTH_MICROSOFT_CLIENT_SECRET",
   },
+}
+
+/**
+ * Retrouve la config depuis la valeur stockée sur la ligne de connexion.
+ *
+ * Meta se connecte via Facebook Login : `connectionProvider` vaut `facebook`,
+ * alors que la clé de config est `meta`. Sans cette table de correspondance, un
+ * rattachement relisant `platform_connections.provider` chercherait une config
+ * « facebook » qui n'existe pas.
+ */
+export function providerKeyForConnection(provider: string): OAuthProviderKey | null {
+  for (const config of Object.values(OAUTH_PROVIDERS)) {
+    if (config.connectionProvider === provider) return config.key
+  }
+  return null
 }
 
 export function isOAuthProviderKey(value: string): value is OAuthProviderKey {

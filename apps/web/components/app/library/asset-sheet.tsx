@@ -4,6 +4,7 @@ import { BadgeCheck, Crop, Film, ImagePlus, Trash2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
+import { MediaFrame } from "@/components/shared/media-frame"
 import { SpecIssues } from "@/components/shared/spec-issues"
 import { Button } from "@/components/ui/button"
 import {
@@ -61,10 +62,9 @@ export function AssetSheet({
 
             <div className="space-y-4 px-4 pb-4">
               <div className="relative aspect-square w-full overflow-hidden rounded-xl border bg-muted">
-                <Image
-                  src={asset.fullUrl}
+                <MediaFrame
+                  media={asset}
                   alt={asset.altText ? asset.altText : assetFileName(asset)}
-                  fill
                   sizes="(max-width: 640px) 100vw, 420px"
                   className="object-contain"
                 />

@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react"
 import Image from "next/image"
+import { MediaFrame } from "@/components/shared/media-frame"
 import { Button } from "@/components/ui/button"
 import type { ContentItem } from "@/lib/domain"
 import { useT } from "@/lib/i18n"
@@ -29,12 +30,10 @@ export function DetailPreviewMedia({
     <div className={cn("relative w-full bg-muted", vertical ? "aspect-[9/16]" : "aspect-square")}>
       {current ? (
         <>
-          <Image
-            src={current.fullUrl}
+          <MediaFrame
+            media={current}
             alt={current.altText ? current.altText : content.title}
-            fill
             sizes="320px"
-            className="object-cover"
           />
           {media.length > 1 ? (
             <>

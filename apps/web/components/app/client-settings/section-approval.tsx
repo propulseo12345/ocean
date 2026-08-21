@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { updateApprovalSettings } from "@/lib/actions/client-settings"
+import type { ClientMemberRow, PendingInvitation } from "@/lib/data/pro"
 import type { ApprovalMode, Client, Reviewer } from "@/lib/domain"
 import { type MessageKey, useFormat, useLabels, useT } from "@/lib/i18n"
 import { REMINDER_DELAY_BOUNDS, REMINDER_DELAY_DEFAULT } from "./constants"
+import { ReviewerAccessList } from "./reviewer-access-list"
 import { ReviewerInviteDialog } from "./reviewer-invite-dialog"
 import { SaveBar, SectionCard } from "./section-card"
 
@@ -50,10 +52,12 @@ export function SectionApproval({
   client,
   reviewer,
   reminderDays: initialReminderDays,
+  access,
 }: {
   client: Client
   reviewer: Reviewer | undefined
   reminderDays: number
+  access: { members: ClientMemberRow[]; invitations: PendingInvitation[] }
 }) {
   const t = useT()
   const f = useFormat()
@@ -172,6 +176,15 @@ export function SectionApproval({
       </p>
 
       <SaveBar dirty={dirty && !pending} onSave={save} />
+
+      {/* P7-7 : la liste qui manquait — invitations en attente (revocables,
+          renvoyables) et membres effectifs (retirables). Sans elle, une
+          invitation ratee etait definitive et la regle 4 n'avait aucun bouton. */}
+      <ReviewerAccessList
+        clientId={client.id}
+        members={access.members}
+        invitations={access.invitations}
+      />
 
       <ReviewerInviteDialog clientId={client.id} open={inviteOpen} onOpenChange={setInviteOpen} />
     </SectionCard>

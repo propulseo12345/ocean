@@ -1,6 +1,24 @@
-// Types Supabase generes depuis le schema en ligne (hgdeopkmkwyoumsfggrm).
-// Regenerer apres chaque migration : voir scripts/gen-types.py.
-// Ne pas editer a la main.
+// Types Supabase du schema en ligne (hgdeopkmkwyoumsfggrm).
+//
+// ⚠ CE FICHIER EST MAINTENU A LA MAIN. Il l'a toujours ete, malgre l'en-tete
+// « genere … ne pas editer a la main » qu'il a porte jusqu'au 15/08/2026. Le
+// script cense le produire, `scripts/gen-types.py`, definissait une fonction
+// `emit()` qu'il n'appelait jamais : il lisait l'OpenAPI de PostgREST, imprimait
+// « regenere 42 tables », sortait 0, et n'ouvrait aucun fichier en ecriture.
+// Retire le 15/08/2026 sur decision d'Etienne, plutot que laisse a produire une
+// preuve de travail sans travail.
+//
+// Consequence pratique : apres une migration, c'est A LA MAIN qu'on met ce
+// fichier a jour. Derive mesuree le 15/08/2026 : 41 tables typees ici contre 42
+// exposees en ligne — `publish_jobs` manque. Sans effet aujourd'hui (le web ne
+// touche la file que par les RPC `enqueue_publish_jobs` / `cancel_publish_jobs`,
+// jamais la table), mais toute lecture directe de `publish_jobs` echouerait au
+// typage.
+//
+// Les enums ne sont PAS generes non plus (`Enums: { [_ in never]: never }`) :
+// une colonne enum est typee `string` ici. Les unions vivent dans
+// `lib/domain/core.ts` — ajouter une valeur a un enum SQL ne change donc rien
+// dans ce fichier.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -326,19 +344,21 @@ export type Database = {
           created_at: string
         }
         Insert: {
-          id: string
+          // id / channels / payload / created_at portent un DEFAULT en base
+          // (migration 007) — optionnels à l'insert, comme les autres tables.
+          id?: string
           org_id: string
           client_id?: string | null
           recipient_user_id: string
           type: string
           title: string
           body?: string | null
-          channels: string[]
+          channels?: string[]
           audience: string
           href: string
-          payload: Json
+          payload?: Json
           read_at?: string | null
-          created_at: string
+          created_at?: string
         }
         Update: {
           id?: string
@@ -1804,6 +1824,20 @@ export type Database = {
       }
     }
     Functions: {
+      // Migration 035 ✅ appliquée en ligne le 15/08/2026. Les deux signatures
+      // ci-dessous ont été recoupées avec `pg_proc` sur le schéma réel :
+      // `read_integration_secret(_secret_id uuid) returns text` et
+      // `revoke_integration_secret(_secret_id uuid) returns boolean`. Elles
+      // correspondent. Elles restent écrites à la main — comme tout ce fichier,
+      // cf. l'en-tête : le générateur n'écrit rien.
+      read_integration_secret: {
+        Args: { _secret_id: string }
+        Returns: string | null
+      }
+      revoke_integration_secret: {
+        Args: { _secret_id: string }
+        Returns: boolean
+      }
       mark_notification_read: {
         Args: { _notification: string }
         Returns: boolean
@@ -1840,6 +1874,30 @@ export type Database = {
       touch_client_member_seen: {
         Args: { _client: string }
         Returns: undefined
+      }
+      // Migration 032 — cycle de vie d'une invitation reviewer (P7-7).
+      invite_client_reviewer: {
+        Args: {
+          _client: string
+          _email: string
+          _token_hash: string
+          _expires_at: string
+        }
+        Returns: string
+      }
+      revoke_client_invitation: {
+        Args: { _invitation: string }
+        Returns: boolean
+      }
+      remove_client_member: {
+        Args: { _client: string; _user: string }
+        Returns: boolean
+      }
+      // Migration 034 — sortie de secours : l'appelant se retire lui-meme.
+      // Pas de `_user` : le perimetre vient de `auth.uid()`, pas d'un parametre.
+      leave_client: {
+        Args: { _client: string }
+        Returns: boolean
       }
       // Migration 018 — partage public de rapport (snapshot).
       get_report_share: {

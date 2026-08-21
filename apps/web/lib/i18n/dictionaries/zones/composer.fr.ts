@@ -69,12 +69,14 @@ export const composerFr = {
       slidesCount: "{count}/{max} slides (limite API Meta)",
       libraryButton: "Médiathèque",
       emptyChoose: "Choisir un visuel dans la médiathèque",
-      emptyHint: "Dépôt de fichiers réel au Lot 1 — la preview pioche dans les médias mockés.",
+      emptyHint: "ou dépose directement un fichier ci-dessous.",
       slidesAria: "Slides du contenu",
       carouselReorder:
         "Glisse les vignettes pour réordonner — la 1re slide est la couverture du carrousel.",
       sizeMb: "{size} Mo",
       duration: "{count} s",
+      cropFailed:
+        "Recadrage impossible : l'original n'a pas pu être relu. L'intention est conservée, mais l'image n'est pas recadrée.",
       cropped: "recadré {preset}",
       crop: "Recadrer",
       remove: "Retirer",
